@@ -24,7 +24,7 @@ if %errorlevel% neq 0 (
 )
 
 echo Launching CPU Scheduling App...
-python main_new.py
+python main.py
 
 if %errorlevel% neq 0 (
     echo.

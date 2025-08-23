@@ -38,7 +38,7 @@ echo ================================================
 echo.
 echo You can now run the application by:
 echo 1. Double-clicking "run.bat"
-echo 2. Or running "python main_new.py" in terminal
+echo 2. Or running "python main.py" in terminal
 echo.
 echo Press any key to exit...
 pause >nul

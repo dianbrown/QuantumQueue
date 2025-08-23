@@ -1,13 +1,10 @@
 # CPU Scheduling Practice Application
 
-Tired trying to get practice examples or solutions for the CPU Scheduling problems?? 
-Well look no further, this application aims to make studying easier and to instantly get the solution to a problem.
+Tired trying to get practice examples or solutions for the CPU Scheduling problems?? Well look no further, this application aims to make studying easier and to instantly get the solution to a problem.
 
 No more making tedious excell spread sheets or worse... drawing everything by HAND!!
 
 just enter everything into the application, it has a built in random funtion and value editor for ease of use
-
-
 
 ## 🚀 Quick Start (Easy Installation)
 
@@ -21,13 +18,13 @@ just enter everything into the application, it has a built in random funtion and
 ### For All Platforms:
 1. **Download** and extract the project
 2. **Double-click** `setup.py` (or run `python setup.py`)
-3. **Run** `python main_new.py` to start the application
+3. **Run** `python main.py` to start the application
 
 ### Manual Installation:
 ```bash
 # Install Python 3.8+ from python.org
 pip install PySide6
-python main_new.py
+python main.py
 ```
 
 ## Project Structure
@@ -37,7 +34,7 @@ CPU_SchedulingPython/
 ├── setup.bat               # 🖱️ Windows setup (double-click)
 ├── run.bat                 # 🖱️ Windows launcher (double-click)
 ├── setup.py                # 🖱️ Cross-platform setup (double-click)
-├── main_new.py             # Main entry point
+├── main.py                 # Main entry point
 ├── requirements.txt        # Python dependencies
 ├── models/                 # Data models
 │   ├── __init__.py
