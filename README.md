@@ -2,29 +2,52 @@
 
 A comprehensive Qt-based application for practicing various CPU scheduling algorithms.
 
+## 🚀 Quick Start (Easy Installation)
+
+### For Windows Users (Double-Click Setup):
+1. **Download** the project as ZIP from GitHub
+2. **Extract** the ZIP file to any folder
+3. **Double-click** `setup.bat` to install dependencies automatically
+4. **Double-click** `run.bat` to start the application
+5. **Done!** 🎉
+
+### For All Platforms:
+1. **Download** and extract the project
+2. **Double-click** `setup.py` (or run `python setup.py`)
+3. **Run** `python main_new.py` to start the application
+
+### Manual Installation:
+```bash
+# Install Python 3.8+ from python.org
+pip install PySide6
+python main_new.py
+```
+
 ## Project Structure
 
 ```
 CPU_SchedulingPython/
-├── main_new.py              # Main entry point
-├── main.py                  # Legacy main file (can be removed)
-├── requirements.txt         # Python dependencies
-├── models/                  # Data models
+├── setup.bat               # 🖱️ Windows setup (double-click)
+├── run.bat                 # 🖱️ Windows launcher (double-click)
+├── setup.py                # 🖱️ Cross-platform setup (double-click)
+├── main_new.py             # Main entry point
+├── requirements.txt        # Python dependencies
+├── models/                 # Data models
 │   ├── __init__.py
-│   ├── process.py          # Process data class
+│   ├── process.py         # Process data class
 │   └── scheduling_result.py # Result data class
-├── algorithms/              # Scheduling algorithms
+├── algorithms/             # Scheduling algorithms
 │   ├── __init__.py
-│   ├── base_scheduler.py   # Abstract base class
-│   ├── fcfs.py            # First Come First Served
-│   ├── fcfs_priority.py   # FCFS with Priority
-│   ├── round_robin.py     # Round Robin (template)
-│   ├── sjf.py            # Shortest Job First (template)
-│   └── srt.py            # Shortest Remaining Time (template)
-├── ui/                     # User interface components
+│   ├── base_scheduler.py  # Abstract base class
+│   ├── fcfs.py           # First Come First Served
+│   ├── fcfs_priority.py  # FCFS with Priority
+│   ├── round_robin.py    # Round Robin (template)
+│   ├── sjf.py           # Shortest Job First (template)
+│   └── srt.py           # Shortest Remaining Time (template)
+├── ui/                    # User interface components
 │   ├── __init__.py
-│   └── main_window.py     # Main application window
-└── utils/                  # Utility functions
+│   └── main_window.py    # Main application window
+└── utils/                 # Utility functions
     ├── __init__.py
     └── process_generator.py # Random process generator
 ```
@@ -34,24 +57,38 @@ CPU_SchedulingPython/
 ### Current Implementation
 - ✅ **FCFS (First Come First Served)**: Non-preemptive scheduling
 - ✅ **FCFS with Priority**: Preemptive priority scheduling
-- ✅ **Smart Process Generation**: Eliminates some random gaps for better visualization
+- ✅ **Smart Process Generation**: Eliminates gaps for better visualization
 - ✅ **Interactive Timeline**: Click and double-click to fill cells
 - ✅ **Solution Checking**: Compare your input with the correct solution
 - ✅ **Metrics Display**: Waiting time, turnaround time, averages
+- ✅ **Easy Installation**: Double-click setup for Windows users
 
-### Future Algorithms to implement
+### Future Algorithms to Implement
 - 🔲 **Round Robin (RR)**: Time quantum-based scheduling
 - 🔲 **Round Robin with Priority (RRP)**: Priority + time quantum
 - 🔲 **Shortest Job First (SJF)**: Non-preemptive shortest job
 - 🔲 **SJF with Priority (SJFP)**: Priority + shortest job
 - 🔲 **Shortest Remaining Time (SRT)**: Preemptive shortest remaining time
 
-## Usage
+## 📖 How to Use the Application
 
-### Running the Application
-```bash
-python main_new.py
-```
+### 🎯 Practice Mode:
+1. **Select Algorithm**: Choose FCFS or FCFS with Priority from dropdown
+2. **Generate Processes**: Click "Randomize" for new practice problems
+3. **Fill Timeline**: Click cells to schedule processes manually
+   - **Single click**: Fill one time slot
+   - **Double click**: Auto-fill entire burst time
+4. **Check Solution**: Click "Check Solution" to see if you're correct
+5. **Show Answer**: Click "Show Solution" to see the correct schedule
+6. **Reset**: Click "Reset" to clear and try again
+
+### ⚙️ Advanced Features:
+- **Add/Delete Processes**: Modify the process list manually
+- **Edit Process Data**: Change arrival times, burst times, priorities
+- **New Grid**: Generate fresh timeline after editing processes
+- **Metrics Display**: View waiting times, turnaround times, and averages
+
+## 👩‍💻 For Developers
 
 ### Adding New Algorithms
 1. Create a new file in `algorithms/` directory
