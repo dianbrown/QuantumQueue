@@ -66,10 +66,10 @@ CPU_SchedulingPython/
 - ✅ **Solution Checking**: Compare your input with the correct solution
 - ✅ **Metrics Display**: Waiting time, turnaround time, averages
 - ✅ **Easy Installation**: Double-click setup for Windows users
+- ✅ **Round Robin (RR)**: Time quantum-based scheduling
+- ✅ **Round Robin with Priority (RRP)**: Priority + time quantum
 
 ### Future Algorithms to Implement
-- 🔲 **Round Robin (RR)**: Time quantum-based scheduling
-- 🔲 **Round Robin with Priority (RRP)**: Priority + time quantum
 - 🔲 **Shortest Job First (SJF)**: Non-preemptive shortest job
 - 🔲 **SJF with Priority (SJFP)**: Priority + shortest job
 - 🔲 **Shortest Remaining Time (SRT)**: Preemptive shortest remaining time
