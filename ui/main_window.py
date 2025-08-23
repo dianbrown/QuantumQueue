@@ -5,14 +5,14 @@ from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QComboBox, QLabel,
-    QHeaderView, QMessageBox
+    QHeaderView, QMessageBox, QSpinBox
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
 from models.process import Process
 from models.scheduling_result import SchedulingResult
-from algorithms import FCFSScheduler, FCFSPriorityScheduler
+from algorithms import FCFSScheduler, FCFSPriorityScheduler, RoundRobinScheduler, RoundRobinPriorityScheduler
 from utils.process_generator import ProcessGenerator
 
 
@@ -28,11 +28,14 @@ class CPUSchedulingApp(QMainWindow):
         self.solution_result: Optional[SchedulingResult] = None
         self.is_locked = False
         self.results_label: Optional[QLabel] = None
+        self.quantum_spinbox: Optional[QSpinBox] = None
         
         # Initialize schedulers
         self.schedulers = {
             "FCFS": FCFSScheduler(),
-            "FCFS with Priority": FCFSPriorityScheduler(higher_is_better=True)
+            "FCFS with Priority": FCFSPriorityScheduler(higher_is_better=True),
+            "Round Robin": RoundRobinScheduler(2),
+            "Round Robin with Priority": RoundRobinPriorityScheduler(2)
         }
         
         self.init_ui()
@@ -41,7 +44,7 @@ class CPUSchedulingApp(QMainWindow):
 
     def init_ui(self):
         """Initialize the user interface."""
-        self.setWindowTitle("CPU Scheduling Practice App (Phase 1: FCFS)")
+        self.setWindowTitle("CPU Scheduling Practice App")
         self.setGeometry(100, 100, 1200, 700)
         
         central_widget = QWidget()
@@ -57,6 +60,20 @@ class CPUSchedulingApp(QMainWindow):
         self.algorithm_combo.currentTextChanged.connect(self.on_algorithm_changed)
         controls_layout.addWidget(QLabel("Algorithm:"))
         controls_layout.addWidget(self.algorithm_combo)
+        
+        # Quantum input (for Round Robin algorithms)
+        self.quantum_spinbox = QSpinBox()
+        self.quantum_spinbox.setMinimum(1)
+        self.quantum_spinbox.setMaximum(10)
+        self.quantum_spinbox.setValue(2)
+        self.quantum_spinbox.valueChanged.connect(self.on_quantum_changed)
+        self.quantum_label = QLabel("Quantum:")
+        controls_layout.addWidget(self.quantum_label)
+        controls_layout.addWidget(self.quantum_spinbox)
+        
+        # Initially hide quantum controls
+        self.quantum_label.setVisible(False)
+        self.quantum_spinbox.setVisible(False)
         
         # Control buttons
         new_grid_btn = QPushButton("New Grid")
@@ -280,7 +297,29 @@ class CPUSchedulingApp(QMainWindow):
 
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
+        algorithm = self.algorithm_combo.currentText()
+        
+        # Show/hide quantum controls for Round Robin algorithms
+        is_round_robin = "Round Robin" in algorithm
+        self.quantum_label.setVisible(is_round_robin)
+        self.quantum_spinbox.setVisible(is_round_robin)
+        
+        # Update scheduler with current quantum if needed
+        if is_round_robin:
+            self.update_round_robin_scheduler()
+        
         self.reset_grid()
+    
+    def on_quantum_changed(self):
+        """Handle quantum value change."""
+        self.update_round_robin_scheduler()
+        self.reset_grid()
+    
+    def update_round_robin_scheduler(self):
+        """Update Round Robin schedulers with current quantum value."""
+        quantum = self.quantum_spinbox.value()
+        self.schedulers["Round Robin"] = RoundRobinScheduler(quantum)
+        self.schedulers["Round Robin with Priority"] = RoundRobinPriorityScheduler(quantum)
 
     def new_grid(self):
         """Create a new grid with current processes."""
@@ -330,6 +369,13 @@ class CPUSchedulingApp(QMainWindow):
     def randomize_processes(self):
         """Generate random processes."""
         self.processes = ProcessGenerator.generate_processes()
+        
+        # If using Round Robin, also randomize quantum
+        algorithm = self.algorithm_combo.currentText()
+        if "Round Robin" in algorithm:
+            quantum = ProcessGenerator.generate_quantum()
+            self.quantum_spinbox.setValue(quantum)
+            self.update_round_robin_scheduler()
         
         # Clear any existing solution state
         self.solution_result = None

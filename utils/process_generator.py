@@ -89,3 +89,12 @@ class ProcessGenerator:
         
         # Sort back to A, B, C, D order for display (not by arrival time)
         return sorted(new_processes, key=lambda p: p.id)
+    
+    @staticmethod
+    def generate_quantum() -> int:
+        """Generate a random time quantum for Round Robin algorithms.
+        
+        Returns:
+            Random quantum value between 1 and 5
+        """
+        return random.randint(1, 5)
