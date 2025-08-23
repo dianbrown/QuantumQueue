@@ -1,6 +1,13 @@
 # CPU Scheduling Practice Application
 
-A comprehensive Qt-based application for practicing various CPU scheduling algorithms.
+Tired trying to get practice examples or solutions for the CPU Scheduling problems?? 
+Well look no further, this application aims to make studying easier and to instantly get the solution to a problem.
+
+No more making tedious excell spread sheets or worse... drawing everything by HAND!!
+
+just enter everything into the application, it has a built in random funtion and value editor for ease of use
+
+
 
 ## Project Structure
 
