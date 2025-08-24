@@ -5,7 +5,7 @@ from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QComboBox, QLabel,
-    QHeaderView, QMessageBox, QSpinBox, QMenu
+    QHeaderView, QMessageBox, QSpinBox, QMenu, QScrollArea
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
@@ -28,6 +28,7 @@ class CPUSchedulingApp(QMainWindow):
         self.solution_result: Optional[SchedulingResult] = None
         self.is_locked = False
         self.results_label: Optional[QLabel] = None
+        self.results_scroll_area: Optional[QScrollArea] = None
         self.algorithm_name_label: Optional[QLabel] = None
         self.quantum_spinbox: Optional[QSpinBox] = None
         self.rs_markers = {}  # Track RS markers: {(row, col): True}
@@ -150,22 +151,34 @@ class CPUSchedulingApp(QMainWindow):
         self.setup_timeline_grid()
         right_panel.addWidget(self.timeline_grid)
         
-        # Results display
+        # Results display with scroll area
         self.results_label = QLabel("")
         self.results_label.setWordWrap(True)
-        self.results_label.setMinimumHeight(150)  # Set minimum height for results
-        self.results_label.setMaximumHeight(200)  # Set maximum height to prevent too much expansion
         self.results_label.setStyleSheet("""
             QLabel {
                 background-color: #2b2b2b;
-                border: 1px solid #555;
-                border-radius: 5px;
+                border: none;
                 padding: 10px;
                 font-family: monospace;
                 color: white;
             }
         """)
-        right_panel.addWidget(self.results_label)
+        
+        # Create scroll area for results
+        self.results_scroll_area = QScrollArea()
+        self.results_scroll_area.setWidget(self.results_label)
+        self.results_scroll_area.setWidgetResizable(True)
+        self.results_scroll_area.setMinimumHeight(150)
+        self.results_scroll_area.setMaximumHeight(200)
+        self.results_scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: 1px solid #555;
+                border-radius: 5px;
+                background-color: #2b2b2b;
+            }
+        """)
+        
+        right_panel.addWidget(self.results_scroll_area)
         
         right_widget = QWidget()
         right_widget.setLayout(right_panel)
@@ -285,18 +298,32 @@ class CPUSchedulingApp(QMainWindow):
             other_item = self.timeline_grid.item(r, col)
             if other_item and r != row:
                 other_item.setBackground(Qt.white)
-                other_item.setText("")
                 other_item.setForeground(QColor(0, 0, 0))  # Black text
+                # Handle RS marker preservation when clearing
+                if (r, col) in self.rs_markers:
+                    other_item.setText("RS")
+                    other_item.setForeground(QColor(128, 128, 128))  # Gray for RS
+                else:
+                    other_item.setText("")
         
         # Toggle current cell
         if item.background().color().name() == "#ffff00":  # Yellow
             item.setBackground(Qt.white)
-            item.setText("")
             item.setForeground(QColor(0, 0, 0))  # Black text
+            # Handle RS marker preservation when turning off yellow
+            if (row, col) in self.rs_markers:
+                item.setText("RS")
+                item.setForeground(QColor(128, 128, 128))  # Gray for RS
+            else:
+                item.setText("")
         else:
             item.setBackground(Qt.yellow)
-            item.setText("-")
             item.setForeground(QColor(0, 0, 0))  # Black text
+            # Handle RS marker preservation when turning on yellow
+            if (row, col) in self.rs_markers:
+                item.setText("-\nRS")
+            else:
+                item.setText("-")
 
     def on_cell_hover(self, row: int, col: int):
         """Handle cell hover events."""
@@ -556,6 +583,24 @@ class CPUSchedulingApp(QMainWindow):
             avg_turnaround = self.solution_result.get_average_turnaround_time()
             result_text += f"<br><b>Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}</b>"
         
+        # Add responsiveness calculations
+        result_text += "<br><br><b>Responsiveness (Burst/TAT):</b><br>"
+        total_responsiveness = 0
+        process_count = 0
+        
+        for process_id, metrics in self.solution_result.process_metrics.items():
+            # Find the process to get its burst time
+            process = next((p for p in self.processes if p.id == process_id), None)
+            if process and metrics.turnaround > 0:
+                responsiveness = process.burst / metrics.turnaround
+                result_text += f"Process {process_id}: {responsiveness:.3f}<br>"
+                total_responsiveness += responsiveness
+                process_count += 1
+        
+        if process_count > 0:
+            avg_responsiveness = total_responsiveness / process_count
+            result_text += f"<br><b>Average Responsiveness: {avg_responsiveness:.3f}</b>"
+        
         self.results_label.setText(result_text)
 
     def show_solution(self):
@@ -586,6 +631,24 @@ class CPUSchedulingApp(QMainWindow):
             avg_waiting = self.solution_result.get_average_waiting_time()
             avg_turnaround = self.solution_result.get_average_turnaround_time()
             result_text += f"<br><b>Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}</b>"
+        
+        # Add responsiveness calculations
+        result_text += "<br><br><b>Responsiveness (Burst/TAT):</b><br>"
+        total_responsiveness = 0
+        process_count = 0
+        
+        for process_id, metrics in self.solution_result.process_metrics.items():
+            # Find the process to get its burst time
+            process = next((p for p in self.processes if p.id == process_id), None)
+            if process and metrics.turnaround > 0:
+                responsiveness = process.burst / metrics.turnaround
+                result_text += f"Process {process_id}: {responsiveness:.3f}<br>"
+                total_responsiveness += responsiveness
+                process_count += 1
+        
+        if process_count > 0:
+            avg_responsiveness = total_responsiveness / process_count
+            result_text += f"<br><b>Average Responsiveness: {avg_responsiveness:.3f}</b>"
         
         self.results_label.setText(result_text)
 
