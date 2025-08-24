@@ -5,10 +5,10 @@ from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QComboBox, QLabel,
-    QHeaderView, QMessageBox, QSpinBox
+    QHeaderView, QMessageBox, QSpinBox, QMenu
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor
 
 from models.process import Process
 from models.scheduling_result import SchedulingResult
@@ -29,6 +29,7 @@ class CPUSchedulingApp(QMainWindow):
         self.is_locked = False
         self.results_label: Optional[QLabel] = None
         self.quantum_spinbox: Optional[QSpinBox] = None
+        self.rs_markers = {}  # Track RS markers: {(row, col): True}
         
         # Initialize schedulers
         self.schedulers = {
@@ -79,10 +80,6 @@ class CPUSchedulingApp(QMainWindow):
         self.quantum_spinbox.setVisible(False)
         
         # Control buttons
-        new_grid_btn = QPushButton("New Grid")
-        new_grid_btn.clicked.connect(self.new_grid)
-        controls_layout.addWidget(new_grid_btn)
-        
         check_btn = QPushButton("Check Solution")
         check_btn.clicked.connect(self.check_solution)
         controls_layout.addWidget(check_btn)
@@ -167,6 +164,10 @@ class CPUSchedulingApp(QMainWindow):
         # Connect cell events
         self.timeline_grid.cellClicked.connect(self.on_cell_clicked)
         self.timeline_grid.cellEntered.connect(self.on_cell_hover)
+        
+        # Enable context menu
+        self.timeline_grid.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.timeline_grid.customContextMenuRequested.connect(self.show_context_menu)
         self.timeline_grid.cellDoubleClicked.connect(self.on_cell_double_clicked)
         
         # Enable mouse tracking for better responsiveness
@@ -202,6 +203,9 @@ class CPUSchedulingApp(QMainWindow):
             self.timeline_grid.setRowCount(0)
             return
             
+        # Save current RS markers
+        old_rs_markers = self.rs_markers.copy()
+        
         # Clear all existing cells first
         for i in range(self.timeline_grid.rowCount()):
             for j in range(1, self.timeline_grid.columnCount()):
@@ -229,6 +233,12 @@ class CPUSchedulingApp(QMainWindow):
                 else:
                     item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 self.timeline_grid.setItem(i, j, item)
+        
+        # Restore RS markers
+        self.rs_markers = old_rs_markers
+        for (row, col) in self.rs_markers:
+            if row < self.timeline_grid.rowCount() and col < self.timeline_grid.columnCount():
+                self.update_cell_display(row, col)
 
     def on_cell_clicked(self, row: int, col: int):
         """Handle cell click events."""
@@ -298,6 +308,80 @@ class CPUSchedulingApp(QMainWindow):
                         cell_item.setBackground(Qt.yellow)
                         cell_item.setText("-")
 
+    def show_context_menu(self, position):
+        """Show context menu for RS markers."""
+        item = self.timeline_grid.itemAt(position)
+        if item is None:
+            return
+            
+        row = item.row()
+        col = item.column()
+        
+        # Only allow RS markers in timeline columns (not process ID column)
+        if col == 0:
+            return
+            
+        menu = QMenu(self)
+        
+        # Check if RS marker exists at this position
+        has_rs_marker = (row, col) in self.rs_markers
+        
+        if has_rs_marker:
+            action = menu.addAction("Remove RS Marker")
+            action.triggered.connect(lambda: self.remove_rs_marker(row, col))
+        else:
+            action = menu.addAction("Add RS Marker")
+            action.triggered.connect(lambda: self.add_rs_marker(row, col))
+            
+        menu.exec(self.timeline_grid.mapToGlobal(position))
+
+    def add_rs_marker(self, row: int, col: int):
+        """Add RS marker to a cell."""
+        # Remove any existing RS marker in this row (only one per process)
+        self.remove_rs_markers_in_row(row)
+        
+        # Add new RS marker
+        self.rs_markers[(row, col)] = True
+        self.update_cell_display(row, col)
+
+    def remove_rs_marker(self, row: int, col: int):
+        """Remove RS marker from a cell."""
+        if (row, col) in self.rs_markers:
+            del self.rs_markers[(row, col)]
+            self.update_cell_display(row, col)
+
+    def remove_rs_markers_in_row(self, row: int):
+        """Remove all RS markers in a specific row (process)."""
+        markers_to_remove = [(r, c) for r, c in self.rs_markers.keys() if r == row]
+        for r, c in markers_to_remove:
+            del self.rs_markers[(r, c)]
+            self.update_cell_display(r, c)
+
+    def update_cell_display(self, row: int, col: int):
+        """Update cell display to show/hide RS marker."""
+        item = self.timeline_grid.item(row, col)
+        if item is None:
+            return
+            
+        has_rs_marker = (row, col) in self.rs_markers
+        current_text = item.text()
+        
+        if has_rs_marker:
+            # Add RS marker as overlay text (keep existing content)
+            if current_text and current_text != "" and "RS" not in current_text:
+                item.setText(f"{current_text}\nRS")
+            else:
+                item.setText("RS")
+            # Set light gray color for RS text
+            item.setForeground(QColor(128, 128, 128))
+        else:
+            # Remove RS marker but keep other content
+            if current_text and "RS" in current_text:
+                new_text = current_text.replace("\nRS", "").replace("RS", "")
+                item.setText(new_text)
+            # Reset text color to black
+            item.setForeground(QColor(0, 0, 0))
+
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
         algorithm = self.algorithm_combo.currentText()
@@ -323,20 +407,6 @@ class CPUSchedulingApp(QMainWindow):
         quantum = self.quantum_spinbox.value()
         self.schedulers["Round Robin"] = RoundRobinScheduler(quantum)
         self.schedulers["Round Robin with Priority"] = RoundRobinPriorityScheduler(quantum)
-
-    def new_grid(self):
-        """Create a new grid with current processes."""
-        self.read_process_table()
-        
-        # Clear solution state
-        self.solution_result = None
-        self.current_schedule = []
-        self.is_locked = False
-        
-        # Update grid and clear results
-        self.update_timeline_grid()
-        if self.results_label:
-            self.results_label.setText("")
 
     def add_process(self):
         """Add a new process."""
@@ -486,6 +556,9 @@ class CPUSchedulingApp(QMainWindow):
         self.is_locked = False
         self.results_label.setText("")
         
+        # Clear RS markers
+        self.rs_markers.clear()
+        
         for i in range(self.timeline_grid.rowCount()):
             for j in range(1, self.timeline_grid.columnCount()):
                 item = self.timeline_grid.item(i, j)
@@ -493,6 +566,7 @@ class CPUSchedulingApp(QMainWindow):
                     item.setBackground(Qt.white)
                     item.setText("")
                     item.setFlags(item.flags() | Qt.ItemIsEditable)
+                    item.setForeground(QColor(0, 0, 0))  # Reset text color
 
     def get_student_schedule(self) -> List[Optional[str]]:
         """Get the student's schedule from the grid."""
