@@ -28,6 +28,7 @@ class CPUSchedulingApp(QMainWindow):
         self.solution_result: Optional[SchedulingResult] = None
         self.is_locked = False
         self.results_label: Optional[QLabel] = None
+        self.algorithm_name_label: Optional[QLabel] = None
         self.quantum_spinbox: Optional[QSpinBox] = None
         self.rs_markers = {}  # Track RS markers: {(row, col): True}
         
@@ -91,6 +92,24 @@ class CPUSchedulingApp(QMainWindow):
         reset_btn = QPushButton("Reset")
         reset_btn.clicked.connect(self.reset_grid)
         controls_layout.addWidget(reset_btn)
+        
+        # Add more spacing to center the algorithm name above the grid
+        controls_layout.addSpacing(200)
+        
+        # Algorithm name display
+        self.algorithm_name_label = QLabel("Current Algorithm: FCFS")
+        self.algorithm_name_label.setStyleSheet("""
+            QLabel {
+                font-family: Arial;
+                font-size: 14px;
+                font-weight: bold;
+                color: white;
+                background: transparent;
+                border: none;
+                padding: 8px;
+            }
+        """)
+        controls_layout.addWidget(self.algorithm_name_label)
         
         controls_layout.addStretch()
         main_layout.addLayout(controls_layout)
@@ -400,6 +419,10 @@ class CPUSchedulingApp(QMainWindow):
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
         algorithm = self.algorithm_combo.currentText()
+        
+        # Update algorithm name label
+        if self.algorithm_name_label:
+            self.algorithm_name_label.setText(f"Current Algorithm: {algorithm}")
         
         # Show/hide quantum controls for Round Robin algorithms
         is_round_robin = "Round Robin" in algorithm
