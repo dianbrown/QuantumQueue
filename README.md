@@ -82,10 +82,10 @@ CPU_SchedulingPython/
 3. **Fill Timeline**: Click cells to schedule processes manually
    - **Single click**: Fill one time slot
    - **Double click**: Auto-fill entire burst time
+   - **Right-Click**: Adds RS (Ready State) Markers
 4. **Check Solution**: Click "Check Solution" to see if you're correct
 5. **Show Answer**: Click "Show Solution" to see the correct schedule
 6. **Reset**: Click "Reset" to clear and try again
-7. **Right-Click to add RS**: Adds RS markers for visualization when solving problems to keep track of ready states
 
 ### ⚙️ Advanced Features:
 - **Add/Delete Processes**: Modify the process list manually
