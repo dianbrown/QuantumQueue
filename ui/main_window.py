@@ -5,10 +5,10 @@ from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QComboBox, QLabel,
-    QHeaderView, QMessageBox, QSpinBox
+    QHeaderView, QMessageBox, QSpinBox, QMenu, QScrollArea
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor
 
 from models.process import Process
 from models.scheduling_result import SchedulingResult
@@ -28,7 +28,10 @@ class CPUSchedulingApp(QMainWindow):
         self.solution_result: Optional[SchedulingResult] = None
         self.is_locked = False
         self.results_label: Optional[QLabel] = None
+        self.results_scroll_area: Optional[QScrollArea] = None
+        self.algorithm_name_label: Optional[QLabel] = None
         self.quantum_spinbox: Optional[QSpinBox] = None
+        self.rs_markers = {}  # Track RS markers: {(row, col): True}
         
         # Initialize schedulers
         self.schedulers = {
@@ -79,10 +82,6 @@ class CPUSchedulingApp(QMainWindow):
         self.quantum_spinbox.setVisible(False)
         
         # Control buttons
-        new_grid_btn = QPushButton("New Grid")
-        new_grid_btn.clicked.connect(self.new_grid)
-        controls_layout.addWidget(new_grid_btn)
-        
         check_btn = QPushButton("Check Solution")
         check_btn.clicked.connect(self.check_solution)
         controls_layout.addWidget(check_btn)
@@ -94,6 +93,24 @@ class CPUSchedulingApp(QMainWindow):
         reset_btn = QPushButton("Reset")
         reset_btn.clicked.connect(self.reset_grid)
         controls_layout.addWidget(reset_btn)
+        
+        # Add more spacing to center the algorithm name above the grid
+        controls_layout.addSpacing(200)
+        
+        # Algorithm name display
+        self.algorithm_name_label = QLabel("Current Algorithm: FCFS")
+        self.algorithm_name_label.setStyleSheet("""
+            QLabel {
+                font-family: Arial;
+                font-size: 14px;
+                font-weight: bold;
+                color: white;
+                background: transparent;
+                border: none;
+                padding: 8px;
+            }
+        """)
+        controls_layout.addWidget(self.algorithm_name_label)
         
         controls_layout.addStretch()
         main_layout.addLayout(controls_layout)
@@ -134,10 +151,34 @@ class CPUSchedulingApp(QMainWindow):
         self.setup_timeline_grid()
         right_panel.addWidget(self.timeline_grid)
         
-        # Results display
+        # Results display with scroll area
         self.results_label = QLabel("")
         self.results_label.setWordWrap(True)
-        right_panel.addWidget(self.results_label)
+        self.results_label.setStyleSheet("""
+            QLabel {
+                background-color: #2b2b2b;
+                border: none;
+                padding: 10px;
+                font-family: monospace;
+                color: white;
+            }
+        """)
+        
+        # Create scroll area for results
+        self.results_scroll_area = QScrollArea()
+        self.results_scroll_area.setWidget(self.results_label)
+        self.results_scroll_area.setWidgetResizable(True)
+        self.results_scroll_area.setMinimumHeight(150)
+        self.results_scroll_area.setMaximumHeight(200)
+        self.results_scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: 1px solid #555;
+                border-radius: 5px;
+                background-color: #2b2b2b;
+            }
+        """)
+        
+        right_panel.addWidget(self.results_scroll_area)
         
         right_widget = QWidget()
         right_widget.setLayout(right_panel)
@@ -167,6 +208,10 @@ class CPUSchedulingApp(QMainWindow):
         # Connect cell events
         self.timeline_grid.cellClicked.connect(self.on_cell_clicked)
         self.timeline_grid.cellEntered.connect(self.on_cell_hover)
+        
+        # Enable context menu
+        self.timeline_grid.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.timeline_grid.customContextMenuRequested.connect(self.show_context_menu)
         self.timeline_grid.cellDoubleClicked.connect(self.on_cell_double_clicked)
         
         # Enable mouse tracking for better responsiveness
@@ -202,6 +247,9 @@ class CPUSchedulingApp(QMainWindow):
             self.timeline_grid.setRowCount(0)
             return
             
+        # Save current RS markers
+        old_rs_markers = self.rs_markers.copy()
+        
         # Clear all existing cells first
         for i in range(self.timeline_grid.rowCount()):
             for j in range(1, self.timeline_grid.columnCount()):
@@ -229,6 +277,12 @@ class CPUSchedulingApp(QMainWindow):
                 else:
                     item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 self.timeline_grid.setItem(i, j, item)
+        
+        # Restore RS markers
+        self.rs_markers = old_rs_markers
+        for (row, col) in self.rs_markers:
+            if row < self.timeline_grid.rowCount() and col < self.timeline_grid.columnCount():
+                self.update_cell_display(row, col)
 
     def on_cell_clicked(self, row: int, col: int):
         """Handle cell click events."""
@@ -244,15 +298,32 @@ class CPUSchedulingApp(QMainWindow):
             other_item = self.timeline_grid.item(r, col)
             if other_item and r != row:
                 other_item.setBackground(Qt.white)
-                other_item.setText("")
+                other_item.setForeground(QColor(0, 0, 0))  # Black text
+                # Handle RS marker preservation when clearing
+                if (r, col) in self.rs_markers:
+                    other_item.setText("RS")
+                    other_item.setForeground(QColor(128, 128, 128))  # Gray for RS
+                else:
+                    other_item.setText("")
         
         # Toggle current cell
         if item.background().color().name() == "#ffff00":  # Yellow
             item.setBackground(Qt.white)
-            item.setText("")
+            item.setForeground(QColor(0, 0, 0))  # Black text
+            # Handle RS marker preservation when turning off yellow
+            if (row, col) in self.rs_markers:
+                item.setText("RS")
+                item.setForeground(QColor(128, 128, 128))  # Gray for RS
+            else:
+                item.setText("")
         else:
             item.setBackground(Qt.yellow)
-            item.setText("-")
+            item.setForeground(QColor(0, 0, 0))  # Black text
+            # Handle RS marker preservation when turning on yellow
+            if (row, col) in self.rs_markers:
+                item.setText("-\nRS")
+            else:
+                item.setText("-")
 
     def on_cell_hover(self, row: int, col: int):
         """Handle cell hover events."""
@@ -298,9 +369,87 @@ class CPUSchedulingApp(QMainWindow):
                         cell_item.setBackground(Qt.yellow)
                         cell_item.setText("-")
 
+    def show_context_menu(self, position):
+        """Show context menu for RS markers."""
+        item = self.timeline_grid.itemAt(position)
+        if item is None:
+            return
+            
+        row = item.row()
+        col = item.column()
+        
+        # Only allow RS markers in timeline columns (not process ID column)
+        if col == 0:
+            return
+            
+        menu = QMenu(self)
+        
+        # Check if RS marker exists at this position
+        has_rs_marker = (row, col) in self.rs_markers
+        
+        if has_rs_marker:
+            action = menu.addAction("Remove RS Marker")
+            action.triggered.connect(lambda: self.remove_rs_marker(row, col))
+        else:
+            action = menu.addAction("Add RS Marker")
+            action.triggered.connect(lambda: self.add_rs_marker(row, col))
+            
+        menu.exec(self.timeline_grid.mapToGlobal(position))
+
+    def add_rs_marker(self, row: int, col: int):
+        """Add RS marker to a cell."""
+        # Remove any existing RS marker in this row (only one per process)
+        self.remove_rs_markers_in_row(row)
+        
+        # Add new RS marker
+        self.rs_markers[(row, col)] = True
+        self.update_cell_display(row, col)
+
+    def remove_rs_marker(self, row: int, col: int):
+        """Remove RS marker from a cell."""
+        if (row, col) in self.rs_markers:
+            del self.rs_markers[(row, col)]
+            self.update_cell_display(row, col)
+
+    def remove_rs_markers_in_row(self, row: int):
+        """Remove all RS markers in a specific row (process)."""
+        markers_to_remove = [(r, c) for r, c in self.rs_markers.keys() if r == row]
+        for r, c in markers_to_remove:
+            del self.rs_markers[(r, c)]
+            self.update_cell_display(r, c)
+
+    def update_cell_display(self, row: int, col: int):
+        """Update cell display to show/hide RS marker."""
+        item = self.timeline_grid.item(row, col)
+        if item is None:
+            return
+            
+        has_rs_marker = (row, col) in self.rs_markers
+        current_text = item.text()
+        
+        if has_rs_marker:
+            # Add RS marker as overlay text (keep existing content)
+            if current_text and current_text != "" and "RS" not in current_text:
+                item.setText(f"{current_text}\nRS")
+            else:
+                item.setText("RS")
+            # Set light gray color for RS text
+            item.setForeground(QColor(128, 128, 128))
+        else:
+            # Remove RS marker but keep other content
+            if current_text and "RS" in current_text:
+                new_text = current_text.replace("\nRS", "").replace("RS", "")
+                item.setText(new_text)
+            # Reset text color to black
+            item.setForeground(QColor(0, 0, 0))
+
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
         algorithm = self.algorithm_combo.currentText()
+        
+        # Update algorithm name label
+        if self.algorithm_name_label:
+            self.algorithm_name_label.setText(f"Current Algorithm: {algorithm}")
         
         # Show/hide quantum controls for Round Robin algorithms
         is_round_robin = "Round Robin" in algorithm
@@ -323,20 +472,6 @@ class CPUSchedulingApp(QMainWindow):
         quantum = self.quantum_spinbox.value()
         self.schedulers["Round Robin"] = RoundRobinScheduler(quantum)
         self.schedulers["Round Robin with Priority"] = RoundRobinPriorityScheduler(quantum)
-
-    def new_grid(self):
-        """Create a new grid with current processes."""
-        self.read_process_table()
-        
-        # Clear solution state
-        self.solution_result = None
-        self.current_schedule = []
-        self.is_locked = False
-        
-        # Update grid and clear results
-        self.update_timeline_grid()
-        if self.results_label:
-            self.results_label.setText("")
 
     def add_process(self):
         """Add a new process."""
@@ -427,26 +562,44 @@ class CPUSchedulingApp(QMainWindow):
         
         # Display results
         if not mismatches:
-            result_text = "✓ Correct solution!\\n\\n"
+            result_text = "<b>✓ Correct solution!</b><br><br>"
         else:
-            result_text = f"✗ Incorrect. Mismatches at times: {mismatches[:10]}\\n\\n"
+            result_text = f"<b>✗ Incorrect.</b> Mismatches at times: {mismatches[:10]}<br><br>"
         
         # Add metrics
-        result_text += "Waiting & Turnaround Times:\\n"
+        result_text += "<b>Waiting & Turnaround Times:</b><br>"
         total_waiting = 0
         total_turnaround = 0
         
         for process_id, metrics in self.solution_result.process_metrics.items():
             waiting = metrics.waiting
             turnaround = metrics.turnaround
-            result_text += f"Process {process_id}: WT={waiting}, TAT={turnaround}\\n"
+            result_text += f"Process {process_id}: WT={waiting}, TAT={turnaround}<br>"
             total_waiting += waiting
             total_turnaround += turnaround
         
         if len(self.solution_result.process_metrics) > 0:
             avg_waiting = self.solution_result.get_average_waiting_time()
             avg_turnaround = self.solution_result.get_average_turnaround_time()
-            result_text += f"Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}"
+            result_text += f"<br><b>Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}</b>"
+        
+        # Add responsiveness calculations
+        result_text += "<br><br><b>Responsiveness (Burst/TAT):</b><br>"
+        total_responsiveness = 0
+        process_count = 0
+        
+        for process_id, metrics in self.solution_result.process_metrics.items():
+            # Find the process to get its burst time
+            process = next((p for p in self.processes if p.id == process_id), None)
+            if process and metrics.turnaround > 0:
+                responsiveness = process.burst / metrics.turnaround
+                result_text += f"Process {process_id}: {responsiveness:.3f}<br>"
+                total_responsiveness += responsiveness
+                process_count += 1
+        
+        if process_count > 0:
+            avg_responsiveness = total_responsiveness / process_count
+            result_text += f"<br><b>Average Responsiveness: {avg_responsiveness:.3f}</b>"
         
         self.results_label.setText(result_text)
 
@@ -466,18 +619,36 @@ class CPUSchedulingApp(QMainWindow):
         self.is_locked = True
         
         # Show metrics
-        result_text = "Solution displayed and locked.\\n\\n"
-        result_text += "Waiting & Turnaround Times:\\n"
+        result_text = "<b>Solution displayed and locked.</b><br><br>"
+        result_text += "<b>Waiting & Turnaround Times:</b><br>"
         
         for process_id, metrics in self.solution_result.process_metrics.items():
             waiting = metrics.waiting
             turnaround = metrics.turnaround
-            result_text += f"Process {process_id}: WT={waiting}, TAT={turnaround}\\n"
+            result_text += f"Process {process_id}: WT={waiting}, TAT={turnaround}<br>"
         
         if len(self.solution_result.process_metrics) > 0:
             avg_waiting = self.solution_result.get_average_waiting_time()
             avg_turnaround = self.solution_result.get_average_turnaround_time()
-            result_text += f"Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}"
+            result_text += f"<br><b>Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}</b>"
+        
+        # Add responsiveness calculations
+        result_text += "<br><br><b>Responsiveness (Burst/TAT):</b><br>"
+        total_responsiveness = 0
+        process_count = 0
+        
+        for process_id, metrics in self.solution_result.process_metrics.items():
+            # Find the process to get its burst time
+            process = next((p for p in self.processes if p.id == process_id), None)
+            if process and metrics.turnaround > 0:
+                responsiveness = process.burst / metrics.turnaround
+                result_text += f"Process {process_id}: {responsiveness:.3f}<br>"
+                total_responsiveness += responsiveness
+                process_count += 1
+        
+        if process_count > 0:
+            avg_responsiveness = total_responsiveness / process_count
+            result_text += f"<br><b>Average Responsiveness: {avg_responsiveness:.3f}</b>"
         
         self.results_label.setText(result_text)
 
@@ -486,6 +657,9 @@ class CPUSchedulingApp(QMainWindow):
         self.is_locked = False
         self.results_label.setText("")
         
+        # Clear RS markers
+        self.rs_markers.clear()
+        
         for i in range(self.timeline_grid.rowCount()):
             for j in range(1, self.timeline_grid.columnCount()):
                 item = self.timeline_grid.item(i, j)
@@ -493,6 +667,7 @@ class CPUSchedulingApp(QMainWindow):
                     item.setBackground(Qt.white)
                     item.setText("")
                     item.setFlags(item.flags() | Qt.ItemIsEditable)
+                    item.setForeground(QColor(0, 0, 0))  # Reset text color
 
     def get_student_schedule(self) -> List[Optional[str]]:
         """Get the student's schedule from the grid."""
@@ -520,6 +695,7 @@ class CPUSchedulingApp(QMainWindow):
                 if item:
                     item.setBackground(Qt.white)
                     item.setText("")
+                    item.setForeground(QColor(0, 0, 0))  # Reset text color
         
         # Fill with schedule
         process_to_row = {}
@@ -536,4 +712,5 @@ class CPUSchedulingApp(QMainWindow):
                     if item:
                         item.setBackground(Qt.yellow)
                         item.setText("-")
+                        item.setForeground(QColor(0, 0, 0))  # Black text
                         item.setFlags(item.flags() & ~Qt.ItemIsEditable)
