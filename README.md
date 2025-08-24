@@ -71,9 +71,9 @@ CPU_SchedulingPython/
 - ✅ **Round Robin with Priority (RRP)**: Priority + time quantum
 - ✅ **Shortest Job First (SJF)**: Non-preemptive shortest job
 - ✅ **SJF with Priority (SJFP)**: Priority + shortest job
+- ✅ **Shortest Remaining Time (SRT)**: Preemptive shortest remaining time
 
 ### Future Algorithms to Implement
-- 🔲 **Shortest Remaining Time (SRT)**: Preemptive shortest remaining time
 - 🔲**Responsiveness per process**: Calculates the responsiveness and displays it
 
 ## 📖 How to Use the Application
