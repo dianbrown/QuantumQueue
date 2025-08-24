@@ -134,6 +134,18 @@ class CPUSchedulingApp(QMainWindow):
         # Results display
         self.results_label = QLabel("")
         self.results_label.setWordWrap(True)
+        self.results_label.setMinimumHeight(150)  # Set minimum height for results
+        self.results_label.setMaximumHeight(200)  # Set maximum height to prevent too much expansion
+        self.results_label.setStyleSheet("""
+            QLabel {
+                background-color: #2b2b2b;
+                border: 1px solid #555;
+                border-radius: 5px;
+                padding: 10px;
+                font-family: monospace;
+                color: white;
+            }
+        """)
         right_panel.addWidget(self.results_label)
         
         right_widget = QWidget()
@@ -255,14 +267,17 @@ class CPUSchedulingApp(QMainWindow):
             if other_item and r != row:
                 other_item.setBackground(Qt.white)
                 other_item.setText("")
+                other_item.setForeground(QColor(0, 0, 0))  # Black text
         
         # Toggle current cell
         if item.background().color().name() == "#ffff00":  # Yellow
             item.setBackground(Qt.white)
             item.setText("")
+            item.setForeground(QColor(0, 0, 0))  # Black text
         else:
             item.setBackground(Qt.yellow)
             item.setText("-")
+            item.setForeground(QColor(0, 0, 0))  # Black text
 
     def on_cell_hover(self, row: int, col: int):
         """Handle cell hover events."""
@@ -497,26 +512,26 @@ class CPUSchedulingApp(QMainWindow):
         
         # Display results
         if not mismatches:
-            result_text = "✓ Correct solution!\\n\\n"
+            result_text = "<b>✓ Correct solution!</b><br><br>"
         else:
-            result_text = f"✗ Incorrect. Mismatches at times: {mismatches[:10]}\\n\\n"
+            result_text = f"<b>✗ Incorrect.</b> Mismatches at times: {mismatches[:10]}<br><br>"
         
         # Add metrics
-        result_text += "Waiting & Turnaround Times:\\n"
+        result_text += "<b>Waiting & Turnaround Times:</b><br>"
         total_waiting = 0
         total_turnaround = 0
         
         for process_id, metrics in self.solution_result.process_metrics.items():
             waiting = metrics.waiting
             turnaround = metrics.turnaround
-            result_text += f"Process {process_id}: WT={waiting}, TAT={turnaround}\\n"
+            result_text += f"Process {process_id}: WT={waiting}, TAT={turnaround}<br>"
             total_waiting += waiting
             total_turnaround += turnaround
         
         if len(self.solution_result.process_metrics) > 0:
             avg_waiting = self.solution_result.get_average_waiting_time()
             avg_turnaround = self.solution_result.get_average_turnaround_time()
-            result_text += f"Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}"
+            result_text += f"<br><b>Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}</b>"
         
         self.results_label.setText(result_text)
 
@@ -536,18 +551,18 @@ class CPUSchedulingApp(QMainWindow):
         self.is_locked = True
         
         # Show metrics
-        result_text = "Solution displayed and locked.\\n\\n"
-        result_text += "Waiting & Turnaround Times:\\n"
+        result_text = "<b>Solution displayed and locked.</b><br><br>"
+        result_text += "<b>Waiting & Turnaround Times:</b><br>"
         
         for process_id, metrics in self.solution_result.process_metrics.items():
             waiting = metrics.waiting
             turnaround = metrics.turnaround
-            result_text += f"Process {process_id}: WT={waiting}, TAT={turnaround}\\n"
+            result_text += f"Process {process_id}: WT={waiting}, TAT={turnaround}<br>"
         
         if len(self.solution_result.process_metrics) > 0:
             avg_waiting = self.solution_result.get_average_waiting_time()
             avg_turnaround = self.solution_result.get_average_turnaround_time()
-            result_text += f"Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}"
+            result_text += f"<br><b>Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}</b>"
         
         self.results_label.setText(result_text)
 
@@ -594,6 +609,7 @@ class CPUSchedulingApp(QMainWindow):
                 if item:
                     item.setBackground(Qt.white)
                     item.setText("")
+                    item.setForeground(QColor(0, 0, 0))  # Reset text color
         
         # Fill with schedule
         process_to_row = {}
@@ -610,4 +626,5 @@ class CPUSchedulingApp(QMainWindow):
                     if item:
                         item.setBackground(Qt.yellow)
                         item.setText("-")
+                        item.setForeground(QColor(0, 0, 0))  # Black text
                         item.setFlags(item.flags() & ~Qt.ItemIsEditable)
