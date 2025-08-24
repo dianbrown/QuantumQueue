@@ -12,7 +12,7 @@ from PySide6.QtGui import QFont
 
 from models.process import Process
 from models.scheduling_result import SchedulingResult
-from algorithms import FCFSScheduler, FCFSPriorityScheduler, RoundRobinScheduler, RoundRobinPriorityScheduler
+from algorithms import FCFSScheduler, FCFSPriorityScheduler, RoundRobinScheduler, RoundRobinPriorityScheduler, SJFScheduler, SJFPriorityScheduler
 from utils.process_generator import ProcessGenerator
 
 
@@ -34,6 +34,8 @@ class CPUSchedulingApp(QMainWindow):
         self.schedulers = {
             "FCFS": FCFSScheduler(),
             "FCFS with Priority": FCFSPriorityScheduler(higher_is_better=True),
+            "SJF": SJFScheduler(),
+            "SJF Priority": SJFPriorityScheduler(),
             "Round Robin": RoundRobinScheduler(2),
             "Round Robin with Priority": RoundRobinPriorityScheduler(2)
         }

@@ -45,8 +45,9 @@ CPU_SchedulingPython/
 │   ├── base_scheduler.py  # Abstract base class
 │   ├── fcfs.py           # First Come First Served
 │   ├── fcfs_priority.py  # FCFS with Priority
-│   ├── round_robin.py    # Round Robin (template)
-│   ├── sjf.py           # Shortest Job First (template)
+│   ├── round_robin.py    # Round Robin
+│   ├── sjf.py           # Shortest Job First 
+│   ├── sjf_priority.py  # Shortest Job First Priority
 │   └── srt.py           # Shortest Remaining Time (template)
 ├── ui/                    # User interface components
 │   ├── __init__.py
@@ -68,11 +69,12 @@ CPU_SchedulingPython/
 - ✅ **Easy Installation**: Double-click setup for Windows users
 - ✅ **Round Robin (RR)**: Time quantum-based scheduling
 - ✅ **Round Robin with Priority (RRP)**: Priority + time quantum
+- ✅ **Shortest Job First (SJF)**: Non-preemptive shortest job
+- ✅ **SJF with Priority (SJFP)**: Priority + shortest job
 
 ### Future Algorithms to Implement
-- 🔲 **Shortest Job First (SJF)**: Non-preemptive shortest job
-- 🔲 **SJF with Priority (SJFP)**: Priority + shortest job
 - 🔲 **Shortest Remaining Time (SRT)**: Preemptive shortest remaining time
+- 🔲**Responsiveness per process**: Calculates the responsiveness and displays it
 
 ## 📖 How to Use the Application
 
