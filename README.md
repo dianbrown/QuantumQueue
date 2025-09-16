@@ -4,7 +4,10 @@ Tired trying to get practice examples or solutions for the CPU Scheduling proble
 
 No more making tedious excell spread sheets or worse... drawing everything by HAND!!
 
-just enter everything into the application, it has a built in random funtion and value editor for ease of use
+just enter everything into the application, it has a built in random function and value editor for ease of use
+
+The TAT and WT are also calculated when you view the solution as well as the responsiveness per process.
+Feel free to enter your own values to view solutions or just practice the algorithms with the randomize function.
 
 ## 🚀 Quick Start (Easy Installation)
 
