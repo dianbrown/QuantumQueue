@@ -16,25 +16,52 @@ class ProcessGenerator:
             num_processes: Number of processes to generate. If None, generates 3-7 processes.
             
         Returns:
-            List of Process objects with optimized arrival times for continuous scheduling.
+            List of Process objects with optimized arrival times and burst times that fit in timeline.
         """
         if num_processes is None:
             num_processes = random.randint(3, 7)
         
+        # Maximum timeline length (32 columns)
+        MAX_TIMELINE = 32
+        
+        # Reserve some space for gaps and arrival times (use 80% of timeline for burst times)
+        max_total_burst = int(MAX_TIMELINE * 0.8)
+        
         processes = []
+        total_burst_so_far = 0
         
         # Create processes A, B, C, D, E, F, G in order (top to bottom)
         for i in range(num_processes):
             process_id = chr(ord('A') + i)
             priority = random.randint(1, 5)
-            burst = random.randint(2, 5)  # Smaller burst times for better continuity
+            
+            # Calculate remaining burst time budget
+            remaining_processes = num_processes - i
+            remaining_burst_budget = max_total_burst - total_burst_so_far
+            
+            # Ensure minimum burst time of 1 for remaining processes
+            min_burst_needed_for_others = remaining_processes - 1
+            available_for_this_process = remaining_burst_budget - min_burst_needed_for_others
+            
+            # Set burst time constraints
+            min_burst = 1
+            max_burst = max(min_burst, min(5, available_for_this_process))
+            
+            # For the last process, use exactly what's left (if reasonable)
+            if i == num_processes - 1:
+                burst = max(1, min(remaining_burst_budget, 5))
+            else:
+                burst = random.randint(min_burst, max_burst)
+            
+            total_burst_so_far += burst
             
             # The LAST process (bottom one) gets arrival time 1
             if i == num_processes - 1:
                 arrival = 1
             else:
-                # Other processes get strategic arrival times
-                arrival = random.randint(2, 8)
+                # Other processes get strategic arrival times (limited to reasonable range)
+                max_arrival = min(8, MAX_TIMELINE - total_burst_so_far)
+                arrival = random.randint(2, max(2, max_arrival))
             
             processes.append(Process(process_id, priority, arrival, burst))
         
@@ -49,8 +76,10 @@ class ProcessGenerator:
             processes: List of processes to optimize
             
         Returns:
-            List of processes with optimized arrival times
+            List of processes with optimized arrival times that fit in timeline
         """
+        MAX_TIMELINE = 32
+        
         # Sort by current arrival times to see the timeline
         sorted_by_arrival = sorted(processes, key=lambda p: p.arrival)
         
@@ -72,23 +101,50 @@ class ProcessGenerator:
         
         for process in remaining:
             # Calculate when this process should arrive to minimize gaps
-            # It should arrive no later than current_time to avoid gaps
-            optimal_arrival = min(process.arrival, current_time)
-            
-            # But ensure it doesn't arrive before its original time if that would make sense
-            if process.arrival <= current_time + 1:  # Allow small gaps (1 unit max)
-                new_arrival = process.arrival
+            # But ensure we don't exceed timeline limits
+            if current_time >= MAX_TIMELINE - 2:  # Leave some buffer
+                # If we're near the timeline limit, make remaining processes arrive earlier
+                optimal_arrival = min(process.arrival, current_time - 1)
             else:
-                # Bring it closer to eliminate larger gaps
-                new_arrival = current_time + random.randint(0, 1)
+                optimal_arrival = min(process.arrival, current_time)
+            
+            # Ensure arrival time is reasonable
+            new_arrival = max(1, min(optimal_arrival, MAX_TIMELINE - process.burst - 1))
             
             new_processes.append(Process(process.id, process.priority, new_arrival, process.burst))
+            
             # Update current_time based on when this process would finish
             process_start = max(new_arrival, current_time)
-            current_time = process_start + process.burst
+            current_time = min(process_start + process.burst, MAX_TIMELINE)
         
         # Sort back to A, B, C, D order for display (not by arrival time)
         return sorted(new_processes, key=lambda p: p.id)
+    
+    @staticmethod
+    def _validate_timeline_fit(processes: List[Process]) -> bool:
+        """Validate that processes can fit within the 32-column timeline.
+        
+        Args:
+            processes: List of processes to validate
+            
+        Returns:
+            True if processes fit within timeline, False otherwise
+        """
+        MAX_TIMELINE = 32
+        
+        # Check total burst time
+        total_burst = sum(p.burst for p in processes)
+        if total_burst > MAX_TIMELINE:
+            return False
+        
+        # Check that no process arrives too late
+        max_arrival = max(p.arrival for p in processes)
+        min_burst_after_max_arrival = min(p.burst for p in processes if p.arrival == max_arrival)
+        
+        if max_arrival + min_burst_after_max_arrival > MAX_TIMELINE:
+            return False
+        
+        return True
     
     @staticmethod
     def generate_quantum() -> int:
