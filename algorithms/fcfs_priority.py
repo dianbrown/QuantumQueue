@@ -66,11 +66,11 @@ class FCFSPriorityScheduler(BaseScheduler):
                     ready_queue.append(current_process)
                     current_process = None
             
-            # Sort ready queue by priority
+            # Sort ready queue by priority, then by arrival time (FCFS for same priority)
             if self.higher_is_better:
-                ready_queue.sort(key=lambda p: (-p.priority, p.id))
+                ready_queue.sort(key=lambda p: (-p.priority, p.arrival, p.id))
             else:
-                ready_queue.sort(key=lambda p: (p.priority, p.id))
+                ready_queue.sort(key=lambda p: (p.priority, p.arrival, p.id))
             
             # If no current process and ready queue has processes
             if not current_process and ready_queue:
