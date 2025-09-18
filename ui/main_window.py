@@ -506,10 +506,18 @@ class CPUSchedulingApp(QMainWindow):
 
     def randomize_processes(self):
         """Generate random processes."""
-        self.processes = ProcessGenerator.generate_processes()
+        # Check if current algorithm needs unique arrival times
+        algorithm = self.algorithm_combo.currentText()
+        
+        # Only basic FCFS and Round Robin need unique arrivals (no priority variants)
+        algorithms_needing_unique_arrivals = ["FCFS", "Round Robin (Q="]
+        
+        # Use unique arrivals only for pure FCFS and Round Robin (not priority variants)
+        unique_arrivals = (algorithm == "FCFS" or algorithm.startswith("Round Robin (Q="))
+        
+        self.processes = ProcessGenerator.generate_processes(unique_arrivals=unique_arrivals)
         
         # If using Round Robin, also randomize quantum
-        algorithm = self.algorithm_combo.currentText()
         if "Round Robin" in algorithm:
             quantum = ProcessGenerator.generate_quantum()
             self.quantum_spinbox.setValue(quantum)
