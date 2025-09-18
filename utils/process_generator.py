@@ -9,11 +9,12 @@ class ProcessGenerator:
     """Utility class for generating randomized processes."""
     
     @staticmethod
-    def generate_processes(num_processes: int = None) -> List[Process]:
+    def generate_processes(num_processes: int = None, unique_arrivals: bool = False) -> List[Process]:
         """Generate a list of randomized processes with intelligent arrival times.
         
         Args:
             num_processes: Number of processes to generate. If None, generates 3-7 processes.
+            unique_arrivals: If True, ensures all processes have unique arrival times.
             
         Returns:
             List of Process objects with optimized arrival times and burst times that fit in timeline.
@@ -54,16 +55,41 @@ class ProcessGenerator:
                 burst = random.randint(min_burst, max_burst)
             
             total_burst_so_far += burst
+            processes.append(Process(process_id, priority, 0, burst))  # Temporary arrival time
+        
+        # Generate arrival times (unique if requested)
+        if unique_arrivals:
+            # Generate unique arrival times
+            used_arrivals = set()
+            max_arrival = min(8, MAX_TIMELINE - total_burst_so_far)
             
-            # The LAST process (bottom one) gets arrival time 1
-            if i == num_processes - 1:
-                arrival = 1
-            else:
-                # Other processes get strategic arrival times (limited to reasonable range)
-                max_arrival = min(8, MAX_TIMELINE - total_burst_so_far)
-                arrival = random.randint(2, max(2, max_arrival))
-            
-            processes.append(Process(process_id, priority, arrival, burst))
+            for i, process in enumerate(processes):
+                if i == num_processes - 1:
+                    # Last process gets arrival time 1
+                    arrival = 1
+                else:
+                    # Find an unused arrival time
+                    attempts = 0
+                    while attempts < 50:  # Prevent infinite loop
+                        arrival = random.randint(2, max(2, max_arrival))
+                        if arrival not in used_arrivals and arrival != 1:  # Don't use 1 (reserved for last)
+                            break
+                        attempts += 1
+                    else:
+                        # If we can't find unique time, use sequential assignment
+                        arrival = 2 + i
+                
+                used_arrivals.add(arrival)
+                process.arrival = arrival
+        else:
+            # Original logic - allow duplicate arrival times
+            for i, process in enumerate(processes):
+                if i == num_processes - 1:
+                    arrival = 1
+                else:
+                    max_arrival = min(8, MAX_TIMELINE - total_burst_so_far)
+                    arrival = random.randint(2, max(2, max_arrival))
+                process.arrival = arrival
         
         # Apply intelligent gap elimination
         return ProcessGenerator._eliminate_gaps(processes)
