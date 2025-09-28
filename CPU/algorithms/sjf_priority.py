@@ -1,25 +1,25 @@
-"""Shortest Remaining Time (SRT) scheduling algorithm."""
+"""SJF with Priority scheduling algorithm."""
 
 from typing import List, Optional
 from .base_scheduler import BaseScheduler
-from models.process import Process
-from models.scheduling_result import SchedulingResult
+from ..models.process import Process
+from ..models.scheduling_result import SchedulingResult
 
 
-class SRTScheduler(BaseScheduler):
-    """Shortest Remaining Time scheduling algorithm."""
+class SJFPriorityScheduler(BaseScheduler):
+    """SJF with Priority scheduling algorithm."""
     
     @property
     def name(self) -> str:
-        return "SRT"
+        return "SJF Priority"
     
     def schedule(self, processes: List[Process]) -> SchedulingResult:
-        """Execute SRT scheduling algorithm.
+        """Execute SJF with Priority scheduling algorithm.
         
         Algorithm:
-        1. Always select the process with the shortest remaining burst time
-        2. Preemptive - processes can interrupt each other when shorter remaining time arrives
-        3. When multiple processes have same remaining time, use arrival time as tie-breaker
+        1. Higher priority numbers can interrupt lower priority numbers (preemptive)
+        2. Same priority numbers use SJF logic (shortest burst time wins)
+        3. Process selection: Priority first, then shortest burst time
         
         Args:
             processes: List of processes to schedule
@@ -41,7 +41,9 @@ class SRTScheduler(BaseScheduler):
         # Create working copies to avoid modifying originals
         remaining_processes = []
         for p in processes:
-            remaining_processes.append(Process(p.id, p.priority, p.arrival, p.burst))
+            proc = Process(p.id, p.priority, p.arrival, p.burst)
+            proc.original_burst = p.burst  # Store original burst time for comparison
+            remaining_processes.append(proc)
         
         # Sort by arrival time for easy processing
         remaining_processes.sort(key=lambda p: (p.arrival, p.id))
@@ -58,17 +60,20 @@ class SRTScheduler(BaseScheduler):
                 new_process = remaining_processes.pop(0)
                 ready_queue.append(new_process)
                 
-                # Check if this new process can preempt current process based on remaining burst time
-                if current_process and new_process.burst < current_process.burst:
-                    # Shorter remaining burst time - preempt immediately
-                    ready_queue.append(current_process)
-                    current_process = None
-                    break  # Break to handle preemption immediately
+                # Check if this new process can preempt current process
+                if current_process:
+                    if (new_process.priority > current_process.priority or 
+                        (new_process.priority == current_process.priority and 
+                         new_process.original_burst < current_process.original_burst)):
+                        # Higher priority or same priority with shorter original burst - preempt immediately
+                        ready_queue.append(current_process)
+                        current_process = None
+                        break  # Break to handle preemption immediately
             
             # If no current process, select one from ready queue
             if current_process is None and ready_queue:
-                # Sort by remaining burst time (ascending), then by arrival time for tie-breaking
-                ready_queue.sort(key=lambda p: (p.burst, p.arrival, p.id))
+                # Sort by priority (descending), then by original burst time (ascending), then by arrival
+                ready_queue.sort(key=lambda p: (-p.priority, p.original_burst, p.arrival, p.id))
                 current_process = ready_queue.pop(0)
                 
                 # Record start time only for the first time this process runs
@@ -82,7 +87,7 @@ class SRTScheduler(BaseScheduler):
                 if timeline_index < len(timeline):
                     timeline[timeline_index] = current_process.id
                 
-                # Consume time - this reduces the remaining burst time
+                # Consume time
                 current_process.burst -= 1
                 current_time += 1
                 

@@ -2,7 +2,7 @@
 
 import random
 from typing import List
-from models.process import Process
+from ..models.process import Process
 
 
 class ProcessGenerator:

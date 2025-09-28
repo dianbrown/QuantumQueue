@@ -2,8 +2,8 @@
 
 from abc import ABC, abstractmethod
 from typing import List
-from models.process import Process
-from models.scheduling_result import SchedulingResult
+from ..models.process import Process
+from ..models.scheduling_result import SchedulingResult
 
 
 class BaseScheduler(ABC):
@@ -40,7 +40,7 @@ class BaseScheduler(ABC):
         Returns:
             Dictionary of process metrics
         """
-        from models.scheduling_result import ProcessMetrics
+        from ..models.scheduling_result import ProcessMetrics
         
         metrics = {}
         original_bursts = {p.id: p.burst for p in processes}

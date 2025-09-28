@@ -1,0 +1,24 @@
+{
+    "name": "Dark Theme (Default)",
+    "description": "The default dark theme with blue accents",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#36393f",
+        "sidebar_bg": "#2c2f33",
+        "sidebar_header_bg": "#23272a",
+        "sidebar_border": "#40444b",
+        "sidebar_hover": "#40444b",
+        "sidebar_active": "#565b5e",
+        "sidebar_accent": "#1f5582",
+        "text_primary": "#ffffff",
+        "text_secondary": "#c3c3c3",
+        "button_bg": "#7289da",
+        "button_hover": "#677bc4",
+        "input_bg": "#40444b",
+        "input_border": "#72767d",
+        "table_bg": "#40444b",
+        "table_grid": "#72767d",
+        "header_bg": "#2c2f33"
+    }
+}
