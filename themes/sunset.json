@@ -1,0 +1,24 @@
+{
+    "name": "Sunset Theme",
+    "description": "Warm sunset colors with orange and red tones",
+    "author": "Custom Theme",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#2d1b14",
+        "sidebar_bg": "#3d251a",
+        "sidebar_header_bg": "#2d1b14",
+        "sidebar_border": "#4d3520",
+        "sidebar_hover": "#4d3520",
+        "sidebar_active": "#5d4530",
+        "sidebar_accent": "#ff6b35",
+        "text_primary": "#fff5ee",
+        "text_secondary": "#ffd4c4",
+        "button_bg": "#ff6b35",
+        "button_hover": "#e55a2b",
+        "input_bg": "#4d3520",
+        "input_border": "#5d4530",
+        "table_bg": "#4d3520",
+        "table_grid": "#5d4530",
+        "header_bg": "#3d251a"
+    }
+}

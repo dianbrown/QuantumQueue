@@ -1,0 +1,24 @@
+{
+    "name": "Purple Theme",
+    "description": "Royal purple theme with pink accents",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#4a148c",
+        "sidebar_bg": "#6a1b9a",
+        "sidebar_header_bg": "#4a148c",
+        "sidebar_border": "#7b1fa2",
+        "sidebar_hover": "#7b1fa2",
+        "sidebar_active": "#8e24aa",
+        "sidebar_accent": "#e040fb",
+        "text_primary": "#ffffff",
+        "text_secondary": "#f3e5f5",
+        "button_bg": "#e040fb",
+        "button_hover": "#d500f9",
+        "input_bg": "#7b1fa2",
+        "input_border": "#8e24aa",
+        "table_bg": "#7b1fa2",
+        "table_grid": "#8e24aa",
+        "header_bg": "#6a1b9a"
+    }
+}

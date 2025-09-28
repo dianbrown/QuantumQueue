@@ -14,6 +14,8 @@ from PySide6.QtSvg import QSvgRenderer
 
 # Import the existing CPU scheduling app
 from CPU.ui.main_window import CPUSchedulingApp
+# Import the theme manager
+from themes.theme_manager import ThemeManager
 
 
 class SidebarButton(QPushButton):
@@ -189,6 +191,7 @@ class SettingsPage(QWidget):
     def __init__(self):
         super().__init__()
         self.settings = QSettings()
+        self.theme_manager = ThemeManager()
         self.setup_ui()
         self.load_settings()
         
@@ -232,13 +235,12 @@ class SettingsPage(QWidget):
         
         # Theme selection
         self.theme_combo = QComboBox()
-        self.theme_combo.addItems([
-            "Dark Theme (Default)",
-            "Light Theme", 
-            "Blue Theme",
-            "Green Theme",
-            "Purple Theme"
-        ])
+        available_themes = self.theme_manager.get_available_themes()
+        if available_themes:
+            self.theme_combo.addItems(available_themes)
+        else:
+            # Fallback if no themes are loaded
+            self.theme_combo.addItems(["Dark Theme (Default)"])
         self.theme_combo.setStyleSheet("""
             QComboBox {
                 background-color: #40444b;
@@ -340,8 +342,9 @@ class ModernMainWindow(QMainWindow):
         self.setWindowTitle("CPU Scheduling & Page Replacement Practice")
         self.setMinimumSize(1200, 800)
         
-        # Initialize settings
+        # Initialize settings and theme manager
         self.settings = QSettings()
+        self.theme_manager = ThemeManager()
         
         self.setup_ui()
         
@@ -453,10 +456,19 @@ class ModernMainWindow(QMainWindow):
         
     def apply_theme(self, theme_name):
         """Apply the selected theme to the application"""
-        themes = {
-            "Dark Theme (Default)": {
+        # Get theme colors from theme manager
+        theme = self.theme_manager.get_theme_colors(theme_name)
+        
+        # Fallback to default theme if theme not found
+        if not theme:
+            theme_name = "Dark Theme (Default)"
+            theme = self.theme_manager.get_theme_colors(theme_name)
+            
+        # If still no theme found, use hardcoded fallback
+        if not theme:
+            theme = {
                 "main_bg": "#36393f",
-                "sidebar_bg": "#2c2f33",
+                "sidebar_bg": "#2c2f33", 
                 "sidebar_header_bg": "#23272a",
                 "sidebar_border": "#40444b",
                 "sidebar_hover": "#40444b",
@@ -471,85 +483,7 @@ class ModernMainWindow(QMainWindow):
                 "table_bg": "#40444b",
                 "table_grid": "#72767d",
                 "header_bg": "#2c2f33"
-            },
-            "Light Theme": {
-                "main_bg": "#ffffff",
-                "sidebar_bg": "#f8f9fa",
-                "sidebar_header_bg": "#e9ecef",
-                "sidebar_border": "#dee2e6",
-                "sidebar_hover": "#e9ecef",
-                "sidebar_active": "#dee2e6",
-                "sidebar_accent": "#007bff",
-                "text_primary": "#212529",
-                "text_secondary": "#6c757d",
-                "button_bg": "#007bff",
-                "button_hover": "#0056b3",
-                "input_bg": "#ffffff",
-                "input_border": "#ced4da",
-                "table_bg": "#ffffff",
-                "table_grid": "#dee2e6",
-                "header_bg": "#f8f9fa"
-            },
-            "Blue Theme": {
-                "main_bg": "#1a237e",
-                "sidebar_bg": "#283593",
-                "sidebar_header_bg": "#1a237e",
-                "sidebar_border": "#3f51b5",
-                "sidebar_hover": "#3f51b5",
-                "sidebar_active": "#5c6bc0",
-                "sidebar_accent": "#00bcd4",
-                "text_primary": "#ffffff",
-                "text_secondary": "#e3f2fd",
-                "button_bg": "#00bcd4",
-                "button_hover": "#00acc1",
-                "input_bg": "#3f51b5",
-                "input_border": "#5c6bc0",
-                "table_bg": "#3f51b5",
-                "table_grid": "#5c6bc0",
-                "header_bg": "#283593"
-            },
-            "Green Theme": {
-                "main_bg": "#1b5e20",
-                "sidebar_bg": "#2e7d32",
-                "sidebar_header_bg": "#1b5e20",
-                "sidebar_border": "#388e3c",
-                "sidebar_hover": "#388e3c",
-                "sidebar_active": "#4caf50",
-                "sidebar_accent": "#00e676",
-                "text_primary": "#ffffff",
-                "text_secondary": "#e8f5e8",
-                "button_bg": "#00e676",
-                "button_hover": "#00c853",
-                "input_bg": "#388e3c",
-                "input_border": "#4caf50",
-                "table_bg": "#388e3c",
-                "table_grid": "#4caf50",
-                "header_bg": "#2e7d32"
-            },
-            "Purple Theme": {
-                "main_bg": "#4a148c",
-                "sidebar_bg": "#6a1b9a",
-                "sidebar_header_bg": "#4a148c",
-                "sidebar_border": "#7b1fa2",
-                "sidebar_hover": "#7b1fa2",
-                "sidebar_active": "#8e24aa",
-                "sidebar_accent": "#e040fb",
-                "text_primary": "#ffffff",
-                "text_secondary": "#f3e5f5",
-                "button_bg": "#e040fb",
-                "button_hover": "#d500f9",
-                "input_bg": "#7b1fa2",
-                "input_border": "#8e24aa",
-                "table_bg": "#7b1fa2",
-                "table_grid": "#8e24aa",
-                "header_bg": "#6a1b9a"
             }
-        }
-        
-        if theme_name not in themes:
-            theme_name = "Dark Theme (Default)"
-            
-        theme = themes[theme_name]
         
         # Apply main window theme
         self.setStyleSheet(f"""

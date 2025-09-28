@@ -1,0 +1,24 @@
+{
+    "name": "Green Theme",
+    "description": "Forest green theme with bright accents",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#1b5e20",
+        "sidebar_bg": "#2e7d32",
+        "sidebar_header_bg": "#1b5e20",
+        "sidebar_border": "#388e3c",
+        "sidebar_hover": "#388e3c",
+        "sidebar_active": "#4caf50",
+        "sidebar_accent": "#00e676",
+        "text_primary": "#ffffff",
+        "text_secondary": "#e8f5e8",
+        "button_bg": "#00e676",
+        "button_hover": "#00c853",
+        "input_bg": "#388e3c",
+        "input_border": "#4caf50",
+        "table_bg": "#388e3c",
+        "table_grid": "#4caf50",
+        "header_bg": "#2e7d32"
+    }
+}

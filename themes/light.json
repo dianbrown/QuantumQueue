@@ -1,0 +1,24 @@
+{
+    "name": "Light Theme",
+    "description": "Clean light theme with blue accents",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#ffffff",
+        "sidebar_bg": "#f8f9fa",
+        "sidebar_header_bg": "#e9ecef",
+        "sidebar_border": "#dee2e6",
+        "sidebar_hover": "#e9ecef",
+        "sidebar_active": "#dee2e6",
+        "sidebar_accent": "#007bff",
+        "text_primary": "#212529",
+        "text_secondary": "#6c757d",
+        "button_bg": "#007bff",
+        "button_hover": "#0056b3",
+        "input_bg": "#ffffff",
+        "input_border": "#ced4da",
+        "table_bg": "#ffffff",
+        "table_grid": "#dee2e6",
+        "header_bg": "#f8f9fa"
+    }
+}
