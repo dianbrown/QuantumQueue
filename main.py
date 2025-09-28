@@ -7,7 +7,7 @@ Supports FCFS, FCFS with Priority, and future algorithms like RR, SJF, etc.
 
 import sys
 from PySide6.QtWidgets import QApplication
-from ui.main_window import CPUSchedulingApp
+from CPU.ui.main_window import CPUSchedulingApp
 
 
 def main():

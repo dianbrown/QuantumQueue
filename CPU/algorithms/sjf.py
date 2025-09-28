@@ -2,8 +2,8 @@
 
 from typing import List, Optional
 from .base_scheduler import BaseScheduler
-from models.process import Process
-from models.scheduling_result import SchedulingResult
+from ..models.process import Process
+from ..models.scheduling_result import SchedulingResult
 
 
 class SJFScheduler(BaseScheduler):

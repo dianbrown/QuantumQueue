@@ -10,10 +10,10 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
 
-from models.process import Process
-from models.scheduling_result import SchedulingResult
-from algorithms import FCFSScheduler, FCFSPriorityScheduler, RoundRobinScheduler, RoundRobinPriorityScheduler, SJFScheduler, SJFPriorityScheduler, SRTScheduler
-from utils.process_generator import ProcessGenerator
+from CPU.models.process import Process
+from CPU.models.scheduling_result import SchedulingResult
+from CPU.algorithms import FCFSScheduler, FCFSPriorityScheduler, RoundRobinScheduler, RoundRobinPriorityScheduler, SJFScheduler, SJFPriorityScheduler, SRTScheduler
+from CPU.utils.process_generator import ProcessGenerator
 
 
 class CPUSchedulingApp(QMainWindow):
