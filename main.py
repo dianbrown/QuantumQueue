@@ -1,21 +1,21 @@
 """
-CPU Scheduling Practice Application
+CPU Scheduling & Page Replacement Practice Application
 
-A Qt-based application for practicing CPU scheduling algorithms.
-Supports FCFS, FCFS with Priority, and future algorithms like RR, SJF, etc.
+A modern Qt-based application for practicing CPU scheduling algorithms and Page Replacement Algorithms.
+Features a collapsible sidebar menu with sections for CPU Scheduling, PRA, and Settings.
 """
 
 import sys
-from PySide6.QtWidgets import QApplication
-from CPU.ui.main_window import CPUSchedulingApp
+from modern_main import main as modern_main
 
 
 def main():
-    """Main entry point for the CPU Scheduling application."""
-    app = QApplication(sys.argv)
-    window = CPUSchedulingApp()
-    window.show()
-    sys.exit(app.exec())
+    """Main entry point for the modern GUI application."""
+    try:
+        modern_main()
+    except Exception as e:
+        print(f"Error starting application: {e}")
+        input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

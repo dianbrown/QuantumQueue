@@ -127,12 +127,19 @@ class CPUSchedulingApp(QMainWindow):
         
         # Process control buttons
         process_controls = QHBoxLayout()
+        process_controls.setSpacing(5)  # Reduce spacing between buttons
+        
         add_btn = QPushButton("Add Process")
         add_btn.clicked.connect(self.add_process)
+        add_btn.setMinimumWidth(80)  # Set minimum width
+        
         delete_btn = QPushButton("Delete Process")
         delete_btn.clicked.connect(self.delete_process)
+        delete_btn.setMinimumWidth(90)  # Set minimum width
+        
         randomize_btn = QPushButton("Randomize")
         randomize_btn.clicked.connect(self.randomize_processes)
+        randomize_btn.setMinimumWidth(75)  # Set minimum width
         
         process_controls.addWidget(add_btn)
         process_controls.addWidget(delete_btn)
@@ -141,7 +148,7 @@ class CPUSchedulingApp(QMainWindow):
         
         left_widget = QWidget()
         left_widget.setLayout(left_panel)
-        left_widget.setFixedWidth(300)
+        left_widget.setFixedWidth(380)  # Increased from 300 to 380 pixels
         content_layout.addWidget(left_widget)
         
         # Center panel - Timeline grid
@@ -203,7 +210,7 @@ class CPUSchedulingApp(QMainWindow):
         # Set column widths
         self.timeline_grid.setColumnWidth(0, 80)
         for i in range(1, 33):
-            self.timeline_grid.setColumnWidth(i, 25)
+            self.timeline_grid.setColumnWidth(i, 30)
         
         # Connect cell events
         self.timeline_grid.cellClicked.connect(self.on_cell_clicked)
