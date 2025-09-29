@@ -118,21 +118,27 @@ class CollapsibleSidebar(QFrame):
         menu_layout.setSpacing(5)
         
         # CPU Scheduling button
-        self.cpu_btn = SidebarButton("CPU Scheduling", "")
-        self.cpu_btn.setText("🖥️  CPU Scheduling" if self.is_expanded else "🖥️")
+        self.cpu_btn = SidebarButton("CPU Scheduling", "icons/cil-devices.png")
+        self.cpu_btn.setText("  CPU Scheduling" if self.is_expanded else "")
+        self.cpu_btn.setIcon(QIcon("icons/cil-devices.png"))
+        self.cpu_btn.setIconSize(QSize(20, 20))
         self.cpu_btn.clicked.connect(lambda: self.menu_changed.emit(0))
         self.cpu_btn.setChecked(True)  # Default selection
         menu_layout.addWidget(self.cpu_btn)
         
         # PRA button
-        self.pra_btn = SidebarButton("Page Replacement", "")
-        self.pra_btn.setText("📄  Page Replacement" if self.is_expanded else "📄")
+        self.pra_btn = SidebarButton("Page Replacement", "icons/cil-description.png")
+        self.pra_btn.setText("  Page Replacement" if self.is_expanded else "")
+        self.pra_btn.setIcon(QIcon("icons/cil-description.png"))
+        self.pra_btn.setIconSize(QSize(20, 20))
         self.pra_btn.clicked.connect(lambda: self.menu_changed.emit(1))
         menu_layout.addWidget(self.pra_btn)
         
         # Settings button
-        self.settings_btn = SidebarButton("Settings", "")
-        self.settings_btn.setText("⚙️  Settings" if self.is_expanded else "⚙️")
+        self.settings_btn = SidebarButton("Settings", "icons/icon_settings.png")
+        self.settings_btn.setText("  Settings" if self.is_expanded else "")
+        self.settings_btn.setIcon(QIcon("icons/icon_settings.png"))
+        self.settings_btn.setIconSize(QSize(20, 20))
         self.settings_btn.clicked.connect(lambda: self.menu_changed.emit(2))
         menu_layout.addWidget(self.settings_btn)
         
@@ -162,10 +168,10 @@ class CollapsibleSidebar(QFrame):
         self.animation.setEndValue(self.expanded_width)
         self.animation.start()
         
-        # Update button texts
-        self.cpu_btn.setText("🖥️  CPU Scheduling")
-        self.pra_btn.setText("📄  Page Replacement")
-        self.settings_btn.setText("⚙️  Settings")
+        # Update button texts to show text with icons
+        self.cpu_btn.setText("  CPU Scheduling")
+        self.pra_btn.setText("  Page Replacement")
+        self.settings_btn.setText("  Settings")
         
     def collapse_sidebar(self):
         """Collapse the sidebar"""
@@ -174,10 +180,10 @@ class CollapsibleSidebar(QFrame):
         self.animation.setEndValue(self.collapsed_width)
         self.animation.start()
         
-        # Update button texts to icons only
-        self.cpu_btn.setText("🖥️")
-        self.pra_btn.setText("📄")
-        self.settings_btn.setText("⚙️")
+        # Update button texts to show icons only
+        self.cpu_btn.setText("")
+        self.pra_btn.setText("")
+        self.settings_btn.setText("")
         
     def set_active_button(self, index):
         """Set the active button"""

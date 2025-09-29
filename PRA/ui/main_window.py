@@ -5,10 +5,11 @@ from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTableWidget, QTableWidgetItem, QPushButton, QComboBox, QLabel,
-    QHeaderView, QMessageBox, QSpinBox, QLineEdit, QScrollArea, QMenu
+    QHeaderView, QMessageBox, QSpinBox, QLineEdit, QScrollArea, QMenu,
+    QFrame, QApplication
 )
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QColor
+from PySide6.QtCore import Qt, QMimeData, QPoint
+from PySide6.QtGui import QFont, QColor, QDrag, QPainter, QPixmap
 
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -17,6 +18,183 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from algorithms.fifo import FIFOReplacer
 from algorithms.base_replacer import PageReplacementResult
 from models.frame import Frame
+
+
+class DraggableFrameBlock(QLabel):
+    """Draggable frame block for queue visualization."""
+    
+    def __init__(self, frame_id: str, parent=None):
+        super().__init__(parent)
+        self.frame_id = frame_id
+        self.setText(f"F{frame_id}")
+        self.setAlignment(Qt.AlignCenter)
+        self.setFixedSize(40, 30)
+        self.setStyleSheet("""
+            QLabel {
+                background-color: #4a90e2;
+                color: white;
+                border: 2px solid #357abd;
+                border-radius: 5px;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QLabel:hover {
+                background-color: #5ba0f2;
+            }
+        """)
+        
+    def mousePressEvent(self, event):
+        """Handle mouse press for drag initiation."""
+        if event.button() == Qt.LeftButton:
+            self.drag_start_position = event.pos()
+            
+    def mouseMoveEvent(self, event):
+        """Handle mouse move for dragging."""
+        if not (event.buttons() & Qt.LeftButton):
+            return
+            
+        if ((event.pos() - self.drag_start_position).manhattanLength() < 
+            QApplication.startDragDistance()):
+            return
+            
+        # Start drag operation
+        drag = QDrag(self)
+        mime_data = QMimeData()
+        mime_data.setText(self.frame_id)
+        drag.setMimeData(mime_data)
+        
+        # Create drag pixmap
+        pixmap = QPixmap(self.size())
+        self.render(pixmap)
+        drag.setPixmap(pixmap)
+        drag.setHotSpot(event.pos())
+        
+        # Execute drag
+        drag.exec(Qt.MoveAction)
+
+
+class QueueVisualizationWidget(QWidget):
+    """Widget for visualizing and managing the FIFO queue order."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.frame_blocks = []
+        self.init_ui()
+        
+    def init_ui(self):
+        """Initialize the queue visualization UI."""
+        layout = QVBoxLayout(self)
+        
+        # Title
+        title = QLabel("FIFO Queue Order:")
+        title.setStyleSheet("font-weight: bold; margin-bottom: 5px;")
+        layout.addWidget(title)
+        
+        # Queue container
+        self.queue_container = QWidget()
+        self.queue_layout = QHBoxLayout(self.queue_container)
+        self.queue_layout.setSpacing(5)
+        self.queue_layout.setContentsMargins(10, 5, 10, 5)
+        
+        # Style the container
+        self.queue_container.setStyleSheet("""
+            QWidget {
+                background-color: #f0f0f0;
+                border: 2px dashed #ccc;
+                border-radius: 5px;
+                min-height: 50px;
+            }
+        """)
+        self.queue_container.setAcceptDrops(True)
+        self.queue_container.dragEnterEvent = self.drag_enter_event
+        self.queue_container.dragMoveEvent = self.drag_move_event
+        self.queue_container.dropEvent = self.drop_event
+        
+        layout.addWidget(self.queue_container)
+        
+        # Instructions
+        instructions = QLabel("Drag frames to reorder queue (left = oldest, right = newest)")
+        instructions.setStyleSheet("color: #666; font-size: 10px; margin-top: 5px;")
+        instructions.setWordWrap(True)
+        layout.addWidget(instructions)
+        
+    def update_frames(self, frames: List[Frame]):
+        """Update the queue with current frames."""
+        # Clear existing blocks
+        for block in self.frame_blocks:
+            block.setParent(None)
+        self.frame_blocks.clear()
+        
+        # Sort frames by load time to show initial FIFO order
+        sorted_frames = sorted(frames, key=lambda f: f.load_time)
+        
+        # Create new blocks
+        for frame in sorted_frames:
+            block = DraggableFrameBlock(frame.frame_id, self.queue_container)
+            self.frame_blocks.append(block)
+            self.queue_layout.addWidget(block)
+            
+    def drag_enter_event(self, event):
+        """Handle drag enter event."""
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+            
+    def drag_move_event(self, event):
+        """Handle drag move event."""
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+            
+    def drop_event(self, event):
+        """Handle drop event to reorder queue."""
+        if event.mimeData().hasText():
+            frame_id = event.mimeData().text()
+            drop_position = event.pos()
+            
+            # Find the frame block being dragged
+            dragged_block = None
+            dragged_index = -1
+            for i, block in enumerate(self.frame_blocks):
+                if block.frame_id == frame_id:
+                    dragged_block = block
+                    dragged_index = i
+                    break
+                    
+            if dragged_block and dragged_index >= 0:
+                # Calculate insertion position before removing the item
+                insert_index = self.calculate_insert_position(drop_position, dragged_index)
+                
+                # Only proceed if the position actually changes
+                if insert_index != dragged_index:
+                    # Remove the block
+                    self.queue_layout.removeWidget(dragged_block)
+                    self.frame_blocks.remove(dragged_block)
+                    
+                    # Adjust insert index if necessary (since we removed an item)
+                    if insert_index > dragged_index:
+                        insert_index -= 1
+                    
+                    # Ensure insert_index is within bounds
+                    insert_index = max(0, min(insert_index, len(self.frame_blocks)))
+                    
+                    # Insert at new position
+                    self.queue_layout.insertWidget(insert_index, dragged_block)
+                    self.frame_blocks.insert(insert_index, dragged_block)
+                
+            event.acceptProposedAction()
+            
+    def calculate_insert_position(self, drop_pos: QPoint, dragged_index: int = -1) -> int:
+        """Calculate where to insert the dropped frame."""
+        for i, block in enumerate(self.frame_blocks):
+            # Skip the dragged block itself when calculating position
+            if i == dragged_index:
+                continue
+            if drop_pos.x() < block.x() + block.width() // 2:
+                return i
+        return len(self.frame_blocks)
+        
+    def get_queue_order(self) -> List[str]:
+        """Get current queue order as list of frame IDs."""
+        return [block.frame_id for block in self.frame_blocks]
 
 
 class PRAMainWindow(QWidget):
@@ -34,6 +212,7 @@ class PRAMainWindow(QWidget):
         self.results_label: Optional[QLabel] = None
         self.results_scroll_area: Optional[QScrollArea] = None
         self.algorithm_name_label: Optional[QLabel] = None
+        self.queue_widget: Optional[QueueVisualizationWidget] = None
         
         # Initialize algorithms
         self.algorithms = {
@@ -128,6 +307,10 @@ class PRAMainWindow(QWidget):
         self.setup_solution_table()
         right_panel.addWidget(self.solution_table)
         
+        # Queue visualization widget
+        self.queue_widget = QueueVisualizationWidget()
+        right_panel.addWidget(self.queue_widget)
+        
         # Results display with scroll area
         self.results_label = QLabel("")
         self.results_label.setWordWrap(True)
@@ -168,6 +351,9 @@ class PRAMainWindow(QWidget):
         self.frame_table = QTableWidget(0, 3)
         self.frame_table.setHorizontalHeaderLabels(["Frame ID", "Load Time", "Page in Memory"])
         self.frame_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        
+        # Connect signal to update solution table when frame data changes
+        self.frame_table.itemChanged.connect(self.on_frame_table_changed)
         
     def setup_solution_table(self):
         """Set up the solution grid for visualization."""
@@ -210,6 +396,16 @@ class PRAMainWindow(QWidget):
             self.frame_table.setItem(i, 0, QTableWidgetItem(frame.frame_id))
             self.frame_table.setItem(i, 1, QTableWidgetItem(str(frame.load_time)))
             self.frame_table.setItem(i, 2, QTableWidgetItem(frame.pages_in_memory))
+        
+        # Update queue visualization
+        if self.queue_widget:
+            self.queue_widget.update_frames(self.frames)
+    
+    def on_frame_table_changed(self, item):
+        """Handle when frame table data is edited by user."""
+        # Read the updated frame data and refresh solution table
+        self.read_frame_table()
+        self.update_solution_table()
             
     def read_frame_table(self):
         """Read frame data from the table."""
@@ -476,26 +672,32 @@ class PRAMainWindow(QWidget):
             item.setForeground(QColor("black"))
             
     def add_frame(self):
-        """Add a new frame."""
-        # Find the next available frame ID (descending order)
+        """Add a new frame to the top of the list."""
+        # Read current frame table data first
+        self.read_frame_table()
+        
+        # Find the highest frame ID and add 1
         existing_ids = [int(frame.frame_id) for frame in self.frames if frame.frame_id.isdigit()]
         if existing_ids:
-            # If we have existing frames, find the lowest unused ID
-            min_id = min(existing_ids)
-            frame_id = str(min_id - 1) if min_id > 0 else str(max(existing_ids) + 1)
+            max_id = max(existing_ids)
+            frame_id = str(max_id + 1)
         else:
             # No existing frames, start with 0
             frame_id = "0"
         
         new_frame = Frame(frame_id, 0, "")
-        self.frames.append(new_frame)
+        # Insert at the beginning to show at top
+        self.frames.insert(0, new_frame)
         self.update_frame_table()
         self.update_solution_table()
         
     def delete_frame(self):
-        """Delete the last frame."""
+        """Delete the top frame."""
         if self.frames:
-            self.frames.pop()
+            # Read current frame table data first
+            self.read_frame_table()
+            # Remove the first frame (top of the list)
+            self.frames.pop(0)
             self.update_frame_table()
             self.update_solution_table()
             
