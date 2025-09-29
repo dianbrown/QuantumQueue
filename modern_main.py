@@ -14,6 +14,8 @@ from PySide6.QtSvg import QSvgRenderer
 
 # Import the existing CPU scheduling app
 from CPU.ui.main_window import CPUSchedulingApp
+# Import the PRA app
+from PRA.ui.main_window import PRAMainWindow
 # Import the theme manager
 from themes.theme_manager import ThemeManager
 
@@ -429,20 +431,9 @@ class ModernMainWindow(QMainWindow):
         """)
         self.content_stack.addWidget(self.cpu_page)
         
-        # PRA Page (placeholder for now)
-        pra_page = QWidget()
-        pra_layout = QVBoxLayout(pra_page)
-        pra_label = QLabel("Page Replacement Algorithms")
-        pra_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        pra_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #ffffff;")
-        pra_layout.addWidget(pra_label)
-        
-        pra_desc = QLabel("Coming Soon: FIFO, LRU, Second Chance algorithms")
-        pra_desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        pra_desc.setStyleSheet("font-size: 16px; color: #c3c3c3; margin-top: 20px;")
-        pra_layout.addWidget(pra_desc)
-        
-        self.content_stack.addWidget(pra_page)
+        # PRA Page
+        self.pra_page = PRAMainWindow()
+        self.content_stack.addWidget(self.pra_page)
         
         # Settings Page
         self.settings_page = SettingsPage()
@@ -572,6 +563,67 @@ class ModernMainWindow(QMainWindow):
                 background-color: {theme['button_hover']};
             }}
             QComboBox {{
+                background-color: {theme['input_bg']};
+                border: 1px solid {theme['input_border']};
+                padding: 5px;
+                border-radius: 3px;
+                color: {theme['text_primary']};
+            }}
+            QTableWidget {{
+                background-color: {theme['table_bg']};
+                gridline-color: {theme['table_grid']};
+                border: 1px solid {theme['input_border']};
+                color: {theme['text_primary']};
+            }}
+            QTableWidget::item {{
+                padding: 5px;
+            }}
+            QHeaderView::section {{
+                background-color: {theme['header_bg']};
+                color: {theme['text_primary']};
+                padding: 5px;
+                border: 1px solid {theme['table_grid']};
+            }}
+        """)
+        
+        # Apply PRA page theme  
+        self.pra_page.setStyleSheet(f"""
+            QWidget {{
+                background-color: {theme['main_bg']};
+                color: {theme['text_primary']};
+            }}
+            QLabel {{
+                color: {theme['text_primary']};
+            }}
+            QPushButton {{
+                background-color: {theme['button_bg']};
+                border: none;
+                padding: 8px 12px;
+                border-radius: 4px;
+                color: {theme['text_primary']};
+                font-weight: bold;
+                font-size: 12px;
+                min-width: 70px;
+                text-align: center;
+            }}
+            QPushButton:hover {{
+                background-color: {theme['button_hover']};
+            }}
+            QComboBox {{
+                background-color: {theme['input_bg']};
+                border: 1px solid {theme['input_border']};
+                padding: 5px;
+                border-radius: 3px;
+                color: {theme['text_primary']};
+            }}
+            QLineEdit {{
+                background-color: {theme['input_bg']};
+                border: 1px solid {theme['input_border']};
+                padding: 5px;
+                border-radius: 3px;
+                color: {theme['text_primary']};
+            }}
+            QSpinBox {{
                 background-color: {theme['input_bg']};
                 border: 1px solid {theme['input_border']};
                 padding: 5px;
