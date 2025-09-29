@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QMimeData, QPoint
 from PySide6.QtGui import QFont, QColor, QDrag, QPainter, QPixmap
+import random
+import random
 
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -290,9 +292,12 @@ class PRAMainWindow(QWidget):
         add_frame_btn.clicked.connect(self.add_frame)
         delete_frame_btn = QPushButton("Delete Frame")
         delete_frame_btn.clicked.connect(self.delete_frame)
+        randomize_btn = QPushButton("Randomize")
+        randomize_btn.clicked.connect(self.generate_random_problem)
         
         frame_controls.addWidget(add_frame_btn)
         frame_controls.addWidget(delete_frame_btn)
+        frame_controls.addWidget(randomize_btn)
         left_panel.addLayout(frame_controls)
         
         left_widget = QWidget()
@@ -385,9 +390,9 @@ class PRAMainWindow(QWidget):
         self.frames = sample_frames
         self.update_frame_table()
         
-        # Set sample page sequence
-        self.page_input.setText("7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0")
-        self.parse_page_sequence("7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0")
+        # Set sample page sequence (using 1-15 range)
+        self.page_input.setText("7,1,2,3,1,4,1,5,2,3,1,3,2,1,2,1")
+        self.parse_page_sequence("7,1,2,3,1,4,1,5,2,3,1,3,2,1,2,1")
         
     def update_frame_table(self):
         """Update the frame table with current frames."""
@@ -406,6 +411,59 @@ class PRAMainWindow(QWidget):
         # Read the updated frame data and refresh solution table
         self.read_frame_table()
         self.update_solution_table()
+        
+    def generate_random_problem(self):
+        """Generate random frame data and page sequence for practice."""
+        # Generate random number of frames (3-6 frames)
+        num_frames = random.randint(3, 6)
+        
+        # Clear existing frames
+        self.frames.clear()
+        
+        # Generate unique load times for all frames (1-20, no duplicates)
+        available_load_times = list(range(1, 21))  # 1 to 20
+        random.shuffle(available_load_times)
+        selected_load_times = available_load_times[:num_frames]
+        
+        # Generate random frames with descending IDs
+        used_pages = set()
+        for i in range(num_frames):
+            frame_id = str(num_frames - 1 - i)  # Descending order: 5,4,3,2,1,0
+            load_time = selected_load_times[i]  # Unique load time
+            
+            # Generate unique page for initial state (1-15)
+            page = random.randint(1, 15)
+            while page in used_pages:
+                page = random.randint(1, 15)
+            used_pages.add(page)
+            
+            frame = Frame(frame_id, load_time, str(page))
+            self.frames.append(frame)
+        
+        # Generate random page sequence (10-30 pages, values 1-15)
+        sequence_length = random.randint(10, 30)
+        page_sequence = []
+        
+        for _ in range(sequence_length):
+            page = random.randint(1, 15)
+            page_sequence.append(str(page))
+        
+        # Update UI
+        self.update_frame_table()
+        
+        # Set the page sequence
+        page_sequence_str = ",".join(page_sequence)
+        self.page_input.setText(page_sequence_str)
+        self.parse_page_sequence(page_sequence_str)
+        
+        # Clear any existing solution
+        self.solution_result = None
+        self.clear_results()
+        
+    def clear_results(self):
+        """Clear the results display."""
+        if self.results_label:
+            self.results_label.setText("No results yet. Generate a solution to see statistics.")
             
     def read_frame_table(self):
         """Read frame data from the table."""
