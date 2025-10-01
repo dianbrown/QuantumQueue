@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Import PRA algorithms and models
 from algorithms.fifo import FIFOReplacer
+from algorithms.lru import LRUReplacer
 from algorithms.base_replacer import PageReplacementResult
 from models.frame import Frame
 
@@ -218,7 +219,8 @@ class PRAMainWindow(QWidget):
         
         # Initialize algorithms
         self.algorithms = {
-            "FIFO": FIFOReplacer()
+            "FIFO": FIFOReplacer(),
+            "LRU": LRUReplacer()
         }
         
         self.init_ui()
@@ -391,8 +393,8 @@ class PRAMainWindow(QWidget):
         self.update_frame_table()
         
         # Set sample page sequence (using 1-15 range)
-        self.page_input.setText("7,1,2,3,1,4,1,5,2,3,1,3,2,1,2,1")
-        self.parse_page_sequence("7,1,2,3,1,4,1,5,2,3,1,3,2,1,2,1")
+        self.page_input.setText("9,7,8,3,5,7,7,9,6,3,3,7,9,7,4,6,7,8,3,2,5,4,7,6,4,2,3,4,3,2,7,7")
+        self.parse_page_sequence("9,7,8,3,5,7,7,9,6,3,3,7,9,7,4,6,7,8,3,2,5,4,7,6,4,2,3,4,3,2,7,7")
         
     def update_frame_table(self):
         """Update the frame table with current frames."""
