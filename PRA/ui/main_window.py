@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 # Import PRA algorithms and models
 from algorithms.fifo import FIFOReplacer
 from algorithms.lru import LRUReplacer
+from algorithms.optimal import OptimalReplacer
 from algorithms.base_replacer import PageReplacementResult
 from models.frame import Frame
 
@@ -89,7 +90,7 @@ class QueueVisualizationWidget(QWidget):
         layout = QVBoxLayout(self)
         
         # Title
-        title = QLabel("FIFO Queue Order:")
+        title = QLabel("Queue Order:")
         title.setStyleSheet("font-weight: bold; margin-bottom: 5px;")
         layout.addWidget(title)
         
@@ -220,7 +221,8 @@ class PRAMainWindow(QWidget):
         # Initialize algorithms
         self.algorithms = {
             "FIFO": FIFOReplacer(),
-            "LRU": LRUReplacer()
+            "LRU": LRUReplacer(),
+            "Optimal": OptimalReplacer()
         }
         
         self.init_ui()
@@ -393,8 +395,10 @@ class PRAMainWindow(QWidget):
         self.update_frame_table()
         
         # Set sample page sequence (using 1-15 range)
-        self.page_input.setText("9,7,8,3,5,7,7,9,6,3,3,7,9,7,4,6,7,8,3,2,5,4,7,6,4,2,3,4,3,2,7,7")
-        self.parse_page_sequence("9,7,8,3,5,7,7,9,6,3,3,7,9,7,4,6,7,8,3,2,5,4,7,6,4,2,3,4,3,2,7,7")
+        #sample_template = "9,7,8,3,5,7,7,9,6,3,3,7,9,7,4,6,7,8,3,2,5,4,7,6,4,2,3,4,3,2,7,7"
+        sample_template = "7,1,1,8,3,2,2,8,5,4,3,5,3,3,1,6,5,8,5,2"
+        self.page_input.setText(f"{sample_template}")
+        self.parse_page_sequence(f"{sample_template}")
         
     def update_frame_table(self):
         """Update the frame table with current frames."""
