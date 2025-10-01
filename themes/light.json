@@ -8,6 +8,7 @@
         "sidebar_bg": "#f8f9fa",
         "sidebar_header_bg": "#e9ecef",
         "sidebar_border": "#dee2e6",
+        "titlebar_bg": "#e9ecef",
         "sidebar_hover": "#e9ecef",
         "sidebar_active": "#dee2e6",
         "sidebar_accent": "#007bff",
@@ -19,6 +20,13 @@
         "input_border": "#ced4da",
         "table_bg": "#ffffff",
         "table_grid": "#dee2e6",
-        "header_bg": "#f8f9fa"
+        "header_bg": "#f8f9fa",
+        "results_box_bg": "#f8f9fa",
+        "results_box_text": "#212529",
+        "queue_container_bg": "#ffffff",
+        "queue_container_border": "#dee2e6",
+        "queue_block_bg": "#007bff",
+        "queue_block_border": "#0056b3",
+        "queue_block_text": "#ffffff"
     }
 }

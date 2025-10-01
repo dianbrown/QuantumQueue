@@ -33,6 +33,7 @@ class DraggableFrameBlock(QLabel):
         super().__init__(parent)
         self.frame_id = frame_id
         self.rbit = False  # R-bit state (False = 0, True = 1)
+        self.theme_colors = {}  # Store theme colors
         self.update_display()
         self.setAlignment(Qt.AlignCenter)
         self.setFixedSize(60, 30)
@@ -45,21 +46,52 @@ class DraggableFrameBlock(QLabel):
         rbit_indicator = "●" if self.rbit else "○"
         self.setText(f"F{self.frame_id} {rbit_indicator}")
         
+    def set_theme_colors(self, theme_colors: dict):
+        """Set theme colors for the block."""
+        self.theme_colors = theme_colors
+        self.update_style()
+        
     def update_style(self):
         """Update the stylesheet."""
-        self.setStyleSheet("""
-            QLabel {
-                background-color: #4a90e2;
-                color: white;
-                border: 2px solid #357abd;
+        # Use theme colors if available, otherwise use defaults
+        bg_color = self.theme_colors.get('queue_block_bg', '#4a90e2')
+        border_color = self.theme_colors.get('queue_block_border', '#357abd')
+        text_color = self.theme_colors.get('queue_block_text', 'white')
+        
+        # Calculate hover color (slightly lighter)
+        hover_color = self._lighten_color(bg_color, 0.1)
+        
+        self.setStyleSheet(f"""
+            QLabel {{
+                background-color: {bg_color};
+                color: {text_color};
+                border: 2px solid {border_color};
                 border-radius: 3px;
                 font-weight: bold;
                 font-size: 12px;
-            }
-            QLabel:hover {
-                background-color: #5ba0f2;
-            }
+            }}
+            QLabel:hover {{
+                background-color: {hover_color};
+            }}
         """)
+    
+    def _lighten_color(self, hex_color: str, factor: float) -> str:
+        """Lighten a hex color by a factor (0.0 to 1.0)."""
+        # Remove '#' if present
+        hex_color = hex_color.lstrip('#')
+        
+        # Convert to RGB
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        
+        # Lighten
+        r = min(255, int(r + (255 - r) * factor))
+        g = min(255, int(g + (255 - g) * factor))
+        b = min(255, int(b + (255 - b) * factor))
+        
+        # Convert back to hex
+        return f"#{r:02x}{g:02x}{b:02x}"
         
     def mousePressEvent(self, event):
         """Handle mouse press for drag initiation."""
@@ -138,6 +170,7 @@ class QueueVisualizationWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.frame_blocks = []
+        self.theme_colors = {}  # Store theme colors
         self.init_ui()
         
     def init_ui(self):
@@ -145,9 +178,9 @@ class QueueVisualizationWidget(QWidget):
         layout = QVBoxLayout(self)
         
         # Title
-        title = QLabel("Queue Order:")
-        title.setStyleSheet("font-weight: bold; margin-bottom: 5px;")
-        layout.addWidget(title)
+        self.title = QLabel("Queue Order:")
+        self.title.setStyleSheet("font-weight: bold; margin-bottom: 5px;")
+        layout.addWidget(self.title)
         
         # Queue container
         self.queue_container = QWidget()
@@ -172,10 +205,31 @@ class QueueVisualizationWidget(QWidget):
         layout.addWidget(self.queue_container)
         
         # Instructions
-        instructions = QLabel("Drag frames to reorder queue (left = oldest, right = newest)\nRight-click to toggle R-bit: ● = 1, ○ = 0 (for Second Chance)")
-        instructions.setStyleSheet("color: #666; font-size: 10px; margin-top: 5px;")
-        instructions.setWordWrap(True)
-        layout.addWidget(instructions)
+        self.instructions = QLabel("Drag frames to reorder queue (left = oldest, right = newest)\nRight-click to toggle R-bit: ● = 1, ○ = 0 (for Second Chance)")
+        self.instructions.setStyleSheet("color: #666; font-size: 10px; margin-top: 5px;")
+        self.instructions.setWordWrap(True)
+        layout.addWidget(self.instructions)
+    
+    def set_theme_colors(self, theme_colors: dict):
+        """Set theme colors for the queue visualization."""
+        self.theme_colors = theme_colors
+        
+        # Update container style
+        container_bg = theme_colors.get('queue_container_bg', '#f0f0f0')
+        container_border = theme_colors.get('queue_container_border', '#ccc')
+        
+        self.queue_container.setStyleSheet(f"""
+            QWidget {{
+                background-color: {container_bg};
+                border: 2px dashed {container_border};
+                border-radius: 5px;
+                min-height: 60px;
+            }}
+        """)
+        
+        # Update all frame blocks
+        for block in self.frame_blocks:
+            block.set_theme_colors(theme_colors)
         
     def update_frames(self, frames: List[Frame]):
         """Update the queue with current frames."""
@@ -190,6 +244,9 @@ class QueueVisualizationWidget(QWidget):
         # Create new blocks
         for frame in sorted_frames:
             block = DraggableFrameBlock(frame.frame_id, self.queue_container)
+            # Apply theme colors if available
+            if self.theme_colors:
+                block.set_theme_colors(self.theme_colors)
             self.frame_blocks.append(block)
             self.queue_layout.addWidget(block, alignment=Qt.AlignVCenter)
             
@@ -587,6 +644,15 @@ class PRAMainWindow(QWidget):
         algorithm = self.algorithm_combo.currentText()
         if self.algorithm_name_label:
             self.algorithm_name_label.setText(f"Current Algorithm: {algorithm}")
+        
+        # Update the algorithm name in the solution table if it exists
+        if self.solution_table and self.solution_table.rowCount() > len(self.frames):
+            algorithm_row = len(self.frames)
+            alg_name_item = QTableWidgetItem(algorithm)
+            alg_name_item.setFlags(alg_name_item.flags() & ~Qt.ItemIsEditable)
+            alg_name_item.setTextAlignment(Qt.AlignCenter)
+            self.solution_table.setItem(algorithm_row, 1, alg_name_item)
+        
         self.reset_solution()
         
     def update_solution_table(self):
@@ -614,6 +680,9 @@ class PRAMainWindow(QWidget):
         self.solution_table.setColumnWidth(1, 120)  # Page in Memory column
         for i in range(2, num_cols):
             self.solution_table.setColumnWidth(i, 30)  # Page columns
+        
+        # Hide the vertical header (row numbers)
+        self.solution_table.verticalHeader().setVisible(False)
             
         # Fill initial data
         self.fill_solution_table_structure()
