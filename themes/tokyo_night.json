@@ -1,0 +1,32 @@
+{
+    "name": "Tokyo Night Theme",
+    "description": "Clean dark theme inspired by Tokyo's neon nights",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#1a1b26",
+        "sidebar_bg": "#16161e",
+        "sidebar_header_bg": "#0f0f14",
+        "sidebar_border": "#292e42",
+        "titlebar_bg": "#0f0f14",
+        "sidebar_hover": "#292e42",
+        "sidebar_active": "#3b4261",
+        "sidebar_accent": "#7aa2f7",
+        "text_primary": "#c0caf5",
+        "text_secondary": "#a9b1d6",
+        "button_bg": "#7aa2f7",
+        "button_hover": "#7dcfff",
+        "input_bg": "#292e42",
+        "input_border": "#3b4261",
+        "table_bg": "#292e42",
+        "table_grid": "#3b4261",
+        "header_bg": "#16161e",
+        "results_box_bg": "#16161e",
+        "results_box_text": "#c0caf5",
+        "queue_container_bg": "#292e42",
+        "queue_container_border": "#3b4261",
+        "queue_block_bg": "#bb9af7",
+        "queue_block_border": "#9d7cd8",
+        "queue_block_text": "#1a1b26"
+    }
+}

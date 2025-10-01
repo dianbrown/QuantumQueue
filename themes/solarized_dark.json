@@ -1,0 +1,32 @@
+{
+    "name": "Solarized Dark Theme",
+    "description": "Precision colors for machines and people",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#002b36",
+        "sidebar_bg": "#073642",
+        "sidebar_header_bg": "#002731",
+        "sidebar_border": "#586e75",
+        "titlebar_bg": "#002731",
+        "sidebar_hover": "#094555",
+        "sidebar_active": "#586e75",
+        "sidebar_accent": "#268bd2",
+        "text_primary": "#fdf6e3",
+        "text_secondary": "#eee8d5",
+        "button_bg": "#268bd2",
+        "button_hover": "#2aa198",
+        "input_bg": "#073642",
+        "input_border": "#586e75",
+        "table_bg": "#073642",
+        "table_grid": "#586e75",
+        "header_bg": "#002b36",
+        "results_box_bg": "#002b36",
+        "results_box_text": "#fdf6e3",
+        "queue_container_bg": "#073642",
+        "queue_container_border": "#586e75",
+        "queue_block_bg": "#859900",
+        "queue_block_border": "#b58900",
+        "queue_block_text": "#002b36"
+    }
+}

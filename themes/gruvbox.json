@@ -1,0 +1,32 @@
+{
+    "name": "Gruvbox Dark Theme",
+    "description": "Retro groove theme with warm earthy colors",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#282828",
+        "sidebar_bg": "#3c3836",
+        "sidebar_header_bg": "#1d2021",
+        "sidebar_border": "#504945",
+        "titlebar_bg": "#1d2021",
+        "sidebar_hover": "#504945",
+        "sidebar_active": "#665c54",
+        "sidebar_accent": "#d79921",
+        "text_primary": "#ebdbb2",
+        "text_secondary": "#d5c4a1",
+        "button_bg": "#d79921",
+        "button_hover": "#fabd2f",
+        "input_bg": "#3c3836",
+        "input_border": "#504945",
+        "table_bg": "#3c3836",
+        "table_grid": "#504945",
+        "header_bg": "#1d2021",
+        "results_box_bg": "#1d2021",
+        "results_box_text": "#ebdbb2",
+        "queue_container_bg": "#3c3836",
+        "queue_container_border": "#504945",
+        "queue_block_bg": "#b8bb26",
+        "queue_block_border": "#98971a",
+        "queue_block_text": "#282828"
+    }
+}

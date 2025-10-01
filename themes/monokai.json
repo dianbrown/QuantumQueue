@@ -1,0 +1,32 @@
+{
+    "name": "Monokai Theme",
+    "description": "Vibrant dark theme with bright accent colors inspired by Monokai",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#272822",
+        "sidebar_bg": "#1e1f1c",
+        "sidebar_header_bg": "#161712",
+        "sidebar_border": "#3e3d32",
+        "titlebar_bg": "#161712",
+        "sidebar_hover": "#3e3d32",
+        "sidebar_active": "#49483e",
+        "sidebar_accent": "#66d9ef",
+        "text_primary": "#f8f8f2",
+        "text_secondary": "#cfcfc2",
+        "button_bg": "#66d9ef",
+        "button_hover": "#a6e22e",
+        "input_bg": "#3e3d32",
+        "input_border": "#75715e",
+        "table_bg": "#3e3d32",
+        "table_grid": "#49483e",
+        "header_bg": "#1e1f1c",
+        "results_box_bg": "#1e1f1c",
+        "results_box_text": "#f8f8f2",
+        "queue_container_bg": "#3e3d32",
+        "queue_container_border": "#49483e",
+        "queue_block_bg": "#a6e22e",
+        "queue_block_border": "#92d400",
+        "queue_block_text": "#272822"
+    }
+}

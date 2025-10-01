@@ -1,0 +1,32 @@
+{
+    "name": "One Dark Theme",
+    "description": "Iconic Atom One Dark theme with balanced colors",
+    "author": "CPU Scheduling App",
+    "version": "1.0.0",
+    "colors": {
+        "main_bg": "#282c34",
+        "sidebar_bg": "#21252b",
+        "sidebar_header_bg": "#1b1d23",
+        "sidebar_border": "#3e4451",
+        "titlebar_bg": "#1b1d23",
+        "sidebar_hover": "#2c313a",
+        "sidebar_active": "#3e4451",
+        "sidebar_accent": "#61afef",
+        "text_primary": "#abb2bf",
+        "text_secondary": "#9da5b4",
+        "button_bg": "#61afef",
+        "button_hover": "#528bff",
+        "input_bg": "#2c313a",
+        "input_border": "#3e4451",
+        "table_bg": "#2c313a",
+        "table_grid": "#3e4451",
+        "header_bg": "#21252b",
+        "results_box_bg": "#21252b",
+        "results_box_text": "#abb2bf",
+        "queue_container_bg": "#2c313a",
+        "queue_container_border": "#3e4451",
+        "queue_block_bg": "#98c379",
+        "queue_block_border": "#7cb668",
+        "queue_block_text": "#282c34"
+    }
+}
