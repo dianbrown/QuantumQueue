@@ -20,6 +20,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from algorithms.fifo import FIFOReplacer
 from algorithms.lru import LRUReplacer
 from algorithms.optimal import OptimalReplacer
+from algorithms.second_chance import SecondChanceReplacer
+from algorithms.clock import ClockReplacer
 from algorithms.base_replacer import PageReplacementResult
 from models.frame import Frame
 
@@ -30,15 +32,27 @@ class DraggableFrameBlock(QLabel):
     def __init__(self, frame_id: str, parent=None):
         super().__init__(parent)
         self.frame_id = frame_id
-        self.setText(f"F{frame_id}")
+        self.rbit = False  # R-bit state (False = 0, True = 1)
+        self.update_display()
         self.setAlignment(Qt.AlignCenter)
-        self.setFixedSize(40, 30)
+        self.setFixedSize(60, 30)
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_context_menu)
+        self.update_style()
+        
+    def update_display(self):
+        """Update the text display with R-bit indicator."""
+        rbit_indicator = "●" if self.rbit else "○"
+        self.setText(f"F{self.frame_id} {rbit_indicator}")
+        
+    def update_style(self):
+        """Update the stylesheet."""
         self.setStyleSheet("""
             QLabel {
                 background-color: #4a90e2;
                 color: white;
                 border: 2px solid #357abd;
-                border-radius: 5px;
+                border-radius: 3px;
                 font-weight: bold;
                 font-size: 12px;
             }
@@ -75,6 +89,47 @@ class DraggableFrameBlock(QLabel):
         
         # Execute drag
         drag.exec(Qt.MoveAction)
+        
+    def show_context_menu(self, position):
+        """Show context menu for R-bit control."""
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+            QMenu {
+                background-color: #2b2b2b;
+                color: white;
+                border: 1px solid #555;
+                padding: 5px;
+            }
+            QMenu::item {
+                padding: 5px 20px;
+                border-radius: 3px;
+            }
+            QMenu::item:selected {
+                background-color: #4a90e2;
+            }
+        """)
+        
+        if self.rbit:
+            action = menu.addAction("Set R-bit to 0 (○)")
+        else:
+            action = menu.addAction("Set R-bit to 1 (●)")
+        
+        action.triggered.connect(self.toggle_rbit)
+        menu.exec(self.mapToGlobal(position))
+        
+    def toggle_rbit(self):
+        """Toggle the R-bit state."""
+        self.rbit = not self.rbit
+        self.update_display()
+        
+    def get_rbit_state(self) -> bool:
+        """Get the current R-bit state (True = 1, False = 0)."""
+        return self.rbit
+        
+    def set_rbit_state(self, state: bool):
+        """Set the R-bit state (True = 1, False = 0)."""
+        self.rbit = state
+        self.update_display()
 
 
 class QueueVisualizationWidget(QWidget):
@@ -98,7 +153,7 @@ class QueueVisualizationWidget(QWidget):
         self.queue_container = QWidget()
         self.queue_layout = QHBoxLayout(self.queue_container)
         self.queue_layout.setSpacing(5)
-        self.queue_layout.setContentsMargins(10, 5, 10, 5)
+        self.queue_layout.setContentsMargins(10, 10, 10, 10)
         
         # Style the container
         self.queue_container.setStyleSheet("""
@@ -106,7 +161,7 @@ class QueueVisualizationWidget(QWidget):
                 background-color: #f0f0f0;
                 border: 2px dashed #ccc;
                 border-radius: 5px;
-                min-height: 50px;
+                min-height: 60px;
             }
         """)
         self.queue_container.setAcceptDrops(True)
@@ -117,7 +172,7 @@ class QueueVisualizationWidget(QWidget):
         layout.addWidget(self.queue_container)
         
         # Instructions
-        instructions = QLabel("Drag frames to reorder queue (left = oldest, right = newest)")
+        instructions = QLabel("Drag frames to reorder queue (left = oldest, right = newest)\nRight-click to toggle R-bit: ● = 1, ○ = 0 (for Second Chance)")
         instructions.setStyleSheet("color: #666; font-size: 10px; margin-top: 5px;")
         instructions.setWordWrap(True)
         layout.addWidget(instructions)
@@ -136,7 +191,7 @@ class QueueVisualizationWidget(QWidget):
         for frame in sorted_frames:
             block = DraggableFrameBlock(frame.frame_id, self.queue_container)
             self.frame_blocks.append(block)
-            self.queue_layout.addWidget(block)
+            self.queue_layout.addWidget(block, alignment=Qt.AlignVCenter)
             
     def drag_enter_event(self, event):
         """Handle drag enter event."""
@@ -180,8 +235,8 @@ class QueueVisualizationWidget(QWidget):
                     # Ensure insert_index is within bounds
                     insert_index = max(0, min(insert_index, len(self.frame_blocks)))
                     
-                    # Insert at new position
-                    self.queue_layout.insertWidget(insert_index, dragged_block)
+                    # Insert at new position with vertical center alignment
+                    self.queue_layout.insertWidget(insert_index, dragged_block, alignment=Qt.AlignVCenter)
                     self.frame_blocks.insert(insert_index, dragged_block)
                 
             event.acceptProposedAction()
@@ -199,6 +254,22 @@ class QueueVisualizationWidget(QWidget):
     def get_queue_order(self) -> List[str]:
         """Get current queue order as list of frame IDs."""
         return [block.frame_id for block in self.frame_blocks]
+    
+    def get_rbit_states(self) -> dict:
+        """Get R-bit states for all frames in the queue."""
+        return {block.frame_id: block.get_rbit_state() for block in self.frame_blocks}
+    
+    def set_rbit_state(self, frame_id: str, state: bool):
+        """Set R-bit state for a specific frame."""
+        for block in self.frame_blocks:
+            if block.frame_id == frame_id:
+                block.set_rbit_state(state)
+                break
+    
+    def reset_all_rbits(self):
+        """Reset all R-bits to 0."""
+        for block in self.frame_blocks:
+            block.set_rbit_state(False)
 
 
 class PRAMainWindow(QWidget):
@@ -222,7 +293,9 @@ class PRAMainWindow(QWidget):
         self.algorithms = {
             "FIFO": FIFOReplacer(),
             "LRU": LRUReplacer(),
-            "Optimal": OptimalReplacer()
+            "Optimal": OptimalReplacer(),
+            "Second Chance": SecondChanceReplacer(),
+            "Clock": ClockReplacer()
         }
         
         self.init_ui()
@@ -386,17 +459,16 @@ class PRAMainWindow(QWidget):
     def add_sample_frames(self):
         """Add sample frames for demonstration."""
         sample_frames = [
-            Frame("3", 11, "5"),
-            Frame("2", 8, "8"),
-            Frame("1", 3, "1"),
-            Frame("0", 14, "4"),
+            Frame("3", 7, "2"),
+            Frame("2", 6, "4"),
+            Frame("1", 21, "8"),
+            Frame("0", 12, "5"),
         ]
         self.frames = sample_frames
         self.update_frame_table()
         
         # Set sample page sequence (using 1-15 range)
-        #sample_template = "9,7,8,3,5,7,7,9,6,3,3,7,9,7,4,6,7,8,3,2,5,4,7,6,4,2,3,4,3,2,7,7"
-        sample_template = "7,1,1,8,3,2,2,8,5,4,3,5,3,3,1,6,5,8,5,2"
+        sample_template = "9,7,8,3,5,7,7,9,6,3,3,7,9,7,4,6,7,8,3,2,5,4,7,6,4,2,3,4,3,2,7,7"
         self.page_input.setText(f"{sample_template}")
         self.parse_page_sequence(f"{sample_template}")
         
