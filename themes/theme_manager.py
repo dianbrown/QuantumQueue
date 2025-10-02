@@ -23,7 +23,7 @@ class ThemeManager:
         
         for theme_file in theme_files:
             try:
-                with open(theme_file, 'r', encoding='utf-8') as f:
+                with open(theme_file, 'r', encoding='utf-8-sig') as f:
                     theme_data = json.load(f)
                     theme_name = theme_data.get('name', theme_file.stem)
                     self.themes[theme_name] = theme_data

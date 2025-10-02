@@ -1,4 +1,4 @@
-{
+﻿{
     "name": "Light Theme",
     "description": "Clean light theme with blue accents",
     "author": "CPU Scheduling App",
@@ -27,6 +27,7 @@
         "queue_container_border": "#dee2e6",
         "queue_block_bg": "#007bff",
         "queue_block_border": "#0056b3",
-        "queue_block_text": "#ffffff"
+        "queue_block_text": "#ffffff",
+        "scheduling_block_bg": "#ffeb3b"
     }
 }

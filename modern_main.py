@@ -923,6 +923,10 @@ class ModernMainWindow(QMainWindow):
                 }}
             """)
         
+        # Apply scheduling block color to CPU page
+        if hasattr(self.cpu_page, 'set_scheduling_block_color'):
+            self.cpu_page.set_scheduling_block_color(theme['scheduling_block_bg'])
+        
         # Apply PRA page theme  
         self.pra_page.setStyleSheet(f"""
             QWidget {{

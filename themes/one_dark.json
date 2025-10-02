@@ -1,4 +1,4 @@
-{
+﻿{
     "name": "One Dark Theme",
     "description": "Iconic Atom One Dark theme with balanced colors",
     "author": "CPU Scheduling App",
@@ -27,6 +27,7 @@
         "queue_container_border": "#3e4451",
         "queue_block_bg": "#98c379",
         "queue_block_border": "#7cb668",
-        "queue_block_text": "#282c34"
+        "queue_block_text": "#abb2bf",
+        "scheduling_block_bg": "#e5c07b"
     }
 }

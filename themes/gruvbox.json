@@ -1,4 +1,4 @@
-{
+﻿{
     "name": "Gruvbox Dark Theme",
     "description": "Retro groove theme with warm earthy colors",
     "author": "CPU Scheduling App",
@@ -27,6 +27,7 @@
         "queue_container_border": "#504945",
         "queue_block_bg": "#b8bb26",
         "queue_block_border": "#98971a",
-        "queue_block_text": "#282828"
+        "queue_block_text": "#ebdbb2",
+        "scheduling_block_bg": "#fabd2f"
     }
 }

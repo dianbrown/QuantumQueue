@@ -379,19 +379,6 @@ class PRAMainWindow(QWidget):
         controls_layout.addWidget(QLabel("Pages:"))
         controls_layout.addWidget(self.page_input)
         
-        # Control buttons
-        check_btn = QPushButton("Check Solution")
-        check_btn.clicked.connect(self.check_solution)
-        controls_layout.addWidget(check_btn)
-        
-        show_btn = QPushButton("Show Solution")
-        show_btn.clicked.connect(self.show_solution)
-        controls_layout.addWidget(show_btn)
-        
-        reset_btn = QPushButton("Reset")
-        reset_btn.clicked.connect(self.reset_solution)
-        controls_layout.addWidget(reset_btn)
-        
         # Algorithm name display
         self.algorithm_name_label = QLabel("Current Algorithm: FIFO")
         self.algorithm_name_label.setStyleSheet("""
@@ -433,6 +420,20 @@ class PRAMainWindow(QWidget):
         frame_controls.addWidget(delete_frame_btn)
         frame_controls.addWidget(randomize_btn)
         left_panel.addLayout(frame_controls)
+        
+        # Solution control buttons
+        solution_controls = QHBoxLayout()
+        check_btn = QPushButton("Check Solution")
+        check_btn.clicked.connect(self.check_solution)
+        show_btn = QPushButton("Show Solution")
+        show_btn.clicked.connect(self.show_solution)
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_solution)
+        
+        solution_controls.addWidget(check_btn)
+        solution_controls.addWidget(show_btn)
+        solution_controls.addWidget(reset_btn)
+        left_panel.addLayout(solution_controls)
         
         left_widget = QWidget()
         left_widget.setLayout(left_panel)

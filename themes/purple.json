@@ -1,4 +1,4 @@
-{
+﻿{
     "name": "Purple Theme",
     "description": "Royal purple theme with pink accents",
     "author": "CPU Scheduling App",
@@ -27,6 +27,7 @@
         "queue_container_border": "#8e24aa",
         "queue_block_bg": "#e040fb",
         "queue_block_border": "#d500f9",
-        "queue_block_text": "#ffffff"
+        "queue_block_text": "#ffffff",
+        "scheduling_block_bg": "#ba68c8"
     }
 }

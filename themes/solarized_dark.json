@@ -1,4 +1,4 @@
-{
+﻿{
     "name": "Solarized Dark Theme",
     "description": "Precision colors for machines and people",
     "author": "CPU Scheduling App",
@@ -27,6 +27,7 @@
         "queue_container_border": "#586e75",
         "queue_block_bg": "#859900",
         "queue_block_border": "#b58900",
-        "queue_block_text": "#002b36"
+        "queue_block_text": "#fdf6e3",
+        "scheduling_block_bg": "#b58900"
     }
 }

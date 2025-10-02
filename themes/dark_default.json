@@ -27,6 +27,7 @@
         "queue_container_border": "#72767d",
         "queue_block_bg": "#7289da",
         "queue_block_border": "#677bc4",
-        "queue_block_text": "#ffffff"
+        "queue_block_text": "#ffffff",
+        "scheduling_block_bg": "#ffff00"
     }
 }

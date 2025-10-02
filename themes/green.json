@@ -1,4 +1,4 @@
-{
+﻿{
     "name": "Green Theme",
     "description": "Forest green theme with bright accents",
     "author": "CPU Scheduling App",
@@ -27,6 +27,7 @@
         "queue_container_border": "#4caf50",
         "queue_block_bg": "#00e676",
         "queue_block_border": "#00c853",
-        "queue_block_text": "#1b5e20"
+        "queue_block_text": "#1b5e20",
+        "scheduling_block_bg": "#81c784"
     }
 }

@@ -44,6 +44,9 @@ class CPUSchedulingApp(QMainWindow):
             "Round Robin with Priority": RoundRobinPriorityScheduler(2)
         }
         
+        # Default scheduling block color (yellow)
+        self.scheduling_block_color = QColor("#ffff00")
+        
         self.init_ui()
         self.add_sample_processes()
         self.update_timeline_grid()
@@ -80,19 +83,6 @@ class CPUSchedulingApp(QMainWindow):
         # Initially hide quantum controls
         self.quantum_label.setVisible(False)
         self.quantum_spinbox.setVisible(False)
-        
-        # Control buttons
-        check_btn = QPushButton("Check Solution")
-        check_btn.clicked.connect(self.check_solution)
-        controls_layout.addWidget(check_btn)
-        
-        show_btn = QPushButton("Show Solution")
-        show_btn.clicked.connect(self.show_solution)
-        controls_layout.addWidget(show_btn)
-        
-        reset_btn = QPushButton("Reset")
-        reset_btn.clicked.connect(self.reset_grid)
-        controls_layout.addWidget(reset_btn)
         
         # Add more spacing to center the algorithm name above the grid
         controls_layout.addSpacing(200)
@@ -145,6 +135,20 @@ class CPUSchedulingApp(QMainWindow):
         process_controls.addWidget(delete_btn)
         process_controls.addWidget(randomize_btn)
         left_panel.addLayout(process_controls)
+        
+        # Solution control buttons
+        solution_controls = QHBoxLayout()
+        check_btn = QPushButton("Check Solution")
+        check_btn.clicked.connect(self.check_solution)
+        show_btn = QPushButton("Show Solution")
+        show_btn.clicked.connect(self.show_solution)
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_grid)
+        
+        solution_controls.addWidget(check_btn)
+        solution_controls.addWidget(show_btn)
+        solution_controls.addWidget(reset_btn)
+        left_panel.addLayout(solution_controls)
         
         left_widget = QWidget()
         left_widget.setLayout(left_panel)
@@ -227,6 +231,10 @@ class CPUSchedulingApp(QMainWindow):
         # Set row height
         self.timeline_grid.verticalHeader().setDefaultSectionSize(30)
         self.timeline_grid.verticalHeader().hide()
+
+    def set_scheduling_block_color(self, color):
+        """Set the color for scheduling blocks in the timeline grid."""
+        self.scheduling_block_color = QColor(color)
 
     def add_sample_processes(self):
         """Add sample processes for demonstration."""
@@ -314,19 +322,19 @@ class CPUSchedulingApp(QMainWindow):
                     other_item.setText("")
         
         # Toggle current cell
-        if item.background().color().name() == "#ffff00":  # Yellow
+        if item.background().color().name().lower() == self.scheduling_block_color.name().lower():
             item.setBackground(Qt.white)
             item.setForeground(QColor(0, 0, 0))  # Black text
-            # Handle RS marker preservation when turning off yellow
+            # Handle RS marker preservation when turning off scheduling block
             if (row, col) in self.rs_markers:
                 item.setText("RS")
                 item.setForeground(QColor(128, 128, 128))  # Gray for RS
             else:
                 item.setText("")
         else:
-            item.setBackground(Qt.yellow)
+            item.setBackground(self.scheduling_block_color)
             item.setForeground(QColor(0, 0, 0))  # Black text
-            # Handle RS marker preservation when turning on yellow
+            # Handle RS marker preservation when turning on scheduling block
             if (row, col) in self.rs_markers:
                 item.setText("-\nRS")
             else:
@@ -373,7 +381,7 @@ class CPUSchedulingApp(QMainWindow):
                                     other_item.setBackground(Qt.white)
                                     other_item.setText("")
                         
-                        cell_item.setBackground(Qt.yellow)
+                        cell_item.setBackground(self.scheduling_block_color)
                         cell_item.setText("-")
 
     def show_context_menu(self, position):
@@ -725,7 +733,7 @@ class CPUSchedulingApp(QMainWindow):
                     row = process_to_row[process_id]
                     item = self.timeline_grid.item(row, grid_col)
                     if item:
-                        item.setBackground(Qt.yellow)
+                        item.setBackground(self.scheduling_block_color)
                         item.setText("-")
                         item.setForeground(QColor(0, 0, 0))  # Black text
                         item.setFlags(item.flags() & ~Qt.ItemIsEditable)
