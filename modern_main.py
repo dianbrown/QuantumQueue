@@ -552,19 +552,6 @@ class SettingsPage(QWidget):
                 border: none;
                 background-color: transparent;
             }
-            QScrollBar:vertical {
-                background-color: #40444b;
-                width: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #72767d;
-                border-radius: 6px;
-                min-height: 20px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #7289da;
-            }
         """)
         
         main_layout.addWidget(scroll_area)
@@ -792,11 +779,93 @@ class ModernMainWindow(QMainWindow):
                 "queue_block_text": "#ffffff"
             }
         
-        # Apply main window theme
+        # Apply main window theme with modern scrollbars
         self.setStyleSheet(f"""
             QMainWindow {{
                 background-color: {theme['main_bg']};
                 color: {theme['text_primary']};
+            }}
+            
+            /* Modern Scrollbars - Horizontal */
+            QScrollBar:horizontal {{
+                border: none;
+                background: {theme.get('scrollbar_bg', theme['input_bg'])};
+                height: 8px;
+                margin: 0px 21px 0 21px;
+                border-radius: 0px;
+            }}
+            QScrollBar::handle:horizontal {{
+                background: {theme.get('scrollbar_handle', theme['button_bg'])};
+                min-width: 25px;
+                border-radius: 4px;
+            }}
+            QScrollBar::handle:horizontal:hover {{
+                background: {theme.get('scrollbar_handle_hover', theme['button_hover'])};
+            }}
+            QScrollBar::add-line:horizontal {{
+                border: none;
+                background: {theme.get('scrollbar_border', theme['sidebar_border'])};
+                width: 20px;
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+                subcontrol-position: right;
+                subcontrol-origin: margin;
+            }}
+            QScrollBar::sub-line:horizontal {{
+                border: none;
+                background: {theme.get('scrollbar_border', theme['sidebar_border'])};
+                width: 20px;
+                border-top-left-radius: 4px;
+                border-bottom-left-radius: 4px;
+                subcontrol-position: left;
+                subcontrol-origin: margin;
+            }}
+            QScrollBar::up-arrow:horizontal, QScrollBar::down-arrow:horizontal {{
+                background: none;
+            }}
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+                background: none;
+            }}
+            
+            /* Modern Scrollbars - Vertical */
+            QScrollBar:vertical {{
+                border: none;
+                background: {theme.get('scrollbar_bg', theme['input_bg'])};
+                width: 8px;
+                margin: 21px 0 21px 0;
+                border-radius: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {theme.get('scrollbar_handle', theme['button_bg'])};
+                min-height: 25px;
+                border-radius: 4px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background: {theme.get('scrollbar_handle_hover', theme['button_hover'])};
+            }}
+            QScrollBar::add-line:vertical {{
+                border: none;
+                background: {theme.get('scrollbar_border', theme['sidebar_border'])};
+                height: 20px;
+                border-bottom-left-radius: 4px;
+                border-bottom-right-radius: 4px;
+                subcontrol-position: bottom;
+                subcontrol-origin: margin;
+            }}
+            QScrollBar::sub-line:vertical {{
+                border: none;
+                background: {theme.get('scrollbar_border', theme['sidebar_border'])};
+                height: 20px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                subcontrol-position: top;
+                subcontrol-origin: margin;
+            }}
+            QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {{
+                background: none;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
             }}
         """)
         

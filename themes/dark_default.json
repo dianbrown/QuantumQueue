@@ -28,6 +28,10 @@
         "queue_block_bg": "#7289da",
         "queue_block_border": "#677bc4",
         "queue_block_text": "#ffffff",
-        "scheduling_block_bg": "#ffff00"
+        "scheduling_block_bg": "#ffff00",
+        "scrollbar_bg": "#40444b",
+        "scrollbar_handle": "#72767d",
+        "scrollbar_handle_hover": "#7289da",
+        "scrollbar_border": "#2c2f33"
     }
 }
