@@ -1,5 +1,5 @@
 {
-    "name": "Monokai Theme",
+    "name": "Monokai",
     "description": "Vibrant dark theme with bright accent colors inspired by Monokai",
     "author": "CPU Scheduling App",
     "version": "1.0.0",
@@ -32,6 +32,10 @@
         "scrollbar_bg": "#3e3d32",
         "scrollbar_handle": "#75715e",
         "scrollbar_handle_hover": "#ae81ff",
-        "scrollbar_border": "#272822"
+        "scrollbar_border": "#272822",
+        "home_title": "#ae81ff",
+        "home_subtitle": "#f8f8f2",
+        "home_description": "#cfcfc2",
+        "home_author": "#66d9ef"
     }
 }

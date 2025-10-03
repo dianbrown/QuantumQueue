@@ -1,5 +1,5 @@
 {
-    "name": "Purple Theme",
+    "name": "Purple",
     "description": "Royal purple theme with pink accents",
     "author": "CPU Scheduling App",
     "version": "1.0.0",
@@ -32,6 +32,10 @@
         "scrollbar_bg": "#7b1fa2",
         "scrollbar_handle": "#8e24aa",
         "scrollbar_handle_hover": "#e040fb",
-        "scrollbar_border": "#6a1b9a"
+        "scrollbar_border": "#6a1b9a",
+        "home_title": "#e040fb",
+        "home_subtitle": "#f3e5f5",
+        "home_description": "#ce93d8",
+        "home_author": "#ab47bc"
     }
 }

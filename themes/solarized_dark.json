@@ -1,5 +1,5 @@
 {
-    "name": "Solarized Dark Theme",
+    "name": "Solarized Dark",
     "description": "Precision colors for machines and people",
     "author": "CPU Scheduling App",
     "version": "1.0.0",
@@ -32,6 +32,10 @@
         "scrollbar_bg": "#073642",
         "scrollbar_handle": "#586e75",
         "scrollbar_handle_hover": "#268bd2",
-        "scrollbar_border": "#002b36"
+        "scrollbar_border": "#002b36",
+        "home_title": "#268bd2",
+        "home_subtitle": "#93a1a1",
+        "home_description": "#657b83",
+        "home_author": "#2aa198"
     }
 }

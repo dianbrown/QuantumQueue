@@ -1,5 +1,5 @@
 {
-    "name": "Green Theme",
+    "name": "Green",
     "description": "Forest green theme with bright accents",
     "author": "CPU Scheduling App",
     "version": "1.0.0",
@@ -32,6 +32,10 @@
         "scrollbar_bg": "#388e3c",
         "scrollbar_handle": "#4caf50",
         "scrollbar_handle_hover": "#00e676",
-        "scrollbar_border": "#2e7d32"
+        "scrollbar_border": "#2e7d32",
+        "home_title": "#00e676",
+        "home_subtitle": "#e8f5e8",
+        "home_description": "#c8e6c9",
+        "home_author": "#66bb6a"
     }
 }

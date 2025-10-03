@@ -1,5 +1,5 @@
 {
-    "name": "Nord Theme",
+    "name": "Nord",
     "description": "Arctic, north-bluish color palette with cold blue tones",
     "author": "Nord Theme",
     "version": "1.0.0",
@@ -32,6 +32,10 @@
         "scrollbar_bg": "#3b4252",
         "scrollbar_handle": "#4c566a",
         "scrollbar_handle_hover": "#88c0d0",
-        "scrollbar_border": "#2e3440"
+        "scrollbar_border": "#2e3440",
+        "home_title": "#88c0d0",
+        "home_subtitle": "#d8dee9",
+        "home_description": "#eceff4",
+        "home_author": "#5e81ac"
     }
 }

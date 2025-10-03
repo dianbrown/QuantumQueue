@@ -1,5 +1,5 @@
 {
-    "name": "Sunset Theme",
+    "name": "Sunset",
     "description": "Warm sunset colors with orange and red tones",
     "author": "Custom Theme",
     "version": "1.0.0",
@@ -32,6 +32,10 @@
         "scrollbar_bg": "#4d3520",
         "scrollbar_handle": "#5d4530",
         "scrollbar_handle_hover": "#ff6b35",
-        "scrollbar_border": "#3d251a"
+        "scrollbar_border": "#3d251a",
+        "home_title": "#ff6b35",
+        "home_subtitle": "#ffd4c4",
+        "home_description": "#ffb5a0",
+        "home_author": "#ff8787"
     }
 }

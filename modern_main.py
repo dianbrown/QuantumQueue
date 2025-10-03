@@ -4,6 +4,7 @@ Inspired by PyDracula design
 """
 
 import sys
+import os
 from PySide6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, 
                               QHBoxLayout, QPushButton, QFrame, QStackedWidget,
                               QLabel, QSizePolicy, QComboBox, QGroupBox, QFormLayout,
@@ -48,16 +49,16 @@ class CustomTitleBar(QFrame):
         
         # Logo
         self.logo_label = QLabel()
-        self.logo_label.setFixedSize(32, 32)
+        self.logo_label.setFixedSize(32, 26)
         self.logo_label.setScaledContents(True)
         # Try to load logo from icons folder
-        logo_pixmap = QPixmap("icons/cpu.png")
+        logo_pixmap = QPixmap("Images/QuantumQueue.png")
         if not logo_pixmap.isNull():
             self.logo_label.setPixmap(logo_pixmap)
         left_layout.addWidget(self.logo_label)
         
         # App name
-        self.app_name = QLabel("CPU Scheduling & PRA Practice")
+        self.app_name = QLabel("QuantumQueue - CPU & PRA")
         self.app_name.setStyleSheet("""
             QLabel {
                 color: white;
@@ -489,7 +490,7 @@ class SettingsPage(QWidget):
             self.theme_combo.addItems(available_themes)
         else:
             # Fallback if no themes are loaded
-            self.theme_combo.addItems(["Dark Theme (Default)"])
+            self.theme_combo.addItems(["Dracula"])
         self.theme_combo.setStyleSheet("""
             QComboBox {
                 background-color: #40444b;
@@ -563,7 +564,7 @@ class SettingsPage(QWidget):
         
     def load_settings(self):
         """Load saved settings"""
-        saved_theme = self.settings.value("theme", "Dark Theme (Default)")
+        saved_theme = self.settings.value("theme", "Dracula")
         if saved_theme:
             index = self.theme_combo.findText(saved_theme)
             if index >= 0:
@@ -595,7 +596,7 @@ class ModernMainWindow(QMainWindow):
         self.setup_ui()
         
         # Apply saved theme or default
-        saved_theme = self.settings.value("theme", "Dark Theme (Default)")
+        saved_theme = self.settings.value("theme", "Dracula")
         self.apply_theme(saved_theme)
         
     def setup_ui(self):
@@ -688,7 +689,7 @@ class ModernMainWindow(QMainWindow):
         self.content_stack.addWidget(self.cpu_page)
         
         # Home Page
-        self.home_page = self.create_placeholder_page("Home", "Welcome to the Scheduling Algorithms Practice Tool")
+        self.home_page = self.create_home_page()
         self.content_stack.addWidget(self.home_page)
         
         # CPU Page
@@ -706,6 +707,85 @@ class ModernMainWindow(QMainWindow):
         self.settings_page = SettingsPage()
         self.settings_page.theme_changed.connect(self.apply_theme)
         self.content_stack.addWidget(self.settings_page)
+    
+    def create_home_page(self):
+        """Create the home page with logo and application information"""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(50, 50, 50, 50)
+        
+        # Logo
+        logo_label = QLabel()
+        logo_path = os.path.join(os.path.dirname(__file__), "Images", "QuantumQueue.png")
+        if os.path.exists(logo_path):
+            pixmap = QPixmap(logo_path)
+            # Scale the logo to a reasonable size (max 400px width while maintaining aspect ratio)
+            scaled_pixmap = pixmap.scaled(400, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            logo_label.setPixmap(scaled_pixmap)
+            logo_label.setAlignment(Qt.AlignCenter)
+            layout.addWidget(logo_label)
+        
+        # Add spacing
+        layout.addSpacing(30)
+        
+        # Application Name
+        app_name = QLabel("QuantumQueue")
+        app_name.setObjectName("appTitle")
+        app_name.setStyleSheet("""
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        """)
+        app_name.setAlignment(Qt.AlignCenter)
+        layout.addWidget(app_name)
+        
+        # Subtitle
+        subtitle = QLabel("CPU Scheduling and Page Replacement Algorithm Visualization")
+        subtitle.setObjectName("appSubtitle")
+        subtitle.setStyleSheet("""
+            font-size: 20px;
+            margin-bottom: 20px;
+        """)
+        subtitle.setAlignment(Qt.AlignCenter)
+        layout.addWidget(subtitle)
+        
+        # Add spacing
+        layout.addSpacing(20)
+        
+        # Description
+        description = QLabel(
+            "Includes customizable settings, such as different themes in the settings.\n"
+            "Tutorials for all algorithms are in the help section! \n\n"
+            "The tutorials includes all the steps needed to complete the algorithms.\n"
+            "No more having to rely on confusing videos or tutors!"
+        )
+        description.setObjectName("appDescription")
+        description.setStyleSheet("""
+            font-size: 16px;
+            line-height: 1.6;
+        """)
+        description.setAlignment(Qt.AlignCenter)
+        description.setWordWrap(True)
+        layout.addWidget(description)
+        
+        # Add spacing
+        layout.addSpacing(30)
+        
+        # Creator info
+        creator_info = QLabel("Created by Dian Brown")
+        creator_info.setObjectName("appAuthor")
+        creator_info.setStyleSheet("""
+            font-size: 14px;
+            font-style: italic;
+        """)
+        creator_info.setAlignment(Qt.AlignCenter)
+        layout.addWidget(creator_info)
+        
+        # Add stretch to push everything to center
+        layout.addStretch()
+        
+        return page
     
     def create_placeholder_page(self, title, subtitle):
         """Create a placeholder page with title and subtitle"""
@@ -747,7 +827,7 @@ class ModernMainWindow(QMainWindow):
         
         # Fallback to default theme if theme not found
         if not theme:
-            theme_name = "Dark Theme (Default)"
+            theme_name = "Dracula"
             theme = self.theme_manager.get_theme_colors(theme_name)
             
         # If still no theme found, use hardcoded fallback
@@ -1082,6 +1162,28 @@ class ModernMainWindow(QMainWindow):
                 }}
             """)
         
+        # Apply Home page theme
+        self.home_page.setStyleSheet(f"""
+            QWidget {{
+                background-color: {theme['main_bg']};
+            }}
+            QLabel {{
+                background-color: transparent;
+            }}
+            QLabel#appTitle {{
+                color: {theme.get('home_title', theme['button_bg'])};
+            }}
+            QLabel#appSubtitle {{
+                color: {theme.get('home_subtitle', theme['text_secondary'])};
+            }}
+            QLabel#appDescription {{
+                color: {theme.get('home_description', theme['text_secondary'])};
+            }}
+            QLabel#appAuthor {{
+                color: {theme.get('home_author', theme['sidebar_accent'])};
+            }}
+        """)
+        
         # Update content stack
         self.content_stack.setStyleSheet(f"""
             QStackedWidget {{
@@ -1095,6 +1197,14 @@ class ModernMainWindow(QMainWindow):
         
         # Save the theme setting
         self.settings.setValue("theme", theme_name)
+        
+        # Update the settings page combo box to reflect the current theme
+        index = self.settings_page.theme_combo.findText(theme_name)
+        if index >= 0:
+            # Block signals to prevent triggering theme_changed signal
+            self.settings_page.theme_combo.blockSignals(True)
+            self.settings_page.theme_combo.setCurrentIndex(index)
+            self.settings_page.theme_combo.blockSignals(False)
     
     def mousePressEvent(self, event):
         """Handle mouse press for window resizing"""
@@ -1212,7 +1322,7 @@ def main():
     """Main application entry point"""
     app = QApplication(sys.argv)
     app.setApplicationName("CPU Scheduling & PRA Practice")
-    app.setOrganizationName("Your Name")
+    app.setOrganizationName("Dian Brown")
     app.setApplicationVersion("2.0")
     
     # Set application style
