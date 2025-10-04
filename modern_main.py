@@ -52,7 +52,7 @@ class CustomTitleBar(QFrame):
         self.logo_label.setFixedSize(32, 26)
         self.logo_label.setScaledContents(True)
         # Try to load logo from icons folder
-        logo_pixmap = QPixmap("Images/QuantumQueue.png")
+        logo_pixmap = QPixmap("Assets/Images/QuantumQueue.png")
         if not logo_pixmap.isNull():
             self.logo_label.setPixmap(logo_pixmap)
         left_layout.addWidget(self.logo_label)
@@ -76,7 +76,7 @@ class CustomTitleBar(QFrame):
         # Right side - Window control buttons
         # Minimize button
         self.minimize_btn = QPushButton()
-        self.minimize_btn.setIcon(QIcon("icons/minimize.png"))
+        self.minimize_btn.setIcon(QIcon("Assets/icons/minimize.png"))
         self.minimize_btn.setIconSize(QSize(16, 16))
         self.minimize_btn.setFixedSize(40, 40)
         self.minimize_btn.clicked.connect(self.minimize_window)
@@ -84,7 +84,7 @@ class CustomTitleBar(QFrame):
         
         # Maximize/Restore button
         self.maximize_btn = QPushButton()
-        self.maximize_btn.setIcon(QIcon("icons/maximize.png"))
+        self.maximize_btn.setIcon(QIcon("Assets/icons/maximize.png"))
         self.maximize_btn.setIconSize(QSize(16, 16))
         self.maximize_btn.setFixedSize(40, 40)
         self.maximize_btn.clicked.connect(self.maximize_restore_window)
@@ -92,7 +92,7 @@ class CustomTitleBar(QFrame):
         
         # Close button
         self.close_btn = QPushButton()
-        self.close_btn.setIcon(QIcon("icons/exit.png"))
+        self.close_btn.setIcon(QIcon("Assets/icons/exit.png"))
         self.close_btn.setIconSize(QSize(16, 16))
         self.close_btn.setFixedSize(40, 40)
         self.close_btn.clicked.connect(self.close_window)
@@ -227,12 +227,12 @@ class CustomTitleBar(QFrame):
         if self.is_maximized:
             # Currently maximized, so restore to normal
             self.parent.showNormal()
-            self.maximize_btn.setIcon(QIcon("icons/maximize.png"))
+            self.maximize_btn.setIcon(QIcon("Assets/icons/maximize.png"))
             self.is_maximized = False
         else:
             # Currently normal, so maximize
             self.parent.showMaximized()
-            self.maximize_btn.setIcon(QIcon("icons/undock.png"))
+            self.maximize_btn.setIcon(QIcon("Assets/icons/undock.png"))
             self.is_maximized = True
     
     def close_window(self):
@@ -311,7 +311,7 @@ class CollapsibleSidebar(QFrame):
         # Hamburger menu button
         self.menu_btn = QPushButton()
         self.menu_btn.setFixedSize(40, 40)
-        self.menu_btn.setIcon(QIcon("icons/hamburger.png"))
+        self.menu_btn.setIcon(QIcon("Assets/icons/menu.png"))
         self.menu_btn.setIconSize(QSize(24, 24))
         self.menu_btn.setCursor(Qt.PointingHandCursor)
         self.menu_btn.setStyleSheet("""
@@ -338,34 +338,34 @@ class CollapsibleSidebar(QFrame):
         menu_layout.setSpacing(5)
         
         # Home button
-        self.home_btn = SidebarButton("Home", "icons/home.png")
+        self.home_btn = SidebarButton("Home", "Assets/icons/home.png")
         self.home_btn.setText("  Home" if self.is_expanded else "")
-        self.home_btn.setIcon(QIcon("icons/home.png"))
+        self.home_btn.setIcon(QIcon("Assets/icons/home.png"))
         self.home_btn.setIconSize(QSize(20, 20))
         self.home_btn.clicked.connect(lambda: self.menu_changed.emit(0))
         self.home_btn.setChecked(True)  # Default selection
         menu_layout.addWidget(self.home_btn)
         
         # CPU Scheduling button
-        self.cpu_btn = SidebarButton("CPU Scheduling", "icons/cpu.png")
+        self.cpu_btn = SidebarButton("CPU Scheduling", "Assets/icons/cpu.png")
         self.cpu_btn.setText("  CPU Scheduling" if self.is_expanded else "")
-        self.cpu_btn.setIcon(QIcon("icons/cpu.png"))
+        self.cpu_btn.setIcon(QIcon("Assets/icons/cpu.png"))
         self.cpu_btn.setIconSize(QSize(20, 20))
         self.cpu_btn.clicked.connect(lambda: self.menu_changed.emit(1))
         menu_layout.addWidget(self.cpu_btn)
         
         # PRA button
-        self.pra_btn = SidebarButton("Page Replacement", "icons/cil-description.png")
+        self.pra_btn = SidebarButton("Page Replacement", "Assets/icons/PRA.png")
         self.pra_btn.setText("  Page Replacement" if self.is_expanded else "")
-        self.pra_btn.setIcon(QIcon("icons/cil-description.png"))
+        self.pra_btn.setIcon(QIcon("Assets/icons/PRA.png"))
         self.pra_btn.setIconSize(QSize(20, 20))
         self.pra_btn.clicked.connect(lambda: self.menu_changed.emit(2))
         menu_layout.addWidget(self.pra_btn)
         
         # Help button
-        self.help_btn = SidebarButton("Help", "icons/help.png")
+        self.help_btn = SidebarButton("Help", "Assets/icons/help.png")
         self.help_btn.setText("  Help" if self.is_expanded else "")
-        self.help_btn.setIcon(QIcon("icons/help.png"))
+        self.help_btn.setIcon(QIcon("Assets/icons/help.png"))
         self.help_btn.setIconSize(QSize(20, 20))
         self.help_btn.clicked.connect(lambda: self.menu_changed.emit(3))
         menu_layout.addWidget(self.help_btn)
@@ -374,9 +374,9 @@ class CollapsibleSidebar(QFrame):
         menu_layout.addStretch()
         
         # Settings button (at bottom)
-        self.settings_btn = SidebarButton("Settings", "icons/icon_settings.png")
+        self.settings_btn = SidebarButton("Settings", "Assets/icons/settings.png")
         self.settings_btn.setText("  Settings" if self.is_expanded else "")
-        self.settings_btn.setIcon(QIcon("icons/icon_settings.png"))
+        self.settings_btn.setIcon(QIcon("Assets/icons/settings.png"))
         self.settings_btn.setIconSize(QSize(20, 20))
         self.settings_btn.clicked.connect(lambda: self.menu_changed.emit(4))
         menu_layout.addWidget(self.settings_btn)

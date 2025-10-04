@@ -234,7 +234,31 @@ class CPUSchedulingApp(QMainWindow):
 
     def set_scheduling_block_color(self, color):
         """Set the color for scheduling blocks in the timeline grid."""
+        old_color = self.scheduling_block_color
         self.scheduling_block_color = QColor(color)
+        # Refresh all existing colored blocks with the new color
+        self.refresh_colored_blocks(old_color)
+
+    def refresh_colored_blocks(self, old_color):
+        """Refresh all colored blocks in the timeline grid with the new color."""
+        if not self.timeline_grid:
+            return
+            
+        # Iterate through all cells in the timeline grid
+        for row in range(self.timeline_grid.rowCount()):
+            for col in range(1, self.timeline_grid.columnCount()):  # Skip process ID column
+                item = self.timeline_grid.item(row, col)
+                if item:
+                    # Check if this cell was colored with the old scheduling color
+                    # We check both the old color and common scheduling block indicators
+                    item_color = item.background().color()
+                    item_text = item.text()
+                    
+                    # If the cell has the old scheduling color or contains a dash (scheduling block marker)
+                    # and is not white, update it to the new color
+                    if (item_color.name().lower() == old_color.name().lower() or 
+                        (item_text in ["-", "-\nRS"] and item_color != Qt.white)):
+                        item.setBackground(self.scheduling_block_color)
 
     def add_sample_processes(self):
         """Add sample processes for demonstration."""
@@ -701,10 +725,17 @@ class CPUSchedulingApp(QMainWindow):
             assigned_process = None
             for row in range(self.timeline_grid.rowCount()):
                 item = self.timeline_grid.item(row, time_col)
-                if item and item.background().color().name() == "#ffff00":
-                    process_id = self.timeline_grid.item(row, 0).text()
-                    assigned_process = process_id
-                    break
+                if item:
+                    # Check if cell is colored (not white) - compare with current scheduling block color
+                    item_color = item.background().color()
+                    # A cell is considered scheduled if it's not white and has text content
+                    is_white = item_color == Qt.white or item_color.name().lower() == "#ffffff"
+                    has_content = item.text() and item.text().strip() and item.text() != "RS"
+                    
+                    if not is_white and has_content:
+                        process_id = self.timeline_grid.item(row, 0).text()
+                        assigned_process = process_id
+                        break
             schedule.append(assigned_process)
         
         return schedule

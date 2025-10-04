@@ -206,7 +206,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # Project specific
-*.png
 *.jpg
 *.jpeg
 *.gif
