@@ -52,7 +52,7 @@ class CustomTitleBar(QFrame):
         self.logo_label.setFixedSize(32, 26)
         self.logo_label.setScaledContents(True)
         # Try to load logo from icons folder
-        logo_pixmap = QPixmap("Assets/Images/QuantumQueue.png")
+        logo_pixmap = QPixmap("Assets/Icons/QuantumQueue.png")
         if not logo_pixmap.isNull():
             self.logo_label.setPixmap(logo_pixmap)
         left_layout.addWidget(self.logo_label)
@@ -717,7 +717,7 @@ class ModernMainWindow(QMainWindow):
         
         # Logo
         logo_label = QLabel()
-        logo_path = os.path.join(os.path.dirname(__file__), "Images", "QuantumQueue.png")
+        logo_path = os.path.join(os.path.dirname(__file__), "Assets/Icons", "QuantumQueue.png")
         if os.path.exists(logo_path):
             pixmap = QPixmap(logo_path)
             # Scale the logo to a reasonable size (max 400px width while maintaining aspect ratio)
