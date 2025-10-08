@@ -474,7 +474,7 @@ class ModernMainWindow(QMainWindow):
                 border: none;
                 padding: 8px 12px;
                 border-radius: 4px;
-                color: {theme['text_primary']};
+                color: {theme.get('button_text', theme['text_primary'])};
                 font-weight: bold;
                 font-size: 12px;
                 min-width: 70px;
@@ -546,7 +546,7 @@ class ModernMainWindow(QMainWindow):
                 border: none;
                 padding: 8px 12px;
                 border-radius: 4px;
-                color: {theme['text_primary']};
+                color: {theme.get('button_text', theme['text_primary'])};
                 font-weight: bold;
                 font-size: 12px;
                 min-width: 70px;

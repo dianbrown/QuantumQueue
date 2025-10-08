@@ -16,6 +16,7 @@ class HelpPage(QWidget):
         super().__init__()
         self.current_theme = {}
         self.example_pages = {}  # Store example pages by algorithm name
+        self.example_page_widgets = {}  # Store actual QWidget references for theme updates
         self.setup_ui()
         
     def setup_ui(self):
@@ -259,7 +260,7 @@ class HelpPage(QWidget):
                 border: none;
                 padding: 20px 40px;
                 border-radius: 8px;
-                color: {theme['text_primary']};
+                color: {theme.get('button_text', theme['text_primary'])};
                 font-size: 18px;
                 font-weight: bold;
                 text-align: left;
@@ -274,7 +275,7 @@ class HelpPage(QWidget):
                 border: none;
                 padding: 20px 40px;
                 border-radius: 8px;
-                color: {theme['text_primary']};
+                color: {theme.get('button_text', theme['text_primary'])};
                 font-size: 18px;
                 font-weight: bold;
                 text-align: left;
@@ -340,7 +341,7 @@ class HelpPage(QWidget):
                 border: none;
                 padding: 10px 20px;
                 border-radius: 5px;
-                color: {theme['text_primary']};
+                color: {theme.get('button_text', theme['text_primary'])};
                 font-size: 14px;
                 font-weight: bold;
                 margin-top: 10px;
@@ -372,6 +373,10 @@ class HelpPage(QWidget):
                 line-height: 1.5;
             }}
         """)
+        
+        # Apply theme to all already-created example pages
+        for page_key, example_page_widget in self.example_page_widgets.items():
+            example_page_widget.setStyleSheet(self.styleSheet())
     
     def show_example_page(self, algo_name, category):
         """Show the example page for a specific algorithm"""
@@ -381,6 +386,7 @@ class HelpPage(QWidget):
         if page_key not in self.example_pages:
             example_page = self.create_example_page(algo_name, category)
             self.example_pages[page_key] = self.stack.count()
+            self.example_page_widgets[page_key] = example_page  # Store widget reference
             self.stack.addWidget(example_page)
         
         # Navigate to the example page
@@ -437,10 +443,6 @@ class HelpPage(QWidget):
         content_layout.addStretch()
         scroll_area.setWidget(content_widget)
         layout.addWidget(scroll_area)
-        
-        # Apply current theme if available
-        if self.current_theme:
-            page.setStyleSheet(self.styleSheet())
         
         return page
     
