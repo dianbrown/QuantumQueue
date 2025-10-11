@@ -214,7 +214,7 @@ class CPUSchedulingApp(QMainWindow):
         # Set column widths
         self.timeline_grid.setColumnWidth(0, 80)
         for i in range(1, 33):
-            self.timeline_grid.setColumnWidth(i, 30)
+            self.timeline_grid.setColumnWidth(i, 35)  # Increased from 30 to 35 to fit "RS" text
         
         # Connect cell events
         self.timeline_grid.cellClicked.connect(self.on_cell_clicked)

@@ -54,7 +54,13 @@ class ModernMainWindow(QMainWindow):
         # Apply saved theme or default
         saved_theme = self.settings.value("theme", "Dracula")
         self.apply_theme(saved_theme)
-        
+    
+    def showEvent(self, event):
+        """Handle show event to ensure sidebar is on top"""
+        super().showEvent(event)
+        if hasattr(self, 'sidebar'):
+            self.sidebar.raise_()
+    
     def setup_ui(self):
         """Setup the main UI"""
         # Central widget
@@ -76,8 +82,10 @@ class ModernMainWindow(QMainWindow):
         content_layout.setSpacing(0)
         
         # Sidebar
-        self.sidebar = CollapsibleSidebar()
+        self.sidebar = CollapsibleSidebar(self)  # Pass self as parent
         self.sidebar.menu_changed.connect(self.change_page)
+        # Move sidebar to be on top of everything
+        self.sidebar.raise_()
         content_layout.addWidget(self.sidebar)
         
         # Content area
@@ -275,6 +283,8 @@ class ModernMainWindow(QMainWindow):
         """Change the active page"""
         self.content_stack.setCurrentIndex(index)
         self.sidebar.set_active_button(index)
+        # Ensure sidebar stays on top after page change
+        self.sidebar.raise_()
         
     def apply_theme(self, theme_name):
         """Apply the selected theme to the application"""

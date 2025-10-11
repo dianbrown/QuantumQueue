@@ -15,16 +15,28 @@ class CollapsibleSidebar(QFrame):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedWidth(60)  # Collapsed width
+        # Don't use setFixedWidth - use setMaximumWidth and setMinimumWidth instead
         self.expanded_width = 200
         self.collapsed_width = 60
         self.is_expanded = False
+        
+        # Set initial width constraints (not fixed)
+        self.setMinimumWidth(self.collapsed_width)
+        self.setMaximumWidth(self.collapsed_width)
+        
+        # Ensure the sidebar can receive mouse events
+        self.setAttribute(Qt.WA_NoMousePropagation, False)
+        self.setMouseTracking(True)
+        self.setFocusPolicy(Qt.StrongFocus)
         
         self.setup_ui()
         self.setup_animation()
         
     def setup_ui(self):
         """Setup the sidebar UI"""
+        # Ensure sidebar stays on top
+        self.raise_()
+        
         self.setStyleSheet("""
             QFrame {
                 background-color: #2c2f33;
@@ -52,6 +64,7 @@ class CollapsibleSidebar(QFrame):
         self.menu_btn.setIcon(QIcon("Assets/icons/menu.png"))
         self.menu_btn.setIconSize(QSize(24, 24))
         self.menu_btn.setCursor(Qt.PointingHandCursor)
+        self.menu_btn.setFocusPolicy(Qt.StrongFocus)
         self.menu_btn.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
@@ -62,7 +75,7 @@ class CollapsibleSidebar(QFrame):
                 border-radius: 5px;
             }
         """)
-        self.menu_btn.clicked.connect(self.toggle_sidebar)
+        self.menu_btn.clicked.connect(self.on_menu_clicked)
         
         header_layout.addWidget(self.menu_btn)
         header_layout.addStretch()
@@ -126,12 +139,22 @@ class CollapsibleSidebar(QFrame):
         
     def setup_animation(self):
         """Setup the sidebar animation"""
-        self.animation = QPropertyAnimation(self, b"maximumWidth")
+        self.animation = QPropertyAnimation(self, b"minimumWidth")
         self.animation.setDuration(300)
         self.animation.setEasingCurve(QEasingCurve.Type.InOutQuart)
         
+        self.animation2 = QPropertyAnimation(self, b"maximumWidth")
+        self.animation2.setDuration(300)
+        self.animation2.setEasingCurve(QEasingCurve.Type.InOutQuart)
+    
+    def on_menu_clicked(self):
+        """Handle menu button click - ensure sidebar is clickable"""
+        self.raise_()
+        self.toggle_sidebar()
+    
     def toggle_sidebar(self):
         """Toggle sidebar expanded/collapsed state"""
+        self.raise_()  # Ensure sidebar is on top when toggling
         if self.is_expanded:
             self.collapse_sidebar()
         else:
@@ -140,9 +163,15 @@ class CollapsibleSidebar(QFrame):
     def expand_sidebar(self):
         """Expand the sidebar"""
         self.is_expanded = True
+        
+        # Animate both minimum and maximum width
         self.animation.setStartValue(self.collapsed_width)
         self.animation.setEndValue(self.expanded_width)
         self.animation.start()
+        
+        self.animation2.setStartValue(self.collapsed_width)
+        self.animation2.setEndValue(self.expanded_width)
+        self.animation2.start()
         
         # Update button texts to show text with icons
         self.home_btn.setText("  Home")
@@ -154,9 +183,15 @@ class CollapsibleSidebar(QFrame):
     def collapse_sidebar(self):
         """Collapse the sidebar"""
         self.is_expanded = False
+        
+        # Animate both minimum and maximum width
         self.animation.setStartValue(self.expanded_width)
         self.animation.setEndValue(self.collapsed_width)
         self.animation.start()
+        
+        self.animation2.setStartValue(self.expanded_width)
+        self.animation2.setEndValue(self.collapsed_width)
+        self.animation2.start()
         
         # Update button texts to show icons only
         self.home_btn.setText("")
