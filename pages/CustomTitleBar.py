@@ -38,7 +38,7 @@ class CustomTitleBar(QFrame):
         self.logo_label.setFixedSize(32, 26)
         self.logo_label.setScaledContents(True)
         # Try to load logo from icons folder
-        logo_pixmap = QPixmap("Assets/Icons/QuantumQueue.png")
+        logo_pixmap = QPixmap("Assets/Icons/QuantumQueue2.png")
         if not logo_pixmap.isNull():
             self.logo_label.setPixmap(logo_pixmap)
         left_layout.addWidget(self.logo_label)
