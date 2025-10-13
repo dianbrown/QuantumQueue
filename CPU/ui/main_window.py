@@ -66,6 +66,13 @@ class CPUSchedulingApp(QMainWindow):
         # Algorithm dropdown
         self.algorithm_combo = QComboBox()
         self.algorithm_combo.addItems(list(self.schedulers.keys()))
+        self.algorithm_combo.setMinimumWidth(300)
+        self.algorithm_combo.setStyleSheet("""
+            QComboBox {
+                font-size: 13px;
+                padding: 6px;
+            }
+        """)
         self.algorithm_combo.currentTextChanged.connect(self.on_algorithm_changed)
         controls_layout.addWidget(QLabel("Algorithm:"))
         controls_layout.addWidget(self.algorithm_combo)
@@ -83,24 +90,6 @@ class CPUSchedulingApp(QMainWindow):
         # Initially hide quantum controls
         self.quantum_label.setVisible(False)
         self.quantum_spinbox.setVisible(False)
-        
-        # Add more spacing to center the algorithm name above the grid
-        controls_layout.addSpacing(200)
-        
-        # Algorithm name display
-        self.algorithm_name_label = QLabel("Current Algorithm: FCFS")
-        self.algorithm_name_label.setStyleSheet("""
-            QLabel {
-                font-family: Arial;
-                font-size: 14px;
-                font-weight: bold;
-                color: white;
-                background: transparent;
-                border: none;
-                padding: 8px;
-            }
-        """)
-        controls_layout.addWidget(self.algorithm_name_label)
         
         controls_layout.addStretch()
         main_layout.addLayout(controls_layout)
@@ -485,10 +474,6 @@ class CPUSchedulingApp(QMainWindow):
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
         algorithm = self.algorithm_combo.currentText()
-        
-        # Update algorithm name label
-        if self.algorithm_name_label:
-            self.algorithm_name_label.setText(f"Current Algorithm: {algorithm}")
         
         # Show/hide quantum controls for Round Robin algorithms
         is_round_robin = "Round Robin" in algorithm

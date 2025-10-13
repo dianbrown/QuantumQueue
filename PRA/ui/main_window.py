@@ -368,6 +368,13 @@ class PRAMainWindow(QWidget):
         # Algorithm selection
         self.algorithm_combo = QComboBox()
         self.algorithm_combo.addItems(list(self.algorithms.keys()))
+        self.algorithm_combo.setMinimumWidth(250)
+        self.algorithm_combo.setStyleSheet("""
+            QComboBox {
+                font-size: 13px;
+                padding: 6px;
+            }
+        """)
         self.algorithm_combo.currentTextChanged.connect(self.on_algorithm_changed)
         controls_layout.addWidget(QLabel("Algorithm:"))
         controls_layout.addWidget(self.algorithm_combo)
@@ -378,21 +385,6 @@ class PRAMainWindow(QWidget):
         self.page_input.textChanged.connect(self.on_page_sequence_changed)
         controls_layout.addWidget(QLabel("Pages:"))
         controls_layout.addWidget(self.page_input)
-        
-        # Algorithm name display
-        self.algorithm_name_label = QLabel("Current Algorithm: FIFO")
-        self.algorithm_name_label.setStyleSheet("""
-            QLabel {
-                font-family: Arial;
-                font-size: 14px;
-                font-weight: bold;
-                color: white;
-                background: transparent;
-                border: none;
-                padding: 8px;
-            }
-        """)
-        controls_layout.addWidget(self.algorithm_name_label)
         
         controls_layout.addStretch()
         main_layout.addLayout(controls_layout)
@@ -643,8 +635,6 @@ class PRAMainWindow(QWidget):
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
         algorithm = self.algorithm_combo.currentText()
-        if self.algorithm_name_label:
-            self.algorithm_name_label.setText(f"Current Algorithm: {algorithm}")
         
         # Update the algorithm name in the solution table if it exists
         if self.solution_table and self.solution_table.rowCount() > len(self.frames):

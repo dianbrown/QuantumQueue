@@ -199,7 +199,8 @@ class HelpPage(QWidget):
             ("First In First Out (FIFO)", self.get_fifo_tutorial()),
             ("Least Recently Used (LRU)", self.get_lru_tutorial()),
             ("Optimal Page Replacement", self.get_optimal_tutorial()),
-            ("Second Chance (Clock)", self.get_second_chance_tutorial()),
+            ("Second Chance", self.get_second_chance_tutorial()),
+            ("Clock", self.get_clock_tutorial()),
         ]
         
         self.pra_sections = []
@@ -522,30 +523,62 @@ class HelpPage(QWidget):
             table.horizontalHeader().setStretchLastSection(False)
             
         elif category == "PRA":
-            # Page replacement visualization
-            num_frames = 3
-            num_references = 10
+            # Page replacement visualization based on sample data from PRA window
+            # Sample data: Frames with IDs 3,2,1,0 with load times 7,6,21,12 containing pages 2,4,8,5
+            # Page sequence: 9,7,8,3,5,7,7,9,6,3,3,7,9,7,4,6,7,8,3,2,5,4,7,6,4,2,3,4,3,2,7,7
+            num_frames = 4
+            num_page_references = 32
             
-            table.setRowCount(num_frames + 1)
-            table.setColumnCount(num_references)
+            # Set up table: 4 frame rows only (no header rows)
+            table.setRowCount(num_frames)
+            table.setColumnCount(num_page_references + 2)  # Frame ID + Page in Memory + page references
             
-            table.setVerticalHeaderLabels(["Ref"] + [f"Frame {i+1}" for i in range(num_frames)])
+            # Hide vertical header (we'll use cells for labels)
+            table.verticalHeader().setVisible(False)
             
-            # Fill with empty cells
-            for row in range(num_frames + 1):
-                for col in range(num_references):
-                    cell_item = QTableWidgetItem("")
-                    cell_item.setTextAlignment(Qt.AlignCenter)
-                    cell_item.setFlags(cell_item.flags() & ~Qt.ItemIsEditable)
-                    table.setItem(row, col, cell_item)
+            # Set horizontal headers - page sequence
+            page_sequence = ["9","7","8","3","5","7","7","9","6","3","3","7","9","7","4","6","7","8","3","2","5","4","7","6","4","2","3","4","3","2","7","7"]
+            h_headers = ["Frame ID", "Page in Memory"] + page_sequence
+            table.setHorizontalHeaderLabels(h_headers)
             
-            for col in range(num_references):
-                table.setColumnWidth(col, 50)
+            # Frame data (from PRA sample)
+            frame_ids = ["3", "2", "1", "0"]
+            initial_pages = ["2", "4", "8", "5"]
             
-            table.setMinimumHeight(200)
-            table.setMaximumHeight(250)
+            # Fill frame rows
+            for frame_idx in range(num_frames):
+                # Column 0: Frame ID
+                item = QTableWidgetItem(frame_ids[frame_idx])
+                item.setTextAlignment(Qt.AlignCenter)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                item.setBackground(QColor("#3a3f4b"))
+                table.setItem(frame_idx, 0, item)
+                
+                # Column 1: Initial page in memory
+                item = QTableWidgetItem(initial_pages[frame_idx])
+                item.setTextAlignment(Qt.AlignCenter)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                item.setBackground(QColor("#2a2a2a"))
+                table.setItem(frame_idx, 1, item)
+                
+                # Remaining columns: Page reference results (initially empty/gray)
+                for col in range(2, num_page_references + 2):
+                    item = QTableWidgetItem("")
+                    item.setTextAlignment(Qt.AlignCenter)
+                    item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                    item.setBackground(QColor("#2a2a2a"))
+                    table.setItem(frame_idx, col, item)
+            
+            # Set column widths
+            table.setColumnWidth(0, 80)  # Frame ID
+            table.setColumnWidth(1, 120)  # Page in Memory
+            for col in range(2, num_page_references + 2):
+                table.setColumnWidth(col, 40)  # Page reference columns
+            
+            # Set table properties
+            table.setFixedHeight(180)
             table.setShowGrid(True)
-            table.horizontalHeader().setVisible(False)
+            table.horizontalHeader().setStretchLastSection(False)
     
     def get_timeline_length(self, algo_name, category):
         """Get the number of time units for the timeline"""
@@ -599,6 +632,11 @@ class HelpPage(QWidget):
                 if step_index < len(page.example_steps):
                     step_title, step_text = page.example_steps[step_index]
                     page.step_explanation.setText(f"<b>{step_title}</b><br><br>{step_text}")
+            elif page.category == "PRA":
+                # For PRA, use direct mapping
+                if step_num - 1 < len(page.example_steps):
+                    step_title, step_text = page.example_steps[step_num - 1]
+                    page.step_explanation.setText(f"<b>{step_title}</b><br><br>{step_text}")
             else:
                 # For other algorithms, use the default mapping
                 step_title, step_text = page.example_steps[step_num - 1]
@@ -618,8 +656,9 @@ class HelpPage(QWidget):
                         item.setText("")
                         item.setBackground(QColor("#2a2a2a"))
         elif category == "PRA":
-            for row in range(table.rowCount()):
-                for col in range(table.columnCount()):
+            # Clear only the page reference columns (column 2 onwards) for all frame rows
+            for row in range(table.rowCount()):  # All 4 frame rows
+                for col in range(2, table.columnCount()):  # Page reference columns (skip Frame ID and Page in Memory)
                     item = table.item(row, col)
                     if item:
                         item.setText("")
@@ -634,7 +673,11 @@ class HelpPage(QWidget):
         category = page.category
         table = page.gantt_table
         
-        if category != "CPU":
+        if category == "PRA":
+            # Handle PRA visualization
+            self.update_pra_table(table, algo_name, step_num)
+            return
+        elif category != "CPU":
             return
         
         # Process data (same for all CPU algorithms)
@@ -1039,6 +1082,305 @@ class HelpPage(QWidget):
         
         return None, execution_segments
     
+    def update_pra_table(self, table, algo_name, step_num):
+        """Update the PRA table visualization for the current step"""
+        # Page sequence from sample data
+        page_sequence = ["9","7","8","3","5","7","7","9","6","3","3","7","9","7","4","6","7","8","3","2","5","4","7","6","4","2","3","4","3","2","7","7"]
+        
+        # Initial frame state: F3=2, F2=4, F1=8, F0=5
+        # Frames are in rows 0-3, column 1 has initial state, columns 2+ have page references
+        
+        # Define hit/fault colors
+        hit_color = QColor("#4caf50")  # Green for hit
+        fault_color = QColor("#f44336")  # Red for fault
+        
+        # Clear table first (only page reference columns, not Frame ID or initial Page in Memory)
+        for row in range(table.rowCount()):
+            for col in range(2, table.columnCount()):
+                item = table.item(row, col)
+                if item:
+                    item.setText("")
+                    item.setBackground(QColor("#2a2a2a"))
+        
+        # FIFO simulation using sample data
+        if "First In First Out" in algo_name:
+            # Initial state - these match the "Page in Memory" column
+            frames = ["2", "4", "8", "5"]  # F3, F2, F1, F0
+            # FIFO queue based on load times: F2(6) oldest, then F3(7), F0(12), F1(21) newest
+            # So FIFO order (oldest to newest) is: F2(1), F3(0), F0(3), F1(2) by array index
+            fifo_queue = [1, 0, 3, 2]  # Frame indices in FIFO order based on load time
+            
+            # Process each page reference up to the current step
+            for ref_idx in range(min(step_num, len(page_sequence))):
+                page = page_sequence[ref_idx]
+                col = ref_idx + 2  # Column index (offset by 2 for Frame ID and Page in Memory columns)
+                
+                # Check if page is in any frame (hit)
+                if page in frames:
+                    # Page hit - find which frame and color it green
+                    frame_idx = frames.index(page)
+                    item = table.item(frame_idx, col)
+                    if item:
+                        item.setText(page)
+                        item.setBackground(hit_color)
+                        item.setForeground(QColor("white"))
+                    
+                    # Fill other frames with their current pages (no color)
+                    for i, frame_page in enumerate(frames):
+                        if i != frame_idx:
+                            item = table.item(i, col)
+                            if item:
+                                item.setText(frame_page)
+                                item.setBackground(QColor("#2a2a2a"))
+                else:
+                    # Page fault - replace oldest frame (FIFO based on load time)
+                    victim_idx = fifo_queue.pop(0)  # Remove oldest
+                    frames[victim_idx] = page  # Replace with new page
+                    fifo_queue.append(victim_idx)  # Add to end as newest
+                    
+                    # Color the replaced frame red
+                    item = table.item(victim_idx, col)
+                    if item:
+                        item.setText(page)
+                        item.setBackground(fault_color)
+                        item.setForeground(QColor("white"))
+                    
+                    # Fill other frames with their current pages (no color)
+                    for i, frame_page in enumerate(frames):
+                        if i != victim_idx:
+                            item = table.item(i, col)
+                            if item:
+                                item.setText(frame_page)
+                                item.setBackground(QColor("#2a2a2a"))
+        
+        # LRU simulation using sample data
+        elif "Least Recently Used" in algo_name:
+            # Initial state
+            frames = ["2", "4", "8", "5"]  # F3, F2, F1, F0
+            # Track last access time for each page
+            # Initially based on load times: F2(6), F3(7), F0(12), F1(21)
+            last_access = {
+                "2": 7,   # F3 load time
+                "4": 6,   # F2 load time
+                "8": 21,  # F1 load time
+                "5": 12   # F0 load time
+            }
+            current_time = 22  # Start after initial load times
+            
+            # Process each page reference up to the current step
+            for ref_idx in range(min(step_num, len(page_sequence))):
+                page = page_sequence[ref_idx]
+                col = ref_idx + 2  # Column index
+                current_time += 1
+                
+                # Check if page is in any frame (hit)
+                if page in frames:
+                    # Page hit - find which frame and color it green
+                    frame_idx = frames.index(page)
+                    item = table.item(frame_idx, col)
+                    if item:
+                        item.setText(page)
+                        item.setBackground(hit_color)
+                        item.setForeground(QColor("white"))
+                    
+                    # Update last access time for this page
+                    last_access[page] = current_time
+                    
+                    # Fill other frames with their current pages (no color)
+                    for i, frame_page in enumerate(frames):
+                        if i != frame_idx:
+                            item = table.item(i, col)
+                            if item:
+                                item.setText(frame_page)
+                                item.setBackground(QColor("#2a2a2a"))
+                else:
+                    # Page fault - find LRU page
+                    # Find the page with the oldest access time
+                    lru_page = min(frames, key=lambda p: last_access.get(p, 0))
+                    victim_idx = frames.index(lru_page)
+                    
+                    # Remove old page from tracking
+                    if lru_page in last_access:
+                        del last_access[lru_page]
+                    
+                    # Replace with new page
+                    frames[victim_idx] = page
+                    last_access[page] = current_time
+                    
+                    # Color the replaced frame red
+                    item = table.item(victim_idx, col)
+                    if item:
+                        item.setText(page)
+                        item.setBackground(fault_color)
+                        item.setForeground(QColor("white"))
+                    
+                    # Fill other frames with their current pages (no color)
+                    for i, frame_page in enumerate(frames):
+                        if i != victim_idx:
+                            item = table.item(i, col)
+                            if item:
+                                item.setText(frame_page)
+                                item.setBackground(QColor("#2a2a2a"))
+        
+        # Optimal simulation using sample data
+        elif "Optimal" in algo_name:
+            # Initial state
+            frames = ["2", "4", "8", "5"]  # F3, F2, F1, F0
+            
+            # Process each page reference up to the current step
+            for ref_idx in range(min(step_num, len(page_sequence))):
+                page = page_sequence[ref_idx]
+                col = ref_idx + 2  # Column index
+                
+                # Check if page is in any frame (hit)
+                if page in frames:
+                    # Page hit - find which frame and color it green
+                    frame_idx = frames.index(page)
+                    item = table.item(frame_idx, col)
+                    if item:
+                        item.setText(page)
+                        item.setBackground(hit_color)
+                        item.setForeground(QColor("white"))
+                    
+                    # Fill other frames with their current pages (no color)
+                    for i, frame_page in enumerate(frames):
+                        if i != frame_idx:
+                            item = table.item(i, col)
+                            if item:
+                                item.setText(frame_page)
+                                item.setBackground(QColor("#2a2a2a"))
+                else:
+                    # Page fault - find optimal page to replace
+                    # Look ahead in future references to find which page won't be used for longest
+                    future_refs = page_sequence[ref_idx + 1:]
+                    
+                    # For each page in frames, find when it will be used next
+                    next_use = {}
+                    for frame_page in frames:
+                        try:
+                            # Find the next occurrence of this page
+                            next_idx = future_refs.index(frame_page)
+                            next_use[frame_page] = next_idx
+                        except ValueError:
+                            # Page won't be used again - perfect candidate for replacement
+                            next_use[frame_page] = float('inf')
+                    
+                    # Replace the page that will be used farthest in the future
+                    victim_page = max(frames, key=lambda p: next_use[p])
+                    victim_idx = frames.index(victim_page)
+                    
+                    # Replace with new page
+                    frames[victim_idx] = page
+                    
+                    # Color the replaced frame red
+                    item = table.item(victim_idx, col)
+                    if item:
+                        item.setText(page)
+                        item.setBackground(fault_color)
+                        item.setForeground(QColor("white"))
+                    
+                    # Fill other frames with their current pages (no color)
+                    for i, frame_page in enumerate(frames):
+                        if i != victim_idx:
+                            item = table.item(i, col)
+                            if item:
+                                item.setText(frame_page)
+                                item.setBackground(QColor("#2a2a2a"))
+        
+        # Second Chance (Clock) simulation using sample data
+        elif "Second Chance" in algo_name or "Clock" in algo_name:
+            # Initial state
+            frames = ["2", "4", "8", "5"]  # F3, F2, F1, F0
+            # R-bits (reference bits) for each frame - all start at 0
+            r_bits = [0, 0, 0, 0]  # F3, F2, F1, F0
+            # Clock hand (queue pointer) - starts at oldest based on load time
+            # Load times: F2(6) oldest, F3(7), F0(12), F1(21) newest
+            # Queue order by frame index: [1, 0, 3, 2] means F2, F3, F0, F1
+            clock_queue = [1, 0, 3, 2]  # Frame indices in clock order
+            clock_hand = 0  # Points to current position in clock_queue
+            
+            # Process each page reference up to the current step
+            for ref_idx in range(min(step_num, len(page_sequence))):
+                page = page_sequence[ref_idx]
+                col = ref_idx + 2  # Column index
+                
+                # Check if page is in any frame (hit)
+                if page in frames:
+                    # Page hit - find which frame and color it green
+                    frame_idx = frames.index(page)
+                    item = table.item(frame_idx, col)
+                    if item:
+                        item.setText(page)
+                        item.setBackground(hit_color)
+                        item.setForeground(QColor("white"))
+                    
+                    # Set R-bit to 1 for the accessed page (second chance)
+                    r_bits[frame_idx] = 1
+                    
+                    # Fill other frames with their current pages (no color)
+                    for i, frame_page in enumerate(frames):
+                        if i != frame_idx:
+                            item = table.item(i, col)
+                            if item:
+                                item.setText(frame_page)
+                                item.setBackground(QColor("#2a2a2a"))
+                else:
+                    # Page fault - use Second Chance algorithm
+                    victim_idx = None
+                    checks = 0
+                    max_checks = len(clock_queue) * 2  # Prevent infinite loop
+                    
+                    while victim_idx is None and checks < max_checks:
+                        # Get frame at current clock hand position
+                        candidate_idx = clock_queue[clock_hand]
+                        
+                        if r_bits[candidate_idx] == 0:
+                            # R-bit is 0, replace this page
+                            victim_idx = candidate_idx
+                        else:
+                            # R-bit is 1, give second chance (set to 0)
+                            r_bits[candidate_idx] = 0
+                            # Move clock hand forward
+                            clock_hand = (clock_hand + 1) % len(clock_queue)
+                        
+                        checks += 1
+                    
+                    # If we couldn't find a victim (all had R-bit=1), replace at current position
+                    if victim_idx is None:
+                        victim_idx = clock_queue[clock_hand]
+                    
+                    # Replace with new page
+                    frames[victim_idx] = page
+                    r_bits[victim_idx] = 1  # New page gets R-bit=1
+                    
+                    # Move clock hand to next position for next replacement
+                    clock_hand = (clock_hand + 1) % len(clock_queue)
+                    
+                    # Update queue order - move replaced frame to end
+                    clock_queue.remove(victim_idx)
+                    clock_queue.append(victim_idx)
+                    # Reset clock hand to start
+                    clock_hand = 0
+                    
+                    # Color the replaced frame red
+                    item = table.item(victim_idx, col)
+                    if item:
+                        item.setText(page)
+                        item.setBackground(fault_color)
+                        item.setForeground(QColor("white"))
+                    
+                    # Fill other frames with their current pages (no color)
+                    for i, frame_page in enumerate(frames):
+                        if i != victim_idx:
+                            item = table.item(i, col)
+                            if item:
+                                item.setText(frame_page)
+                                item.setBackground(QColor("#2a2a2a"))
+        
+        # Force table update
+        table.viewport().update()
+        table.repaint()
+    
     def get_example_steps(self, algo_name, category):
         """Get the step-by-step solution for an algorithm
         Returns a list of tuples: (step_title, step_content)
@@ -1185,9 +1527,19 @@ class HelpPage(QWidget):
         page.prev_btn = prev_btn
         page.next_btn = next_btn
         page.current_step = 0
-        # For FCFS, we have 4 processes, so 4 interactive steps (one per process execution)
+        # For FCFS CPU, we have 4 processes, so 4 interactive steps (one per process execution)
         if category == "CPU" and "First Come First Served" in algo_name:
             page.total_steps = 4  # D, C, A, B
+        elif category == "PRA" and "First In First Out" in algo_name:
+            page.total_steps = 10  # First 10 page references for FIFO example
+        elif category == "PRA" and "Least Recently Used" in algo_name:
+            page.total_steps = 10  # First 10 page references for LRU example
+        elif category == "PRA" and "Optimal" in algo_name:
+            page.total_steps = 10  # First 10 page references for Optimal example
+        elif category == "PRA" and "Second Chance" in algo_name:
+            page.total_steps = 10  # First 10 page references for Second Chance example
+        elif category == "PRA" and "Clock" in algo_name:
+            page.total_steps = 10  # First 10 page references for Clock example
         else:
             page.total_steps = len(example_steps)
         page.example_steps = example_steps
@@ -1409,19 +1761,549 @@ class HelpPage(QWidget):
         elif category == "PRA":
             if algo_name == "First In First Out (FIFO)":
                 return [
-                    ("Problem Statement", "Placeholder example for FIFO page replacement.<br><br>You can customize this with a detailed step-by-step solution."),
+                    ("Page 9 - Page Fault",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=2, F2=4, F1=8, F0=5<br>"
+                     "• Page 9 is NOT in memory → <b>Page Fault</b><br>"
+                     "• FIFO queue order (oldest→newest): F3, F2, F1, F0<br>"
+                     "• <b>Replace F3 (oldest, contains 2)</b><br>"
+                     "• New state: F3=9, F2=4, F1=8, F0=5"),
+                    
+                    ("Page 7 - Page Fault",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=9, F2=4, F1=8, F0=5<br>"
+                     "• Page 7 is NOT in memory → <b>Page Fault</b><br>"
+                     "• FIFO queue order: F2, F1, F0, F3<br>"
+                     "• <b>Replace F2 (oldest, contains 4)</b><br>"
+                     "• New state: F3=9, F2=7, F1=8, F0=5"),
+                    
+                    ("Page 8 - Page Hit",
+                     "• <b>Reference: 8</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=8, F0=5<br>"
+                     "• Page 8 IS in memory (F1) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• FIFO queue unchanged: F2, F1, F0, F3<br>"
+                     "• State remains: F3=9, F2=7, F1=8, F0=5"),
+                    
+                    ("Page 3 - Page Fault",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=8, F0=5<br>"
+                     "• Page 3 is NOT in memory → <b>Page Fault</b><br>"
+                     "• FIFO queue order: F1, F0, F3, F2<br>"
+                     "• <b>Replace F1 (oldest, contains 8)</b><br>"
+                     "• New state: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 5 - Page Hit",
+                     "• <b>Reference: 5</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 5 IS in memory (F0) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• FIFO queue unchanged: F0, F3, F2, F1<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 7 - Page Hit",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 7 IS in memory (F2) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 7 - Page Hit (Again)",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 7 IS in memory (F2) → <b>Page Hit!</b><br>"
+                     "• Consecutive reference to same page<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 9 - Page Hit",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 9 IS in memory (F3) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 6 - Page Fault",
+                     "• <b>Reference: 6</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 6 is NOT in memory → <b>Page Fault</b><br>"
+                     "• FIFO queue order: F0, F3, F2, F1<br>"
+                     "• <b>Replace F0 (oldest, contains 5)</b><br>"
+                     "• New state: F3=9, F2=7, F1=3, F0=6"),
+                    
+                    ("Page 3 - Page Hit",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=6<br>"
+                     "• Page 3 IS in memory (F1) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=6"),
+                    
+                    ("Continue Pattern...",
+                     "<b>FIFO Summary:</b><br>"
+                     "• Always replaces the <b>oldest page</b> in memory<br>"
+                     "• Maintains a queue based on load time<br>"
+                     "• Simple but can replace frequently-used pages<br><br>"
+                     "<b>So far (10 references):</b><br>"
+                     "• Page Hits: 6 (8, 5, 7, 7, 9, 3)<br>"
+                     "• Page Faults: 4 (9, 7, 3, 6)<br>"
+                     "• Hit Ratio: 60%<br><br>"
+                     "<b>Key Point:</b> FIFO doesn't consider how recently or frequently pages are used!"),
                 ]
             elif algo_name == "Least Recently Used (LRU)":
                 return [
-                    ("Problem Statement", "Placeholder example for LRU page replacement.<br><br>You can customize this with a detailed step-by-step solution."),
+                    ("Page 9 - Page Fault",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=2, F2=4, F1=8, F0=5<br>"
+                     "• Page 9 is NOT in memory → <b>Page Fault</b><br>"
+                     "• LRU tracking: F3(2) last used at load, F2(4) last used at load, F1(8) last used at load, F0(5) last used at load<br>"
+                     "• <b>Replace F2 (4) - Least Recently Used (loaded earliest at time 6)</b><br>"
+                     "• New state: F3=2, F2=9, F1=8, F0=5<br>"
+                     "• Page 9 now most recently used"),
+                    
+                    ("Page 7 - Page Fault",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=2, F2=9, F1=8, F0=5<br>"
+                     "• Page 7 is NOT in memory → <b>Page Fault</b><br>"
+                     "• LRU order: 2 (oldest), 8, 5, 9 (most recent)<br>"
+                     "• <b>Replace F3 (2) - Least Recently Used</b><br>"
+                     "• New state: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• Page 7 now most recently used"),
+                    
+                    ("Page 8 - Page Hit",
+                     "• <b>Reference: 8</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• Page 8 IS in memory (F1) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• LRU order updated: 9, 5, 7, 8 (most recent)<br>"
+                     "• State remains: F3=7, F2=9, F1=8, F0=5"),
+                    
+                    ("Page 3 - Page Fault",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• Page 3 is NOT in memory → <b>Page Fault</b><br>"
+                     "• LRU order: 9 (oldest), 5, 7, 8 (most recent)<br>"
+                     "• <b>Replace F2 (9) - Least Recently Used</b><br>"
+                     "• New state: F3=7, F2=3, F1=8, F0=5"),
+                    
+                    ("Page 5 - Page Hit",
+                     "• <b>Reference: 5</b><br>"
+                     "• Current frames: F3=7, F2=3, F1=8, F0=5<br>"
+                     "• Page 5 IS in memory (F0) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• LRU order updated: 7, 3, 8, 5 (most recent)<br>"
+                     "• State remains: F3=7, F2=3, F1=8, F0=5"),
+                    
+                    ("Page 7 - Page Hit",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=7, F2=3, F1=8, F0=5<br>"
+                     "• Page 7 IS in memory (F3) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• LRU order updated: 3, 8, 5, 7 (most recent)<br>"
+                     "• State remains: F3=7, F2=3, F1=8, F0=5"),
+                    
+                    ("Page 7 - Page Hit (Again)",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=7, F2=3, F1=8, F0=5<br>"
+                     "• Page 7 IS in memory (F3) → <b>Page Hit!</b><br>"
+                     "• Consecutive reference to same page<br>"
+                     "• LRU order: 3, 8, 5, 7 (still most recent)<br>"
+                     "• State remains: F3=7, F2=3, F1=8, F0=5"),
+                    
+                    ("Page 9 - Page Fault",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=7, F2=3, F1=8, F0=5<br>"
+                     "• Page 9 is NOT in memory → <b>Page Fault</b><br>"
+                     "• LRU order: 3 (oldest), 8, 5, 7 (most recent)<br>"
+                     "• <b>Replace F2 (3) - Least Recently Used</b><br>"
+                     "• New state: F3=7, F2=9, F1=8, F0=5"),
+                    
+                    ("Page 6 - Page Fault",
+                     "• <b>Reference: 6</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• Page 6 is NOT in memory → <b>Page Fault</b><br>"
+                     "• LRU order: 8 (oldest), 5, 7, 9 (most recent)<br>"
+                     "• <b>Replace F1 (8) - Least Recently Used</b><br>"
+                     "• New state: F3=7, F2=9, F1=6, F0=5"),
+                    
+                    ("Page 3 - Page Fault",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=6, F0=5<br>"
+                     "• Page 3 is NOT in memory → <b>Page Fault</b><br>"
+                     "• LRU order: 5 (oldest), 7, 9, 6 (most recent)<br>"
+                     "• <b>Replace F0 (5) - Least Recently Used</b><br>"
+                     "• New state: F3=7, F2=9, F1=6, F0=3"),
+                    
+                    ("LRU Summary",
+                     "<b>LRU Algorithm Summary:</b><br>"
+                     "• Replaces the page that hasn't been used for the <b>longest time</b><br>"
+                     "• Tracks access history for each page<br>"
+                     "• More intelligent than FIFO - considers usage patterns<br><br>"
+                     "<b>So far (10 references):</b><br>"
+                     "• Page Hits: 4 (8, 5, 7, 7)<br>"
+                     "• Page Faults: 6 (9, 7, 3, 9, 6, 3)<br>"
+                     "• Hit Ratio: 40%<br><br>"
+                     "<b>Key Point:</b> LRU performs differently than FIFO because it considers<br>"
+                     "which pages were accessed recently, not just when they were loaded!"),
                 ]
             elif algo_name == "Optimal Page Replacement":
                 return [
-                    ("Problem Statement", "Placeholder example for Optimal page replacement.<br><br>You can customize this with a detailed step-by-step solution."),
+                    ("Page 9 - Page Fault",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=2, F2=4, F1=8, F0=5<br>"
+                     "• Page 9 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Look ahead: 2 next used at position 20, 4 next used at position 14, 8 next used at position 2, 5 next used at position 4<br>"
+                     "• <b>Replace 2 (won't be used until position 20 - farthest in future)</b><br>"
+                     "• New state: F3=9, F2=4, F1=8, F0=5"),
+                    
+                    ("Page 7 - Page Fault",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=9, F2=4, F1=8, F0=5<br>"
+                     "• Page 7 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Look ahead: 9 next at position 7, 4 next at position 14, 8 next at position 2, 5 next at position 4<br>"
+                     "• <b>Replace 4 (won't be used until position 14 - farthest in future)</b><br>"
+                     "• New state: F3=9, F2=7, F1=8, F0=5"),
+                    
+                    ("Page 8 - Page Hit",
+                     "• <b>Reference: 8</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=8, F0=5<br>"
+                     "• Page 8 IS in memory (F1) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• Optimal algorithm predicted this would be needed soon<br>"
+                     "• State remains: F3=9, F2=7, F1=8, F0=5"),
+                    
+                    ("Page 3 - Page Fault",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=8, F0=5<br>"
+                     "• Page 3 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Look ahead: 9 next at position 7, 7 next at position 5, 8 next at position 17, 5 next at position 4<br>"
+                     "• <b>Replace 8 (won't be used until position 17 - farthest in future)</b><br>"
+                     "• New state: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 5 - Page Hit",
+                     "• <b>Reference: 5</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 5 IS in memory (F0) → <b>Page Hit!</b><br>"
+                     "• Optimal correctly kept 5 because it's needed now<br>"
+                     "• No replacement needed<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 7 - Page Hit",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 7 IS in memory (F2) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• Page 7 appears multiple times in near future<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 7 - Page Hit (Again)",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 7 IS in memory (F2) → <b>Page Hit!</b><br>"
+                     "• Consecutive reference - Optimal keeps frequently used pages<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 9 - Page Hit",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 9 IS in memory (F3) → <b>Page Hit!</b><br>"
+                     "• Optimal kept 9 because it saw this reference coming<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=5"),
+                    
+                    ("Page 6 - Page Fault",
+                     "• <b>Reference: 6</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=5<br>"
+                     "• Page 6 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Look ahead: 9 next at position 12, 7 next at position 11, 3 next at position 10, 5 next at position 20<br>"
+                     "• <b>Replace 5 (won't be used until position 20 - farthest in future)</b><br>"
+                     "• New state: F3=9, F2=7, F1=3, F0=6"),
+                    
+                    ("Page 3 - Page Hit",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=9, F2=7, F1=3, F0=6<br>"
+                     "• Page 3 IS in memory (F1) → <b>Page Hit!</b><br>"
+                     "• Optimal kept 3 knowing it would be referenced again soon<br>"
+                     "• State remains: F3=9, F2=7, F1=3, F0=6"),
+                    
+                    ("Optimal Algorithm Summary",
+                     "<b>Optimal (Clairvoyant) Algorithm:</b><br>"
+                     "• Replaces the page that <b>won't be used for the longest time</b><br>"
+                     "• Looks ahead at future references (impossible in real systems!)<br>"
+                     "• Provides the theoretical minimum page faults<br>"
+                     "• Used as a benchmark to compare other algorithms<br><br>"
+                     "<b>Results (10 references):</b><br>"
+                     "• Page Hits: 7 (8, 5, 7, 7, 9, 3) ← <b>Best possible!</b><br>"
+                     "• Page Faults: 3 (9, 7, 3, 6)<br>"
+                     "• Hit Ratio: 70%<br><br>"
+                     "<b>Compare to:</b><br>"
+                     "• FIFO: 60% hit ratio (4 faults)<br>"
+                     "• LRU: 40% hit ratio (6 faults)<br>"
+                     "• Optimal: 70% hit ratio (3 faults) ← <b>Best!</b><br><br>"
+                     "<b>Note:</b> Load time is irrelevant - only future references matter!"),
                 ]
-            elif algo_name == "Second Chance (Clock)":
+            elif algo_name == "Second Chance":
                 return [
-                    ("Problem Statement", "Placeholder example for Second Chance algorithm.<br><br>You can customize this with a detailed step-by-step solution."),
+                    ("Page 9 - Page Fault",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=2, F2=4, F1=8, F0=5<br>"
+                     "• Page 9 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Queue (oldest→newest): F2(4), F3(2), F0(5), F1(8) [based on load time]<br>"
+                     "• R-bits before: F3=0, F2=0, F1=0, F0=0<br>"
+                     "• Check F2(4): R-bit=0 → <b>Replace F2</b><br>"
+                     "• New state: F3=2, F2=9, F1=8, F0=5<br>"
+                     "• R-bits after: F3=0, F2=1, F1=0, F0=0<br>"
+                     "• Queue: F3(2), F0(5), F1(8), F2(9)"),
+                    
+                    ("Page 7 - Page Fault",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=2, F2=9, F1=8, F0=5<br>"
+                     "• Page 7 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Queue: F3(2), F0(5), F1(8), F2(9)<br>"
+                     "• R-bits before: F3=0, F2=1, F1=0, F0=0<br>"
+                     "• Check F3(2): R-bit=0 → <b>Replace F3</b><br>"
+                     "• New state: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• R-bits after: F3=1, F2=1, F1=0, F0=0<br>"
+                     "• Queue: F0(5), F1(8), F2(9), F3(7)"),
+                    
+                    ("Page 8 - Page Hit",
+                     "• <b>Reference: 8</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• Page 8 IS in memory (F1) → <b>Page Hit!</b><br>"
+                     "• No replacement needed<br>"
+                     "• Queue unchanged: F0(5), F1(8), F2(9), F3(7)<br>"
+                     "• R-bits before: F3=1, F2=1, F1=0, F0=0<br>"
+                     "• <b>Set R-bit for F1(8) to 1</b> (recently referenced)<br>"
+                     "• R-bits after: F3=1, F2=1, F1=1, F0=0<br>"
+                     "• State remains: F3=7, F2=9, F1=8, F0=5"),
+                    
+                    ("Page 3 - Page Fault",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• Page 3 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Queue: F0(5), F1(8), F2(9), F3(7)<br>"
+                     "• R-bits: F3=1, F2=1, F1=1, F0=0<br>"
+                     "• Check F0(5): R-bit=0 → <b>Replace F0</b><br>"
+                     "• New state: F3=7, F2=9, F1=8, F0=3<br>"
+                     "• R-bits after: F3=1, F2=1, F1=1, F0=1<br>"
+                     "• Queue: F1(8), F2(9), F3(7), F0(3)"),
+                    
+                    ("Page 5 - Page Fault",
+                     "• <b>Reference: 5</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=3<br>"
+                     "• Page 5 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Queue: F1(8), F2(9), F3(7), F0(3)<br>"
+                     "• R-bits: F3=1, F2=1, F1=1, F0=1<br>"
+                     "• Check F1(8): R-bit=1 → Set to 0, give second chance<br>"
+                     "• Check F2(9): R-bit=1 → Set to 0, give second chance<br>"
+                     "• Check F3(7): R-bit=1 → Set to 0, give second chance<br>"
+                     "• Check F0(3): R-bit=1 → Set to 0, give second chance<br>"
+                     "• Back to F1(8): R-bit=0 → <b>Replace F1</b><br>"
+                     "• New state: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• R-bits after: F3=0, F2=0, F1=1, F0=0"),
+                    
+                    ("Page 7 - Page Hit",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• Page 7 IS in memory (F3) → <b>Page Hit!</b><br>"
+                     "• Queue: F2(9), F3(7), F0(3), F1(5)<br>"
+                     "• R-bits before: F3=0, F2=0, F1=1, F0=0<br>"
+                     "• <b>Set R-bit for F3(7) to 1</b><br>"
+                     "• R-bits after: F3=1, F2=0, F1=1, F0=0<br>"
+                     "• State remains: F3=7, F2=9, F1=5, F0=3"),
+                    
+                    ("Page 7 - Page Hit (Again)",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• Page 7 IS in memory (F3) → <b>Page Hit!</b><br>"
+                     "• Queue unchanged: F2(9), F3(7), F0(3), F1(5)<br>"
+                     "• R-bit for F3(7) already 1, stays 1<br>"
+                     "• R-bits: F3=1, F2=0, F1=1, F0=0<br>"
+                     "• State remains: F3=7, F2=9, F1=5, F0=3"),
+                    
+                    ("Page 9 - Page Hit",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• Page 9 IS in memory (F2) → <b>Page Hit!</b><br>"
+                     "• Queue unchanged: F2(9), F3(7), F0(3), F1(5)<br>"
+                     "• R-bits before: F3=1, F2=0, F1=1, F0=0<br>"
+                     "• <b>Set R-bit for F2(9) to 1</b><br>"
+                     "• R-bits after: F3=1, F2=1, F1=1, F0=0<br>"
+                     "• State remains: F3=7, F2=9, F1=5, F0=3"),
+                    
+                    ("Page 6 - Page Fault",
+                     "• <b>Reference: 6</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• Page 6 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Queue: F2(9), F3(7), F0(3), F1(5)<br>"
+                     "• R-bits: F3=1, F2=1, F1=1, F0=0<br>"
+                     "• Check F2(9): R-bit=1 → Set to 0, give second chance<br>"
+                     "• Check F3(7): R-bit=1 → Set to 0, give second chance<br>"
+                     "• Check F0(3): R-bit=0 → <b>Replace F0</b><br>"
+                     "• New state: F3=7, F2=9, F1=5, F0=6<br>"
+                     "• R-bits after: F3=0, F2=0, F1=1, F0=1"),
+                    
+                    ("Page 3 - Page Fault",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=6<br>"
+                     "• Page 3 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Queue: F1(5), F2(9), F3(7), F0(6)<br>"
+                     "• R-bits: F3=0, F2=0, F1=1, F0=1<br>"
+                     "• Check F1(5): R-bit=1 → Set to 0, give second chance<br>"
+                     "• Check F2(9): R-bit=0 → <b>Replace F2</b><br>"
+                     "• New state: F3=7, F2=3, F1=5, F0=6<br>"
+                     "• R-bits after: F3=0, F2=1, F1=0, F0=1"),
+                    
+                    ("Second Chance Summary",
+                     "<b>Second Chance Algorithm:</b><br>"
+                     "• Improves FIFO by giving pages a 'second chance'<br>"
+                     "• Uses R-bit (Reference bit): 0 = not recently used, 1 = recently used<br>"
+                     "• Uses dynamic queue that reorders when giving second chances<br>"
+                     "• On page hit: Set R-bit to 1<br>"
+                     "• On page fault: Check oldest page's R-bit<br>"
+                     "  - If R-bit=0: Replace it<br>"
+                     "  - If R-bit=1: Set to 0, <b>move to end of queue</b>, check next<br>"
+                     "• Queue order changes dynamically during replacement search<br><br>"
+                     "<b>Results (10 references):</b><br>"
+                     "• Page Hits: 4 (8, 7, 7, 9)<br>"
+                     "• Page Faults: 6 (9, 7, 3, 5, 6, 3)<br>"
+                     "• Hit Ratio: 40%<br><br>"
+                     "<b>Algorithm Comparison:</b><br>"
+                     "• Optimal: 70% (3 faults) ← Best theoretical<br>"
+                     "• FIFO: 60% (4 faults)<br>"
+                     "• Second Chance: 40% (6 faults)<br>"
+                     "• LRU: 40% (6 faults)<br><br>"
+                     "<b>Key Feature:</b> Dynamic queue reordering protects recently referenced pages!"),
+                ]
+            elif algo_name == "Clock":
+                return [
+                    ("Page 9 - Page Fault",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=2, F2=4, F1=8, F0=5<br>"
+                     "• Page 9 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Clock hand position: F2 (load time 6, oldest)<br>"
+                     "• R-bits before: F3=0, F2=0, F1=0, F0=0<br>"
+                     "• Check F2(4): R-bit=0 → <b>Replace F2</b><br>"
+                     "• Clock hand advances to F3<br>"
+                     "• New state: F3=2, F2=9, F1=8, F0=5<br>"
+                     "• R-bits after: F3=0, F2=1, F1=0, F0=0<br>"
+                     "• Positions remain fixed in circular buffer"),
+                    
+                    ("Page 7 - Page Fault",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=2, F2=9, F1=8, F0=5<br>"
+                     "• Page 7 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Clock hand at: F3<br>"
+                     "• R-bits: F3=0, F2=1, F1=0, F0=0<br>"
+                     "• Check F3(2): R-bit=0 → <b>Replace F3</b><br>"
+                     "• Clock hand advances to F0<br>"
+                     "• New state: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• R-bits after: F3=1, F2=1, F1=0, F0=0"),
+                    
+                    ("Page 8 - Page Hit",
+                     "• <b>Reference: 8</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• Page 8 IS in memory (F1) → <b>Page Hit!</b><br>"
+                     "• Clock hand unchanged at F0<br>"
+                     "• R-bits before: F3=1, F2=1, F1=0, F0=0<br>"
+                     "• <b>Set R-bit for F1(8) to 1</b><br>"
+                     "• R-bits after: F3=1, F2=1, F1=1, F0=0<br>"
+                     "• Frame positions remain fixed"),
+                    
+                    ("Page 3 - Page Fault",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=5<br>"
+                     "• Page 3 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Clock hand at: F0<br>"
+                     "• R-bits: F3=1, F2=1, F1=1, F0=0<br>"
+                     "• Check F0(5): R-bit=0 → <b>Replace F0</b><br>"
+                     "• Clock hand advances to F1<br>"
+                     "• New state: F3=7, F2=9, F1=8, F0=3<br>"
+                     "• R-bits after: F3=1, F2=1, F1=1, F0=1"),
+                    
+                    ("Page 5 - Page Fault with Sweep",
+                     "• <b>Reference: 5</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=8, F0=3<br>"
+                     "• Page 5 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Clock hand at: F1<br>"
+                     "• R-bits: F3=1, F2=1, F1=1, F0=1<br>"
+                     "• Check F1(8): R-bit=1 → Set to 0, advance hand<br>"
+                     "• Check F2(9): R-bit=1 → Set to 0, advance hand<br>"
+                     "• Check F3(7): R-bit=1 → Set to 0, advance hand<br>"
+                     "• Check F0(3): R-bit=1 → Set to 0, advance hand<br>"
+                     "• Back to F1(8): R-bit=0 → <b>Replace F1</b><br>"
+                     "• Clock hand advances to F2<br>"
+                     "• New state: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• R-bits after: F3=0, F2=0, F1=1, F0=0"),
+                    
+                    ("Page 7 - Page Hit",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• Page 7 IS in memory (F3) → <b>Page Hit!</b><br>"
+                     "• Clock hand unchanged at F2<br>"
+                     "• R-bits before: F3=0, F2=0, F1=1, F0=0<br>"
+                     "• <b>Set R-bit for F3(7) to 1</b><br>"
+                     "• R-bits after: F3=1, F2=0, F1=1, F0=0"),
+                    
+                    ("Page 7 - Page Hit (Again)",
+                     "• <b>Reference: 7</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• Page 7 IS in memory (F3) → <b>Page Hit!</b><br>"
+                     "• Clock hand remains at F2<br>"
+                     "• R-bit for F3(7) already 1, stays 1<br>"
+                     "• R-bits: F3=1, F2=0, F1=1, F0=0"),
+                    
+                    ("Page 9 - Page Hit",
+                     "• <b>Reference: 9</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• Page 9 IS in memory (F2) → <b>Page Hit!</b><br>"
+                     "• Clock hand unchanged at F2<br>"
+                     "• R-bits before: F3=1, F2=0, F1=1, F0=0<br>"
+                     "• <b>Set R-bit for F2(9) to 1</b><br>"
+                     "• R-bits after: F3=1, F2=1, F1=1, F0=0"),
+                    
+                    ("Page 6 - Page Fault with Sweep",
+                     "• <b>Reference: 6</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=3<br>"
+                     "• Page 6 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Clock hand at: F2<br>"
+                     "• R-bits: F3=1, F2=1, F1=1, F0=0<br>"
+                     "• Check F2(9): R-bit=1 → Set to 0, advance hand<br>"
+                     "• Check F3(7): R-bit=1 → Set to 0, advance hand<br>"
+                     "• Check F0(3): R-bit=0 → <b>Replace F0</b><br>"
+                     "• Clock hand advances to F1<br>"
+                     "• New state: F3=7, F2=9, F1=5, F0=6<br>"
+                     "• R-bits after: F3=0, F2=0, F1=1, F0=1"),
+                    
+                    ("Page 3 - Page Fault",
+                     "• <b>Reference: 3</b><br>"
+                     "• Current frames: F3=7, F2=9, F1=5, F0=6<br>"
+                     "• Page 3 is NOT in memory → <b>Page Fault</b><br>"
+                     "• Clock hand at: F1<br>"
+                     "• R-bits: F3=0, F2=0, F1=1, F0=1<br>"
+                     "• Check F1(5): R-bit=1 → Set to 0, advance hand<br>"
+                     "• Check F2(9): R-bit=0 → <b>Replace F2</b><br>"
+                     "• Clock hand advances to F3<br>"
+                     "• New state: F3=7, F2=3, F1=5, F0=6<br>"
+                     "• R-bits after: F3=0, F2=1, F1=0, F0=1"),
+                    
+                    ("Clock Algorithm Summary",
+                     "<b>Clock Algorithm:</b><br>"
+                     "• Circular buffer with fixed frame positions<br>"
+                     "• Clock hand sweeps around circle<br>"
+                     "• Uses R-bit (Reference bit): 0 = not recently used, 1 = recently used<br>"
+                     "• On page hit: Set R-bit to 1, hand doesn't move<br>"
+                     "• On page fault: Sweep hand forward<br>"
+                     "  - If R-bit=0: Replace page, advance hand<br>"
+                     "  - If R-bit=1: Set to 0, advance hand, keep checking<br>"
+                     "• No queue reordering - just pointer movement<br><br>"
+                     "<b>Results (10 references):</b><br>"
+                     "• Page Hits: 4 (8, 7, 7, 9)<br>"
+                     "• Page Faults: 6 (9, 7, 3, 5, 6, 3)<br>"
+                     "• Hit Ratio: 40%<br><br>"
+                     "<b>Algorithm Comparison:</b><br>"
+                     "• Optimal: 70% (3 faults) ← Best theoretical<br>"
+                     "• FIFO: 60% (4 faults)<br>"
+                     "• Clock: 40% (6 faults)<br>"
+                     "• LRU: 40% (6 faults)<br><br>"
+                     "<b>Key Feature:</b> Circular sweep with fixed positions - more efficient than queue manipulation!"),
                 ]
         
         # Default fallback
@@ -1622,24 +2504,52 @@ class HelpPage(QWidget):
     def get_second_chance_tutorial(self):
         return """
         <b>Overview:</b><br>
-        Second Chance (Clock algorithm) is an improvement over FIFO that considers a reference bit.
+        Second Chance is an improvement over FIFO that uses a reference bit (R-bit) and a <b>dynamic queue</b>.
         <br><br>
         <b>How it works:</b><br>
-        • Maintains pages in circular queue (like a clock)<br>
-        • Each page has a reference bit (0 or 1)<br>
-        • When page is accessed, reference bit set to 1<br>
-        • On page fault: check oldest page's reference bit<br>
-        • If bit is 1, set to 0 and give it a "second chance"<br>
-        • If bit is 0, replace the page
+        • Maintains pages in a FIFO queue with reference bits<br>
+        • Each page has a reference bit (R-bit): 0 or 1<br>
+        • When page is accessed, R-bit set to 1<br>
+        • On page fault: check oldest page's R-bit<br>
+        &nbsp;&nbsp;- If R-bit = 0: Replace the page<br>
+        &nbsp;&nbsp;- If R-bit = 1: Set to 0, <b>move page to end of queue</b>, check next<br>
+        • <b>Key difference from Clock:</b> Queue order changes dynamically
         <br><br>
         <b>Advantages:</b><br>
         • Better than pure FIFO<br>
-        • Considers page usage<br>
+        • Protects recently used pages<br>
         • Simple to implement<br>
-        • Reasonable performance
+        • Fair second chance for active pages
         <br><br>
         <b>Disadvantages:</b><br>
-        • Not as good as LRU<br>
-        • May clear many reference bits before finding victim<br>
-        • In worst case, behaves like FIFO
+        • Queue manipulation overhead<br>
+        • May scan entire queue before finding victim<br>
+        • Not as efficient as LRU
+        """
+    
+    def get_clock_tutorial(self):
+        return """
+        <b>Overview:</b><br>
+        Clock algorithm is a variant of Second Chance that uses a <b>circular queue with fixed positions</b>.
+        <br><br>
+        <b>How it works:</b><br>
+        • Pages arranged in a circular buffer (like a clock face)<br>
+        • Clock hand points to the oldest page<br>
+        • Each page has a reference bit (R-bit): 0 or 1<br>
+        • When page is accessed, R-bit set to 1<br>
+        • On page fault: clock hand sweeps forward<br>
+        &nbsp;&nbsp;- If R-bit = 0: Replace the page, advance hand<br>
+        &nbsp;&nbsp;- If R-bit = 1: Set to 0, advance hand, keep checking<br>
+        • <b>Key difference from Second Chance:</b> Pages stay in fixed positions
+        <br><br>
+        <b>Advantages:</b><br>
+        • No queue manipulation needed<br>
+        • More efficient than Second Chance<br>
+        • Simple circular pointer management<br>
+        • Better cache locality
+        <br><br>
+        <b>Disadvantages:</b><br>
+        • Still approximates LRU (not exact)<br>
+        • Clock hand may sweep entire circle<br>
+        • Performance depends on reference patterns
         """
