@@ -185,7 +185,7 @@ class ModernMainWindow(QMainWindow):
         if os.path.exists(logo_path):
             pixmap = QPixmap(logo_path)
             # Scale the logo to a reasonable size (max 400px width while maintaining aspect ratio)
-            scaled_pixmap = pixmap.scaled(400, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            scaled_pixmap = pixmap.scaled(340, 340, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             logo_label.setPixmap(scaled_pixmap)
             logo_label.setAlignment(Qt.AlignCenter)
             layout.addWidget(logo_label)
