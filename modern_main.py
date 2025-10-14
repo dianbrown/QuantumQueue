@@ -7,11 +7,9 @@ import sys
 import os
 from PySide6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, 
                               QHBoxLayout, QPushButton, QFrame, QStackedWidget,
-                              QLabel, QSizePolicy, QComboBox, QGroupBox, QFormLayout,
-                              QSpacerItem, QScrollArea)
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRect, QSize, Signal, QSettings
-from PySide6.QtGui import QIcon, QFont, QPixmap, QPainter, QPen, QColor
-from PySide6.QtSvg import QSvgRenderer
+                              QLabel, QSizePolicy, QComboBox)
+from PySide6.QtCore import Qt, QRect, QSize, Signal, QSettings
+from PySide6.QtGui import QIcon, QPixmap, QColor
 
 # Import the existing CPU scheduling app
 from CPU.ui.main_window import CPUSchedulingApp

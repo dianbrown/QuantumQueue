@@ -1,6 +1,5 @@
 """Interactive main window for Page Replacement Algorithms practice."""
 
-import sys
 from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -11,19 +10,15 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QMimeData, QPoint
 from PySide6.QtGui import QFont, QColor, QDrag, QPainter, QPixmap
 import random
-import random
-
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Import PRA algorithms and models
-from algorithms.fifo import FIFOReplacer
-from algorithms.lru import LRUReplacer
-from algorithms.optimal import OptimalReplacer
-from algorithms.second_chance import SecondChanceReplacer
-from algorithms.clock import ClockReplacer
-from algorithms.base_replacer import PageReplacementResult
-from models.frame import Frame
+from PRA.algorithms.fifo import FIFOReplacer
+from PRA.algorithms.lru import LRUReplacer
+from PRA.algorithms.optimal import OptimalReplacer
+from PRA.algorithms.second_chance import SecondChanceReplacer
+from PRA.algorithms.clock import ClockReplacer
+from PRA.algorithms.base_replacer import PageReplacementResult
+from PRA.models.frame import Frame
 
 
 class DraggableFrameBlock(QLabel):

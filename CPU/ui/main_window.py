@@ -1,6 +1,5 @@
 """Main window for the CPU Scheduling application."""
 
-import sys
 from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,

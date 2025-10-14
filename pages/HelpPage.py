@@ -5,9 +5,8 @@ Help Page with CPU Scheduling and Page Replacement Algorithm Tutorials
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QLabel, 
                               QStackedWidget, QScrollArea, QGroupBox, QHBoxLayout,
                               QTableWidget, QTableWidgetItem, QFrame)
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QColor
-from PySide6.QtCore import QSize
 
 
 class HelpPage(QWidget):

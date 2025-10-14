@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
-Cross-platform setup scrip    print("📋 Next steps:")
-    if os.name == 'nt':  # Windows
-        print("   • Double-click 'run.bat' to start the application")
-    print("   • Or run: python main.py")r CPU Scheduling Application
+Cross-platform setup script for CPU Scheduling Application
 """
 
 import subprocess
