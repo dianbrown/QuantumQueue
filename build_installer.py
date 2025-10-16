@@ -235,21 +235,73 @@ def create_macos_installer():
     """Create macOS DMG installer"""
     safe_print("📦 Creating macOS DMG installer...")
     
-    app_path = f"dist/{APP_NAME}.app"
+    # Check for executable (onefile mode creates an executable, not .app)
+    exe_path = f"dist/{APP_NAME}"
+    app_bundle_path = f"dist/{APP_NAME}.app"
     dmg_path = f"dist/installers/{APP_NAME}-{APP_VERSION}-macOS.dmg"
     
-    if not os.path.exists(app_path):
-        safe_print(f"   ❌ {app_path} not found")
-        return False
-    
     os.makedirs('dist/installers', exist_ok=True)
+    
+    # If we have an executable but not an app bundle, create the app bundle structure
+    if os.path.exists(exe_path) and not os.path.exists(app_bundle_path):
+        safe_print(f"   Creating .app bundle from executable...")
+        try:
+            # Create .app bundle structure
+            os.makedirs(f"{app_bundle_path}/Contents/MacOS", exist_ok=True)
+            os.makedirs(f"{app_bundle_path}/Contents/Resources", exist_ok=True)
+            
+            # Copy executable
+            shutil.copy2(exe_path, f"{app_bundle_path}/Contents/MacOS/{APP_NAME}")
+            os.chmod(f"{app_bundle_path}/Contents/MacOS/{APP_NAME}", 0o755)
+            
+            # Create Info.plist
+            plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>{APP_NAME}</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.{AUTHOR}.{APP_NAME.lower()}</string>
+    <key>CFBundleName</key>
+    <string>{APP_NAME}</string>
+    <key>CFBundleVersion</key>
+    <string>{APP_VERSION}</string>
+    <key>CFBundleShortVersionString</key>
+    <string>{APP_VERSION}</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.13</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>"""
+            
+            with open(f"{app_bundle_path}/Contents/Info.plist", 'w') as f:
+                f.write(plist_content)
+            
+            # Copy icon if it exists
+            icon_path = "Assets/Icons/app_icon.icns"
+            if os.path.exists(icon_path):
+                shutil.copy2(icon_path, f"{app_bundle_path}/Contents/Resources/")
+            
+            safe_print(f"   ✅ Created .app bundle")
+            
+        except Exception as e:
+            safe_print(f"   ❌ Failed to create .app bundle: {e}")
+            return False
+    
+    if not os.path.exists(app_bundle_path):
+        safe_print(f"   ❌ {app_bundle_path} not found")
+        return False
     
     try:
         # Create DMG using hdiutil
         cmd = [
             'hdiutil', 'create',
             '-volname', APP_NAME,
-            '-srcfolder', app_path,
+            '-srcfolder', app_bundle_path,
             '-ov',
             '-format', 'UDZO',
             dmg_path
