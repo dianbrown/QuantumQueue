@@ -10,28 +10,59 @@ import subprocess
 import platform
 from pathlib import Path
 
+# Force UTF-8 encoding for Windows
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 # Configuration
 APP_NAME = "QuantumQueue"
 APP_VERSION = "1.0.0"
 AUTHOR = "dianbrown"
 DESCRIPTION = "CPU Scheduling & Page Replacement Practice Application"
 
+# Emoji to ASCII fallback mapping
+EMOJI_MAP = {
+    '🧹': '[CLEAN]',
+    '📦': '[INSTALL]',
+    '✅': '[OK]',
+    '⚠️': '[WARN]',
+    '❌': '[ERROR]',
+    '🎨': '[ICON]',
+    '🔨': '[BUILD]',
+    '🚀': '[START]',
+    'ℹ️': '[INFO]',
+    '📁': '[DIR]',
+    '💡': '[TIP]'
+}
+
+def safe_print(text):
+    """Print text with emoji fallback for systems that don't support Unicode"""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        # Replace emojis with ASCII equivalents
+        for emoji, ascii_replacement in EMOJI_MAP.items():
+            text = text.replace(emoji, ascii_replacement)
+        print(text)
+
 def clean_build_dirs():
     """Clean previous build artifacts"""
-    print("🧹 Cleaning build directories...")
+    safe_print("🧹 Cleaning build directories...")
     dirs_to_clean = ['build', 'dist', '__pycache__']
     for dir_name in dirs_to_clean:
         if os.path.exists(dir_name):
             shutil.rmtree(dir_name)
-            print(f"   Removed {dir_name}/")
+            safe_print(f"   Removed {dir_name}/")
     
     # Clean .spec file if exists (we'll use our custom one)
     if os.path.exists(f'{APP_NAME}.spec'):
-        print(f"   Using custom {APP_NAME}.spec file")
+        safe_print(f"   Using custom {APP_NAME}.spec file")
 
 def install_dependencies():
     """Install required build dependencies"""
-    print("📦 Installing build dependencies...")
+    safe_print("📦 Installing build dependencies...")
     dependencies = [
         'pyinstaller',
         'pillow',  # For icon conversion
@@ -40,15 +71,15 @@ def install_dependencies():
     for dep in dependencies:
         try:
             subprocess.check_call([sys.executable, '-m', 'pip', 'install', dep])
-            print(f"   ✅ {dep} installed")
+            safe_print(f"   ✅ {dep} installed")
         except subprocess.CalledProcessError:
-            print(f"   ❌ Failed to install {dep}")
+            safe_print(f"   ❌ Failed to install {dep}")
             return False
     return True
 
 def convert_icon():
     """Convert PNG icon to platform-specific format"""
-    print("🎨 Converting icon to platform-specific format...")
+    safe_print("🎨 Converting icon to platform-specific format...")
     
     try:
         from PIL import Image
@@ -59,7 +90,7 @@ def convert_icon():
         png_path = icon_dir / "QuantumQueue2.png"
         
         if not png_path.exists():
-            print(f"   ⚠️  Warning: {png_path} not found, using default icon")
+            safe_print(f"   ⚠️  Warning: {png_path} not found, using default icon")
             return True
         
         img = Image.open(png_path)
@@ -69,7 +100,7 @@ def convert_icon():
             ico_path = icon_dir / "app_icon.ico"
             # Create multiple sizes for better quality
             img.save(ico_path, format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
-            print(f"   ✅ Created {ico_path}")
+            safe_print(f"   ✅ Created {ico_path}")
             
         elif platform.system() == 'Darwin':
             # Convert to ICNS (macOS)
@@ -91,23 +122,23 @@ def convert_icon():
             try:
                 subprocess.check_call(['iconutil', '-c', 'icns', str(iconset_path), '-o', str(icns_path)])
                 shutil.rmtree(iconset_path)
-                print(f"   ✅ Created {icns_path}")
+                safe_print(f"   ✅ Created {icns_path}")
             except (subprocess.CalledProcessError, FileNotFoundError):
-                print("   ⚠️  iconutil not available, copying PNG as fallback")
+                safe_print("   ⚠️  iconutil not available, copying PNG as fallback")
                 shutil.copy(png_path, icns_path.with_suffix('.png'))
         
         return True
         
     except ImportError:
-        print("   ⚠️  Pillow not installed, skipping icon conversion")
+        safe_print("   ⚠️  Pillow not installed, skipping icon conversion")
         return True
     except Exception as e:
-        print(f"   ⚠️  Icon conversion failed: {e}")
+        safe_print(f"   ⚠️  Icon conversion failed: {e}")
         return True  # Continue anyway
 
 def build_executable():
     """Build the executable using PyInstaller"""
-    print(f"🔨 Building {APP_NAME} executable...")
+    safe_print(f"🔨 Building {APP_NAME} executable...")
     
     try:
         cmd = [
@@ -118,16 +149,16 @@ def build_executable():
         ]
         
         subprocess.check_call(cmd)
-        print("   ✅ Executable built successfully")
+        safe_print("   ✅ Executable built successfully")
         return True
         
     except subprocess.CalledProcessError as e:
-        print(f"   ❌ Build failed: {e}")
+        safe_print(f"   ❌ Build failed: {e}")
         return False
 
 def create_windows_installer():
     """Create Windows installer using Inno Setup"""
-    print("📦 Creating Windows installer...")
+    safe_print("📦 Creating Windows installer...")
     
     # Create Inno Setup script
     iss_content = f"""
@@ -171,9 +202,9 @@ Filename: "{{app}}\\{APP_NAME}.exe"; Description: "{{cm:LaunchProgram,{APP_NAME}
     with open(iss_path, 'w') as f:
         f.write(iss_content)
     
-    print(f"   ✅ Created {iss_path}")
-    print(f"   ℹ️  To create installer, install Inno Setup and run:")
-    print(f"      iscc {iss_path}")
+    safe_print(f"   ✅ Created {iss_path}")
+    safe_print(f"   ℹ️  To create installer, install Inno Setup and run:")
+    safe_print(f"      iscc {iss_path}")
     
     # Try to run Inno Setup if available
     inno_paths = [
@@ -191,24 +222,24 @@ Filename: "{{app}}\\{APP_NAME}.exe"; Description: "{{cm:LaunchProgram,{APP_NAME}
         try:
             os.makedirs('dist/installers', exist_ok=True)
             subprocess.check_call([inno_exe, iss_path])
-            print(f"   ✅ Windows installer created in dist/installers/")
+            safe_print(f"   ✅ Windows installer created in dist/installers/")
             return True
         except subprocess.CalledProcessError:
-            print("   ⚠️  Inno Setup failed, but ISS script is ready")
+            safe_print("   ⚠️  Inno Setup failed, but ISS script is ready")
     else:
-        print("   ℹ️  Inno Setup not found. Download from: https://jrsoftware.org/isdl.php")
+        safe_print("   ℹ️  Inno Setup not found. Download from: https://jrsoftware.org/isdl.php")
     
     return True
 
 def create_macos_installer():
     """Create macOS DMG installer"""
-    print("📦 Creating macOS DMG installer...")
+    safe_print("📦 Creating macOS DMG installer...")
     
     app_path = f"dist/{APP_NAME}.app"
     dmg_path = f"dist/installers/{APP_NAME}-{APP_VERSION}-macOS.dmg"
     
     if not os.path.exists(app_path):
-        print(f"   ❌ {app_path} not found")
+        safe_print(f"   ❌ {app_path} not found")
         return False
     
     os.makedirs('dist/installers', exist_ok=True)
@@ -225,39 +256,39 @@ def create_macos_installer():
         ]
         
         subprocess.check_call(cmd)
-        print(f"   ✅ macOS DMG created: {dmg_path}")
+        safe_print(f"   ✅ macOS DMG created: {dmg_path}")
         return True
         
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"   ❌ DMG creation failed: {e}")
-        print("   ℹ️  You can manually create DMG or use create-dmg tool")
+        safe_print(f"   ❌ DMG creation failed: {e}")
+        safe_print("   ℹ️  You can manually create DMG or use create-dmg tool")
         return False
 
 def main():
     """Main build process"""
-    print("=" * 60)
-    print(f"🚀 Building {APP_NAME} v{APP_VERSION}")
-    print("=" * 60)
+    safe_print("=" * 60)
+    safe_print(f"🚀 Building {APP_NAME} v{APP_VERSION}")
+    safe_print("=" * 60)
     
     # Step 1: Clean
     clean_build_dirs()
     
     # Step 2: Install dependencies
     if not install_dependencies():
-        print("\n❌ Failed to install dependencies")
+        safe_print("\n❌ Failed to install dependencies")
         return 1
     
     # Step 3: Convert icon
     if not convert_icon():
-        print("\n⚠️  Icon conversion had issues, continuing anyway...")
+        safe_print("\n⚠️  Icon conversion had issues, continuing anyway...")
     
     # Step 4: Build executable
     if not build_executable():
-        print("\n❌ Build failed")
+        safe_print("\n❌ Build failed")
         return 1
     
     # Step 5: Create installer
-    print("\n" + "=" * 60)
+    safe_print("\n" + "=" * 60)
     system = platform.system()
     
     if system == 'Windows':
@@ -265,19 +296,19 @@ def main():
     elif system == 'Darwin':
         create_macos_installer()
     else:
-        print(f"⚠️  Installer creation not supported for {system}")
-        print("   Executable is available in dist/ directory")
+        safe_print(f"⚠️  Installer creation not supported for {system}")
+        safe_print("   Executable is available in dist/ directory")
     
-    print("\n" + "=" * 60)
-    print("✅ Build process completed!")
-    print("=" * 60)
-    print(f"\n📁 Output:")
-    print(f"   Executable: dist/{APP_NAME}.exe")
+    safe_print("\n" + "=" * 60)
+    safe_print("✅ Build process completed!")
+    safe_print("=" * 60)
+    safe_print(f"\n📁 Output:")
+    safe_print(f"   Executable: dist/{APP_NAME}.exe")
     if system == 'Windows':
-        print(f"   Installer: dist/installers/{APP_NAME}-{APP_VERSION}-Windows-Setup.exe")
+        safe_print(f"   Installer: dist/installers/{APP_NAME}-{APP_VERSION}-Windows-Setup.exe")
     elif system == 'Darwin':
-        print(f"   Installer: dist/installers/{APP_NAME}-{APP_VERSION}-macOS.dmg")
-    print(f"\n💡 To test: Run dist\\{APP_NAME}.exe")
+        safe_print(f"   Installer: dist/installers/{APP_NAME}-{APP_VERSION}-macOS.dmg")
+    safe_print(f"\n💡 To test: Run dist\\{APP_NAME}.exe")
     
     return 0
 
