@@ -1,7 +1,7 @@
 # QuantumQueue - CPU Scheduling & Page Replacement Practice
 
 <p align="center">
-  <img src="Assets/Icons/QuantumQueue2.png" alt="QuantumQueue Logo" width="200"/>
+  <img src="Assets/icons/QuantumQueue2.png" alt="QuantumQueue Logo" width="200"/>
 </p>
 
 <p align="center">
