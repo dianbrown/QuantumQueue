@@ -11,6 +11,9 @@ from PySide6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout,
 from PySide6.QtCore import Qt, QRect, QSize, Signal, QSettings
 from PySide6.QtGui import QIcon, QPixmap, QColor
 
+# Import resource path helper
+from resource_path import resource_path
+
 # Import the existing CPU scheduling app
 from CPU.ui.main_window import CPUSchedulingApp
 # Import the PRA app
@@ -179,7 +182,7 @@ class ModernMainWindow(QMainWindow):
         
         # Logo
         logo_label = QLabel()
-        logo_path = os.path.join(os.path.dirname(__file__), "Assets/Icons", "QuantumQueue2.png")
+        logo_path = resource_path("Assets/Icons/QuantumQueue2.png")
         if os.path.exists(logo_path):
             pixmap = QPixmap(logo_path)
             # Scale the logo to a reasonable size (max 400px width while maintaining aspect ratio)

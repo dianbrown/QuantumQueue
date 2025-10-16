@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QLabel,
                               QTableWidget, QTableWidgetItem, QFrame)
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QColor
+from resource_path import resource_path
 
 
 class HelpPage(QWidget):
@@ -75,7 +76,7 @@ class HelpPage(QWidget):
         # CPU Scheduling Tutorial Button
         self.cpu_btn = QPushButton("  CPU Scheduling Tutorials")
         self.cpu_btn.setObjectName("cpuTutorialBtn")
-        self.cpu_btn.setIcon(QIcon("Assets/icons/CPU_Tutorial.png"))
+        self.cpu_btn.setIcon(QIcon(resource_path("Assets/icons/CPU_Tutorial.png")))
         self.cpu_btn.setIconSize(QSize(32, 32))
         self.cpu_btn.setCursor(Qt.PointingHandCursor)
         self.cpu_btn.clicked.connect(lambda: self.stack.setCurrentIndex(1))
@@ -84,7 +85,7 @@ class HelpPage(QWidget):
         # PRA Tutorial Button
         self.pra_btn = QPushButton("  Page Replacement Tutorials")
         self.pra_btn.setObjectName("praTutorialBtn")
-        self.pra_btn.setIcon(QIcon("Assets/icons/PRA_Tutorial.png"))
+        self.pra_btn.setIcon(QIcon(resource_path("Assets/icons/PRA_Tutorial.png")))
         self.pra_btn.setIconSize(QSize(32, 32))
         self.pra_btn.setCursor(Qt.PointingHandCursor)
         self.pra_btn.clicked.connect(lambda: self.stack.setCurrentIndex(2))

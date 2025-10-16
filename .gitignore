@@ -30,7 +30,16 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+
+# Keep our custom spec file
+# *.spec  
+# Commented out to keep QuantumQueue.spec
+
+# Build artifacts
+*.iss
+Assets/Icons/app_icon.ico
+Assets/Icons/app_icon.icns
+Assets/Icons/app_icon.iconset/
 
 # Installer logs
 pip-log.txt

@@ -5,6 +5,7 @@ Custom Title Bar with window controls and drag functionality
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QWidget, QLabel, QPushButton)
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QPixmap
+from resource_path import resource_path
 
 
 class CustomTitleBar(QFrame):
@@ -38,7 +39,7 @@ class CustomTitleBar(QFrame):
         self.logo_label.setFixedSize(32, 26)
         self.logo_label.setScaledContents(True)
         # Try to load logo from icons folder
-        logo_pixmap = QPixmap("Assets/Icons/QuantumQueue2.png")
+        logo_pixmap = QPixmap(resource_path("Assets/Icons/QuantumQueue2.png"))
         if not logo_pixmap.isNull():
             self.logo_label.setPixmap(logo_pixmap)
         left_layout.addWidget(self.logo_label)
@@ -62,7 +63,7 @@ class CustomTitleBar(QFrame):
         # Right side - Window control buttons
         # Minimize button
         self.minimize_btn = QPushButton()
-        self.minimize_btn.setIcon(QIcon("Assets/icons/minimize.png"))
+        self.minimize_btn.setIcon(QIcon(resource_path("Assets/icons/minimize.png")))
         self.minimize_btn.setIconSize(QSize(16, 16))
         self.minimize_btn.setFixedSize(40, 40)
         self.minimize_btn.clicked.connect(self.minimize_window)
@@ -70,7 +71,7 @@ class CustomTitleBar(QFrame):
         
         # Maximize/Restore button
         self.maximize_btn = QPushButton()
-        self.maximize_btn.setIcon(QIcon("Assets/icons/maximize.png"))
+        self.maximize_btn.setIcon(QIcon(resource_path("Assets/icons/maximize.png")))
         self.maximize_btn.setIconSize(QSize(16, 16))
         self.maximize_btn.setFixedSize(40, 40)
         self.maximize_btn.clicked.connect(self.maximize_restore_window)
@@ -78,7 +79,7 @@ class CustomTitleBar(QFrame):
         
         # Close button
         self.close_btn = QPushButton()
-        self.close_btn.setIcon(QIcon("Assets/icons/exit.png"))
+        self.close_btn.setIcon(QIcon(resource_path("Assets/icons/exit.png")))
         self.close_btn.setIconSize(QSize(16, 16))
         self.close_btn.setFixedSize(40, 40)
         self.close_btn.clicked.connect(self.close_window)
@@ -213,12 +214,12 @@ class CustomTitleBar(QFrame):
         if self.is_maximized:
             # Currently maximized, so restore to normal
             self.parent.showNormal()
-            self.maximize_btn.setIcon(QIcon("Assets/icons/maximize.png"))
+            self.maximize_btn.setIcon(QIcon(resource_path("Assets/icons/maximize.png")))
             self.is_maximized = False
         else:
             # Currently normal, so maximize
             self.parent.showMaximized()
-            self.maximize_btn.setIcon(QIcon("Assets/icons/undock.png"))
+            self.maximize_btn.setIcon(QIcon(resource_path("Assets/icons/undock.png")))
             self.is_maximized = True
     
     def close_window(self):

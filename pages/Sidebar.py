@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (QFrame, QVBoxLayout, QHBoxLayout, QPushButton)
 from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QSize
 from PySide6.QtGui import QIcon
 from pages.SideBarButton import SidebarButton
+from resource_path import resource_path
 
 
 class CollapsibleSidebar(QFrame):
@@ -61,7 +62,7 @@ class CollapsibleSidebar(QFrame):
         # Hamburger menu button
         self.menu_btn = QPushButton()
         self.menu_btn.setFixedSize(40, 40)
-        self.menu_btn.setIcon(QIcon("Assets/icons/menu.png"))
+        self.menu_btn.setIcon(QIcon(resource_path("Assets/icons/menu.png")))
         self.menu_btn.setIconSize(QSize(24, 24))
         self.menu_btn.setCursor(Qt.PointingHandCursor)
         self.menu_btn.setFocusPolicy(Qt.StrongFocus)
@@ -89,34 +90,34 @@ class CollapsibleSidebar(QFrame):
         menu_layout.setSpacing(5)
         
         # Home button
-        self.home_btn = SidebarButton("Home", "Assets/icons/home.png")
+        self.home_btn = SidebarButton("Home", resource_path("Assets/icons/home.png"))
         self.home_btn.setText("  Home" if self.is_expanded else "")
-        self.home_btn.setIcon(QIcon("Assets/icons/home.png"))
+        self.home_btn.setIcon(QIcon(resource_path("Assets/icons/home.png")))
         self.home_btn.setIconSize(QSize(20, 20))
         self.home_btn.clicked.connect(lambda: self.menu_changed.emit(0))
         self.home_btn.setChecked(True)  # Default selection
         menu_layout.addWidget(self.home_btn)
         
         # CPU Scheduling button
-        self.cpu_btn = SidebarButton("CPU Scheduling", "Assets/icons/cpu.png")
+        self.cpu_btn = SidebarButton("CPU Scheduling", resource_path("Assets/icons/cpu.png"))
         self.cpu_btn.setText("  CPU Scheduling" if self.is_expanded else "")
-        self.cpu_btn.setIcon(QIcon("Assets/icons/cpu.png"))
+        self.cpu_btn.setIcon(QIcon(resource_path("Assets/icons/cpu.png")))
         self.cpu_btn.setIconSize(QSize(20, 20))
         self.cpu_btn.clicked.connect(lambda: self.menu_changed.emit(1))
         menu_layout.addWidget(self.cpu_btn)
         
         # PRA button
-        self.pra_btn = SidebarButton("Page Replacement", "Assets/icons/PRA.png")
+        self.pra_btn = SidebarButton("Page Replacement", resource_path("Assets/icons/PRA.png"))
         self.pra_btn.setText("  Page Replacement" if self.is_expanded else "")
-        self.pra_btn.setIcon(QIcon("Assets/icons/PRA.png"))
+        self.pra_btn.setIcon(QIcon(resource_path("Assets/icons/PRA.png")))
         self.pra_btn.setIconSize(QSize(20, 20))
         self.pra_btn.clicked.connect(lambda: self.menu_changed.emit(2))
         menu_layout.addWidget(self.pra_btn)
         
         # Help button
-        self.help_btn = SidebarButton("Help", "Assets/icons/help.png")
+        self.help_btn = SidebarButton("Help", resource_path("Assets/icons/help.png"))
         self.help_btn.setText("  Help" if self.is_expanded else "")
-        self.help_btn.setIcon(QIcon("Assets/icons/help.png"))
+        self.help_btn.setIcon(QIcon(resource_path("Assets/icons/help.png")))
         self.help_btn.setIconSize(QSize(20, 20))
         self.help_btn.clicked.connect(lambda: self.menu_changed.emit(3))
         menu_layout.addWidget(self.help_btn)
@@ -125,9 +126,9 @@ class CollapsibleSidebar(QFrame):
         menu_layout.addStretch()
         
         # Settings button (at bottom)
-        self.settings_btn = SidebarButton("Settings", "Assets/icons/settings.png")
+        self.settings_btn = SidebarButton("Settings", resource_path("Assets/icons/settings.png"))
         self.settings_btn.setText("  Settings" if self.is_expanded else "")
-        self.settings_btn.setIcon(QIcon("Assets/icons/settings.png"))
+        self.settings_btn.setIcon(QIcon(resource_path("Assets/icons/settings.png")))
         self.settings_btn.setIconSize(QSize(20, 20))
         self.settings_btn.clicked.connect(lambda: self.menu_changed.emit(4))
         menu_layout.addWidget(self.settings_btn)
