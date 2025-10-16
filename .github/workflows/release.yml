@@ -81,6 +81,8 @@ jobs:
     name: Create GitHub Release
     needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout code
@@ -109,7 +111,7 @@ jobs:
         body: |
           ## QuantumQueue - CPU Scheduling & Page Replacement Practice
           
-          ### 📥 Downloads
+          ### Downloads
           
           **Windows:**
           - Download `QuantumQueue-*-Windows-Setup.exe`
@@ -121,17 +123,17 @@ jobs:
           - Open the DMG file
           - Drag QuantumQueue to Applications folder
           
-          ### ✨ Features
+          ### Features
           - Interactive CPU Scheduling algorithms practice
           - Page Replacement Algorithms visualization
           - Multiple themes available
           - Step-by-step tutorials
           
-          ### 📝 Changelog
+          ### Changelog
           See [CHANGELOG.md](CHANGELOG.md) for details.
           
-          ### 🐛 Issues
-          Report bugs at: https://github.com/dianbrown/CPU-SchedulingApp/issues
+          ### Issues
+          Report bugs at: https://github.com/dianbrown/QuantumQueue/issues
         files: |
           installers/*
         draft: false
