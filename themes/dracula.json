@@ -1,5 +1,5 @@
-{
-    "name": "Dracula Theme",
+﻿{
+    "name": "Dracula",
     "description": "Popular dark theme with purple and pink accents inspired by Dracula",
     "author": "CPU Scheduling App",
     "version": "1.0.0",
@@ -27,6 +27,15 @@
         "queue_container_border": "#6272a4",
         "queue_block_bg": "#ff79c6",
         "queue_block_border": "#ff5ac4",
-        "queue_block_text": "#282a36"
+        "queue_block_text": "#f8f8f2",
+        "scheduling_block_bg": "#FF79C6",
+        "scrollbar_bg": "#44475a",
+        "scrollbar_handle": "#bd93f9",
+        "scrollbar_handle_hover": "#ff79c6",
+        "scrollbar_border": "#21222c",
+        "home_title": "#bd93f9",
+        "home_subtitle": "#e6e6e6",
+        "home_description": "#f8f8f2",
+        "home_author": "#FF79C6"
     }
 }

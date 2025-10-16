@@ -1,6 +1,5 @@
 """Interactive main window for Page Replacement Algorithms practice."""
 
-import sys
 from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -11,19 +10,15 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QMimeData, QPoint
 from PySide6.QtGui import QFont, QColor, QDrag, QPainter, QPixmap
 import random
-import random
-
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Import PRA algorithms and models
-from algorithms.fifo import FIFOReplacer
-from algorithms.lru import LRUReplacer
-from algorithms.optimal import OptimalReplacer
-from algorithms.second_chance import SecondChanceReplacer
-from algorithms.clock import ClockReplacer
-from algorithms.base_replacer import PageReplacementResult
-from models.frame import Frame
+from PRA.algorithms.fifo import FIFOReplacer
+from PRA.algorithms.lru import LRUReplacer
+from PRA.algorithms.optimal import OptimalReplacer
+from PRA.algorithms.second_chance import SecondChanceReplacer
+from PRA.algorithms.clock import ClockReplacer
+from PRA.algorithms.base_replacer import PageReplacementResult
+from PRA.models.frame import Frame
 
 
 class DraggableFrameBlock(QLabel):
@@ -368,6 +363,13 @@ class PRAMainWindow(QWidget):
         # Algorithm selection
         self.algorithm_combo = QComboBox()
         self.algorithm_combo.addItems(list(self.algorithms.keys()))
+        self.algorithm_combo.setMinimumWidth(250)
+        self.algorithm_combo.setStyleSheet("""
+            QComboBox {
+                font-size: 13px;
+                padding: 6px;
+            }
+        """)
         self.algorithm_combo.currentTextChanged.connect(self.on_algorithm_changed)
         controls_layout.addWidget(QLabel("Algorithm:"))
         controls_layout.addWidget(self.algorithm_combo)
@@ -378,34 +380,6 @@ class PRAMainWindow(QWidget):
         self.page_input.textChanged.connect(self.on_page_sequence_changed)
         controls_layout.addWidget(QLabel("Pages:"))
         controls_layout.addWidget(self.page_input)
-        
-        # Control buttons
-        check_btn = QPushButton("Check Solution")
-        check_btn.clicked.connect(self.check_solution)
-        controls_layout.addWidget(check_btn)
-        
-        show_btn = QPushButton("Show Solution")
-        show_btn.clicked.connect(self.show_solution)
-        controls_layout.addWidget(show_btn)
-        
-        reset_btn = QPushButton("Reset")
-        reset_btn.clicked.connect(self.reset_solution)
-        controls_layout.addWidget(reset_btn)
-        
-        # Algorithm name display
-        self.algorithm_name_label = QLabel("Current Algorithm: FIFO")
-        self.algorithm_name_label.setStyleSheet("""
-            QLabel {
-                font-family: Arial;
-                font-size: 14px;
-                font-weight: bold;
-                color: white;
-                background: transparent;
-                border: none;
-                padding: 8px;
-            }
-        """)
-        controls_layout.addWidget(self.algorithm_name_label)
         
         controls_layout.addStretch()
         main_layout.addLayout(controls_layout)
@@ -433,6 +407,20 @@ class PRAMainWindow(QWidget):
         frame_controls.addWidget(delete_frame_btn)
         frame_controls.addWidget(randomize_btn)
         left_panel.addLayout(frame_controls)
+        
+        # Solution control buttons
+        solution_controls = QHBoxLayout()
+        check_btn = QPushButton("Check Solution")
+        check_btn.clicked.connect(self.check_solution)
+        show_btn = QPushButton("Show Solution")
+        show_btn.clicked.connect(self.show_solution)
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_solution)
+        
+        solution_controls.addWidget(check_btn)
+        solution_controls.addWidget(show_btn)
+        solution_controls.addWidget(reset_btn)
+        left_panel.addLayout(solution_controls)
         
         left_widget = QWidget()
         left_widget.setLayout(left_panel)
@@ -642,8 +630,6 @@ class PRAMainWindow(QWidget):
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
         algorithm = self.algorithm_combo.currentText()
-        if self.algorithm_name_label:
-            self.algorithm_name_label.setText(f"Current Algorithm: {algorithm}")
         
         # Update the algorithm name in the solution table if it exists
         if self.solution_table and self.solution_table.rowCount() > len(self.frames):

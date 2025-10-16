@@ -1,6 +1,5 @@
 """Main window for the CPU Scheduling application."""
 
-import sys
 from typing import List, Optional
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -44,6 +43,9 @@ class CPUSchedulingApp(QMainWindow):
             "Round Robin with Priority": RoundRobinPriorityScheduler(2)
         }
         
+        # Default scheduling block color (yellow)
+        self.scheduling_block_color = QColor("#ffff00")
+        
         self.init_ui()
         self.add_sample_processes()
         self.update_timeline_grid()
@@ -63,6 +65,13 @@ class CPUSchedulingApp(QMainWindow):
         # Algorithm dropdown
         self.algorithm_combo = QComboBox()
         self.algorithm_combo.addItems(list(self.schedulers.keys()))
+        self.algorithm_combo.setMinimumWidth(300)
+        self.algorithm_combo.setStyleSheet("""
+            QComboBox {
+                font-size: 13px;
+                padding: 6px;
+            }
+        """)
         self.algorithm_combo.currentTextChanged.connect(self.on_algorithm_changed)
         controls_layout.addWidget(QLabel("Algorithm:"))
         controls_layout.addWidget(self.algorithm_combo)
@@ -80,37 +89,6 @@ class CPUSchedulingApp(QMainWindow):
         # Initially hide quantum controls
         self.quantum_label.setVisible(False)
         self.quantum_spinbox.setVisible(False)
-        
-        # Control buttons
-        check_btn = QPushButton("Check Solution")
-        check_btn.clicked.connect(self.check_solution)
-        controls_layout.addWidget(check_btn)
-        
-        show_btn = QPushButton("Show Solution")
-        show_btn.clicked.connect(self.show_solution)
-        controls_layout.addWidget(show_btn)
-        
-        reset_btn = QPushButton("Reset")
-        reset_btn.clicked.connect(self.reset_grid)
-        controls_layout.addWidget(reset_btn)
-        
-        # Add more spacing to center the algorithm name above the grid
-        controls_layout.addSpacing(200)
-        
-        # Algorithm name display
-        self.algorithm_name_label = QLabel("Current Algorithm: FCFS")
-        self.algorithm_name_label.setStyleSheet("""
-            QLabel {
-                font-family: Arial;
-                font-size: 14px;
-                font-weight: bold;
-                color: white;
-                background: transparent;
-                border: none;
-                padding: 8px;
-            }
-        """)
-        controls_layout.addWidget(self.algorithm_name_label)
         
         controls_layout.addStretch()
         main_layout.addLayout(controls_layout)
@@ -145,6 +123,20 @@ class CPUSchedulingApp(QMainWindow):
         process_controls.addWidget(delete_btn)
         process_controls.addWidget(randomize_btn)
         left_panel.addLayout(process_controls)
+        
+        # Solution control buttons
+        solution_controls = QHBoxLayout()
+        check_btn = QPushButton("Check Solution")
+        check_btn.clicked.connect(self.check_solution)
+        show_btn = QPushButton("Show Solution")
+        show_btn.clicked.connect(self.show_solution)
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_grid)
+        
+        solution_controls.addWidget(check_btn)
+        solution_controls.addWidget(show_btn)
+        solution_controls.addWidget(reset_btn)
+        left_panel.addLayout(solution_controls)
         
         left_widget = QWidget()
         left_widget.setLayout(left_panel)
@@ -210,7 +202,7 @@ class CPUSchedulingApp(QMainWindow):
         # Set column widths
         self.timeline_grid.setColumnWidth(0, 80)
         for i in range(1, 33):
-            self.timeline_grid.setColumnWidth(i, 30)
+            self.timeline_grid.setColumnWidth(i, 35)  # Increased from 30 to 35 to fit "RS" text
         
         # Connect cell events
         self.timeline_grid.cellClicked.connect(self.on_cell_clicked)
@@ -227,6 +219,34 @@ class CPUSchedulingApp(QMainWindow):
         # Set row height
         self.timeline_grid.verticalHeader().setDefaultSectionSize(30)
         self.timeline_grid.verticalHeader().hide()
+
+    def set_scheduling_block_color(self, color):
+        """Set the color for scheduling blocks in the timeline grid."""
+        old_color = self.scheduling_block_color
+        self.scheduling_block_color = QColor(color)
+        # Refresh all existing colored blocks with the new color
+        self.refresh_colored_blocks(old_color)
+
+    def refresh_colored_blocks(self, old_color):
+        """Refresh all colored blocks in the timeline grid with the new color."""
+        if not self.timeline_grid:
+            return
+            
+        # Iterate through all cells in the timeline grid
+        for row in range(self.timeline_grid.rowCount()):
+            for col in range(1, self.timeline_grid.columnCount()):  # Skip process ID column
+                item = self.timeline_grid.item(row, col)
+                if item:
+                    # Check if this cell was colored with the old scheduling color
+                    # We check both the old color and common scheduling block indicators
+                    item_color = item.background().color()
+                    item_text = item.text()
+                    
+                    # If the cell has the old scheduling color or contains a dash (scheduling block marker)
+                    # and is not white, update it to the new color
+                    if (item_color.name().lower() == old_color.name().lower() or 
+                        (item_text in ["-", "-\nRS"] and item_color != Qt.white)):
+                        item.setBackground(self.scheduling_block_color)
 
     def add_sample_processes(self):
         """Add sample processes for demonstration."""
@@ -314,19 +334,19 @@ class CPUSchedulingApp(QMainWindow):
                     other_item.setText("")
         
         # Toggle current cell
-        if item.background().color().name() == "#ffff00":  # Yellow
+        if item.background().color().name().lower() == self.scheduling_block_color.name().lower():
             item.setBackground(Qt.white)
             item.setForeground(QColor(0, 0, 0))  # Black text
-            # Handle RS marker preservation when turning off yellow
+            # Handle RS marker preservation when turning off scheduling block
             if (row, col) in self.rs_markers:
                 item.setText("RS")
                 item.setForeground(QColor(128, 128, 128))  # Gray for RS
             else:
                 item.setText("")
         else:
-            item.setBackground(Qt.yellow)
+            item.setBackground(self.scheduling_block_color)
             item.setForeground(QColor(0, 0, 0))  # Black text
-            # Handle RS marker preservation when turning on yellow
+            # Handle RS marker preservation when turning on scheduling block
             if (row, col) in self.rs_markers:
                 item.setText("-\nRS")
             else:
@@ -373,7 +393,7 @@ class CPUSchedulingApp(QMainWindow):
                                     other_item.setBackground(Qt.white)
                                     other_item.setText("")
                         
-                        cell_item.setBackground(Qt.yellow)
+                        cell_item.setBackground(self.scheduling_block_color)
                         cell_item.setText("-")
 
     def show_context_menu(self, position):
@@ -453,10 +473,6 @@ class CPUSchedulingApp(QMainWindow):
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
         algorithm = self.algorithm_combo.currentText()
-        
-        # Update algorithm name label
-        if self.algorithm_name_label:
-            self.algorithm_name_label.setText(f"Current Algorithm: {algorithm}")
         
         # Show/hide quantum controls for Round Robin algorithms
         is_round_robin = "Round Robin" in algorithm
@@ -693,10 +709,17 @@ class CPUSchedulingApp(QMainWindow):
             assigned_process = None
             for row in range(self.timeline_grid.rowCount()):
                 item = self.timeline_grid.item(row, time_col)
-                if item and item.background().color().name() == "#ffff00":
-                    process_id = self.timeline_grid.item(row, 0).text()
-                    assigned_process = process_id
-                    break
+                if item:
+                    # Check if cell is colored (not white) - compare with current scheduling block color
+                    item_color = item.background().color()
+                    # A cell is considered scheduled if it's not white and has text content
+                    is_white = item_color == Qt.white or item_color.name().lower() == "#ffffff"
+                    has_content = item.text() and item.text().strip() and item.text() != "RS"
+                    
+                    if not is_white and has_content:
+                        process_id = self.timeline_grid.item(row, 0).text()
+                        assigned_process = process_id
+                        break
             schedule.append(assigned_process)
         
         return schedule
@@ -725,7 +748,7 @@ class CPUSchedulingApp(QMainWindow):
                     row = process_to_row[process_id]
                     item = self.timeline_grid.item(row, grid_col)
                     if item:
-                        item.setBackground(Qt.yellow)
+                        item.setBackground(self.scheduling_block_color)
                         item.setText("-")
                         item.setForeground(QColor(0, 0, 0))  # Black text
                         item.setFlags(item.flags() & ~Qt.ItemIsEditable)

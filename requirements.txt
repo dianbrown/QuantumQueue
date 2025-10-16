@@ -1,1 +1,10 @@
-PySide6==6.6.0
+# QuantumQueue Requirements
+# CPU Scheduling & Page Replacement Practice Application
+
+# Core GUI Framework
+PySide6>=6.5.0
+
+# Optional: For building installers
+# Uncomment these when building releases:
+# pyinstaller>=5.13.0
+# pillow>=10.0.0

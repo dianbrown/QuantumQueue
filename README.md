@@ -1,34 +1,105 @@
-# CPU Scheduling Practice Application
+# QuantumQueue - CPU Scheduling & Page Replacement Practice
 
-Tired trying to get practice examples or solutions for the CPU Scheduling problems?? Well look no further, this application aims to make studying easier and to instantly get the solution to a problem.
+<p align="center">
+  <img src="Assets/Icons/QuantumQueue2.png" alt="QuantumQueue Logo" width="200"/>
+</p>
 
-No more making tedious excell spread sheets or worse... drawing everything by HAND!!
+<p align="center">
+  <strong>Interactive learning tool for CPU Scheduling and Page Replacement Algorithms</strong>
+</p>
 
 just enter everything into the application, it has a built in random function and value editor for ease of use
 
 The TAT and WT are also calculated when you view the solution as well as the responsiveness per process.
 Feel free to enter your own values to view solutions or just practice the algorithms with the randomize function.
 
-## 🚀 Quick Start (Easy Installation)
+---
 
-### For Windows Users (Double-Click Setup):
-1. **Download** the project as ZIP from GitHub
-2. **Extract** the ZIP file to any folder
-3. **Double-click** `setup.bat` to install dependencies automatically
-4. **Double-click** `run.bat` to start the application
+## 📥 Quick Start
+
+### 🎯 Easy Installation (Recommended)
+
+#### Windows Users:
+1. **Download** the installer from [Releases](https://github.com/dianbrown/CPU-SchedulingApp/releases/latest)
+2. **Run** `QuantumQueue-*-Windows-Setup.exe`
+3. **Follow** the installation wizard
+4. **Launch** from Desktop shortcut or Start Menu
 5. **Done!** 🎉
 
-### For All Platforms:
-1. **Download** and extract the project
-2. **Double-click** `setup.py` (or run `python setup.py`)
-3. **Run** `python main.py` to start the application
+#### macOS Users:
+1. **Download** the DMG from [Releases](https://github.com/dianbrown/CPU-SchedulingApp/releases/latest)
+2. **Open** `QuantumQueue-*-macOS.dmg`
+3. **Drag** QuantumQueue to Applications folder
+4. **Launch** from Applications
+5. **Done!** 🎉
 
-### Manual Installation:
+### 🛠️ Development Installation
+
 ```bash
-# Install Python 3.8+ from python.org
-pip install PySide6
+# Clone the repository
+git clone https://github.com/dianbrown/QuantumQueue.git
+cd QuantumQueue
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
 python main.py
 ```
+
+## ✨ Features
+
+### CPU Scheduling Algorithms
+- **First Come First Served (FCFS)** - Basic FIFO scheduling
+- **FCFS with Priority** - Priority-based FCFS
+- **Shortest Job First (SJF)** - Non-preemptive shortest job first
+- **SJF with Priority** - Priority-based SJF
+- **Shortest Remaining Time (SRT)** - Preemptive SJF
+- **Round Robin (RR)** - Time-quantum based scheduling
+- **Round Robin with Priority** - Priority-based Round Robin
+
+### Page Replacement Algorithms
+- **First In First Out (FIFO)** - Basic queue-based replacement
+- **Least Recently Used (LRU)** - Recency-based replacement
+- **Optimal** - Theoretical best performance
+- **Second Chance** - Enhanced FIFO with reference bit
+- **Clock** - Circular queue variant
+
+### Interactive Features
+- 🎨 **28 Beautiful Themes** (Dracula, Nord, Tokyo Night, and more)
+- 📊 **Visual Gantt Charts** for CPU scheduling
+- 🎯 **Step-by-step Tutorials** for every algorithm
+- 🔄 **Random Test Case Generation**
+- 📝 **Editable Process/Frame Tables**
+- 📈 **Real-time Performance Metrics**
+- 🎭 **Drag-and-Drop Interface** for page replacement
+- 💾 **Persistent Settings** across sessions
+
+## 📸 Screenshots
+
+*Coming soon*
+
+## 🚀 Usage
+
+### CPU Scheduling Practice
+1. **Select an algorithm** from the dropdown
+2. **Add processes** manually or use "Random Processes"
+3. **Edit** arrival times, burst times, and priorities
+4. **Click "Simulate"** to see the Gantt chart
+5. **Review** waiting times, turnaround times, and metrics
+
+### Page Replacement Practice
+1. **Select an algorithm** from the dropdown
+2. **Set the number of frames**
+3. **Enter page sequence** or use "Random Sequence"
+4. **Click "Run Algorithm"** to visualize
+5. **Review** page faults, hits, and hit ratio
+
+### Tutorials
+1. **Click the Help icon** in the sidebar
+2. **Select CPU or PRA** category
+3. **Choose an algorithm** to learn
+4. **Follow step-by-step examples** with interactive visualizations
 
 ## Project Structure
 

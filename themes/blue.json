@@ -1,5 +1,5 @@
 {
-    "name": "Blue Theme",
+    "name": "Blue",
     "description": "Deep blue theme with cyan accents",
     "author": "CPU Scheduling App",
     "version": "1.0.0",
@@ -27,6 +27,15 @@
         "queue_container_border": "#5c6bc0",
         "queue_block_bg": "#00bcd4",
         "queue_block_border": "#00acc1",
-        "queue_block_text": "#ffffff"
+        "queue_block_text": "#ffffff",
+        "scheduling_block_bg": "#64b5f6",
+        "scrollbar_bg": "#3f51b5",
+        "scrollbar_handle": "#5c6bc0",
+        "scrollbar_handle_hover": "#00bcd4",
+        "scrollbar_border": "#283593",
+        "home_title": "#00bcd4",
+        "home_subtitle": "#e3f2fd",
+        "home_description": "#b0c4de",
+        "home_author": "#81a1c1"
     }
 }

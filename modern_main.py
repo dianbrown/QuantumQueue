@@ -4,13 +4,15 @@ Inspired by PyDracula design
 """
 
 import sys
+import os
 from PySide6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, 
                               QHBoxLayout, QPushButton, QFrame, QStackedWidget,
-                              QLabel, QSizePolicy, QComboBox, QGroupBox, QFormLayout,
-                              QSpacerItem, QScrollArea)
-from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRect, QSize, Signal, QSettings
-from PySide6.QtGui import QIcon, QFont, QPixmap, QPainter, QPen, QColor
-from PySide6.QtSvg import QSvgRenderer
+                              QLabel, QSizePolicy, QComboBox)
+from PySide6.QtCore import Qt, QRect, QSize, Signal, QSettings
+from PySide6.QtGui import QIcon, QPixmap, QColor
+
+# Import resource path helper
+from resource_path import resource_path
 
 # Import the existing CPU scheduling app
 from CPU.ui.main_window import CPUSchedulingApp
@@ -19,568 +21,11 @@ from PRA.ui.main_window import PRAMainWindow
 # Import the theme manager
 from themes.theme_manager import ThemeManager
 
-
-class CustomTitleBar(QFrame):
-    """Custom title bar with window controls and app logo/name"""
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.parent = parent
-        self.dragging = False
-        self.drag_position = None
-        self.is_maximized = False  # Track maximize state
-        
-        # Set fixed height for title bar and use QFrame for isolation
-        self.setFixedHeight(40)
-        self.setFrameShape(QFrame.NoFrame)
-        self.setObjectName("titleBarFrame")
-        
-        # Main layout
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 0, 10, 0)
-        layout.setSpacing(10)
-        
-        # Left side - Logo and App Name
-        left_widget = QWidget()
-        left_layout = QHBoxLayout(left_widget)
-        left_layout.setContentsMargins(0, 0, 0, 0)
-        left_layout.setSpacing(10)
-        
-        # Logo
-        self.logo_label = QLabel()
-        self.logo_label.setFixedSize(32, 32)
-        self.logo_label.setScaledContents(True)
-        # Try to load logo from icons folder
-        logo_pixmap = QPixmap("icons/cpu.png")
-        if not logo_pixmap.isNull():
-            self.logo_label.setPixmap(logo_pixmap)
-        left_layout.addWidget(self.logo_label)
-        
-        # App name
-        self.app_name = QLabel("CPU Scheduling & PRA Practice")
-        self.app_name.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 14px;
-                font-weight: bold;
-            }
-        """)
-        left_layout.addWidget(self.app_name)
-        
-        layout.addWidget(left_widget)
-        
-        # Spacer to push buttons to the right
-        layout.addStretch()
-        
-        # Right side - Window control buttons
-        # Minimize button
-        self.minimize_btn = QPushButton()
-        self.minimize_btn.setIcon(QIcon("icons/minimize.png"))
-        self.minimize_btn.setIconSize(QSize(16, 16))
-        self.minimize_btn.setFixedSize(40, 40)
-        self.minimize_btn.clicked.connect(self.minimize_window)
-        self.minimize_btn.setCursor(Qt.PointingHandCursor)
-        
-        # Maximize/Restore button
-        self.maximize_btn = QPushButton()
-        self.maximize_btn.setIcon(QIcon("icons/maximize.png"))
-        self.maximize_btn.setIconSize(QSize(16, 16))
-        self.maximize_btn.setFixedSize(40, 40)
-        self.maximize_btn.clicked.connect(self.maximize_restore_window)
-        self.maximize_btn.setCursor(Qt.PointingHandCursor)
-        
-        # Close button
-        self.close_btn = QPushButton()
-        self.close_btn.setIcon(QIcon("icons/exit.png"))
-        self.close_btn.setIconSize(QSize(16, 16))
-        self.close_btn.setFixedSize(40, 40)
-        self.close_btn.clicked.connect(self.close_window)
-        self.close_btn.setCursor(Qt.PointingHandCursor)
-        
-        # Add buttons to layout
-        layout.addWidget(self.minimize_btn)
-        layout.addWidget(self.maximize_btn)
-        layout.addWidget(self.close_btn)
-        
-        # Apply default style
-        self.apply_default_style()
-        
-    def apply_default_style(self):
-        """Apply default styling to title bar"""
-        self.setStyleSheet("""
-            QFrame#titleBarFrame {
-                background-color: #23272a;
-                border: none;
-                border-bottom: 2px solid #40444b;
-            }
-            QFrame#titleBarFrame QWidget {
-                background-color: transparent;
-            }
-        """)
-        
-        button_style = """
-            QPushButton {
-                background-color: transparent;
-                border: none;
-                color: #dcddde;
-                font-size: 16px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #40444b;
-            }
-        """
-        
-        self.minimize_btn.setStyleSheet(button_style)
-        self.maximize_btn.setStyleSheet(button_style)
-        self.close_btn.setStyleSheet(button_style + """
-            QPushButton:hover {
-                background-color: #e74c3c;
-                color: white;
-            }
-        """)
-    
-    def apply_theme_colors(self, theme: dict):
-        """Apply theme colors to the title bar"""
-        bg_color = theme.get('titlebar_bg', theme.get('sidebar_header_bg', '#23272a'))
-        border_color = theme.get('sidebar_border', '#40444b')
-        text_color = theme.get('text_primary', '#dcddde')
-        hover_color = theme.get('sidebar_hover', '#40444b')
-        
-        # Apply stylesheet directly to the QFrame container
-        self.setStyleSheet(f"""
-            QFrame#titleBarFrame {{
-                background-color: {bg_color};
-                border: none;
-                border-bottom: 2px solid {border_color};
-            }}
-            QFrame#titleBarFrame QWidget {{
-                background-color: transparent;
-            }}
-        """)
-        
-        # Force update
-        self.update()
-        self.repaint()
-        
-        self.app_name.setStyleSheet(f"""
-            QLabel {{
-                color: {text_color};
-                font-size: 14px;
-                font-weight: bold;
-            }}
-        """)
-        
-        button_style = f"""
-            QPushButton {{
-                background-color: transparent;
-                border: none;
-                color: {text_color};
-                font-size: 16px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: {hover_color};
-            }}
-        """
-        
-        self.minimize_btn.setStyleSheet(button_style)
-        self.maximize_btn.setStyleSheet(button_style)
-        self.close_btn.setStyleSheet(button_style + """
-            QPushButton:hover {
-                background-color: #e74c3c;
-                color: white;
-            }
-        """)
-    
-    def mousePressEvent(self, event):
-        """Handle mouse press for window dragging"""
-        if event.button() == Qt.LeftButton:
-            self.dragging = True
-            self.drag_position = event.globalPosition().toPoint() - self.parent.frameGeometry().topLeft()
-            event.accept()
-    
-    def mouseMoveEvent(self, event):
-        """Handle mouse move for window dragging"""
-        if self.dragging and event.buttons() == Qt.LeftButton:
-            self.parent.move(event.globalPosition().toPoint() - self.drag_position)
-            event.accept()
-    
-    def mouseReleaseEvent(self, event):
-        """Handle mouse release to stop dragging"""
-        self.dragging = False
-        event.accept()
-    
-    def mouseDoubleClickEvent(self, event):
-        """Handle double click to maximize/restore"""
-        if event.button() == Qt.LeftButton:
-            self.maximize_restore_window()
-            event.accept()
-    
-    def minimize_window(self):
-        """Minimize the window"""
-        self.parent.showMinimized()
-    
-    def maximize_restore_window(self):
-        """Toggle between maximized and normal window state"""
-        if self.is_maximized:
-            # Currently maximized, so restore to normal
-            self.parent.showNormal()
-            self.maximize_btn.setIcon(QIcon("icons/maximize.png"))
-            self.is_maximized = False
-        else:
-            # Currently normal, so maximize
-            self.parent.showMaximized()
-            self.maximize_btn.setIcon(QIcon("icons/undock.png"))
-            self.is_maximized = True
-    
-    def close_window(self):
-        """Close the window"""
-        self.parent.close()
-
-
-class SidebarButton(QPushButton):
-    """Custom sidebar button with icon and text"""
-    
-    def __init__(self, text="", icon_path="", parent=None):
-        super().__init__(parent)
-        self.setText(text)
-        self.setCheckable(True)
-        self.setCursor(Qt.PointingHandCursor)
-        self.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                border: none;
-                text-align: left;
-                padding: 15px 20px;
-                color: #c3c3c3;
-                font-size: 14px;
-                font-weight: normal;
-            }
-            QPushButton:hover {
-                background-color: #40444b;
-                color: white;
-            }
-            QPushButton:checked {
-                background-color: #565b5e;
-                color: white;
-                border-left: 3px solid #1f5582;
-            }
-        """)
-
-
-class CollapsibleSidebar(QFrame):
-    """Collapsible sidebar menu"""
-    
-    menu_changed = Signal(int)  # Signal emitted when menu selection changes
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedWidth(60)  # Collapsed width
-        self.expanded_width = 200
-        self.collapsed_width = 60
-        self.is_expanded = False
-        
-        self.setup_ui()
-        self.setup_animation()
-        
-    def setup_ui(self):
-        """Setup the sidebar UI"""
-        self.setStyleSheet("""
-            QFrame {
-                background-color: #2c2f33;
-                border: none;
-                border-right: 1px solid #40444b;
-            }
-        """)
-        
-        # Main layout
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        
-        # Header with hamburger menu
-        self.header = QFrame()
-        self.header.setFixedHeight(60)
-        self.header.setStyleSheet("background-color: #23272a; border-bottom: 1px solid #40444b;")
-        
-        header_layout = QHBoxLayout(self.header)
-        header_layout.setContentsMargins(10, 10, 10, 10)
-        
-        # Hamburger menu button
-        self.menu_btn = QPushButton()
-        self.menu_btn.setFixedSize(40, 40)
-        self.menu_btn.setIcon(QIcon("icons/hamburger.png"))
-        self.menu_btn.setIconSize(QSize(24, 24))
-        self.menu_btn.setCursor(Qt.PointingHandCursor)
-        self.menu_btn.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                border: none;
-            }
-            QPushButton:hover {
-                background-color: #40444b;
-                border-radius: 5px;
-            }
-        """)
-        self.menu_btn.clicked.connect(self.toggle_sidebar)
-        
-        header_layout.addWidget(self.menu_btn)
-        header_layout.addStretch()
-        
-        layout.addWidget(self.header)
-        
-        # Menu items
-        self.menu_frame = QFrame()
-        menu_layout = QVBoxLayout(self.menu_frame)
-        menu_layout.setContentsMargins(0, 20, 0, 0)
-        menu_layout.setSpacing(5)
-        
-        # Home button
-        self.home_btn = SidebarButton("Home", "icons/home.png")
-        self.home_btn.setText("  Home" if self.is_expanded else "")
-        self.home_btn.setIcon(QIcon("icons/home.png"))
-        self.home_btn.setIconSize(QSize(20, 20))
-        self.home_btn.clicked.connect(lambda: self.menu_changed.emit(0))
-        self.home_btn.setChecked(True)  # Default selection
-        menu_layout.addWidget(self.home_btn)
-        
-        # CPU Scheduling button
-        self.cpu_btn = SidebarButton("CPU Scheduling", "icons/cpu.png")
-        self.cpu_btn.setText("  CPU Scheduling" if self.is_expanded else "")
-        self.cpu_btn.setIcon(QIcon("icons/cpu.png"))
-        self.cpu_btn.setIconSize(QSize(20, 20))
-        self.cpu_btn.clicked.connect(lambda: self.menu_changed.emit(1))
-        menu_layout.addWidget(self.cpu_btn)
-        
-        # PRA button
-        self.pra_btn = SidebarButton("Page Replacement", "icons/cil-description.png")
-        self.pra_btn.setText("  Page Replacement" if self.is_expanded else "")
-        self.pra_btn.setIcon(QIcon("icons/cil-description.png"))
-        self.pra_btn.setIconSize(QSize(20, 20))
-        self.pra_btn.clicked.connect(lambda: self.menu_changed.emit(2))
-        menu_layout.addWidget(self.pra_btn)
-        
-        # Help button
-        self.help_btn = SidebarButton("Help", "icons/help.png")
-        self.help_btn.setText("  Help" if self.is_expanded else "")
-        self.help_btn.setIcon(QIcon("icons/help.png"))
-        self.help_btn.setIconSize(QSize(20, 20))
-        self.help_btn.clicked.connect(lambda: self.menu_changed.emit(3))
-        menu_layout.addWidget(self.help_btn)
-        
-        # Add stretch to push settings to bottom
-        menu_layout.addStretch()
-        
-        # Settings button (at bottom)
-        self.settings_btn = SidebarButton("Settings", "icons/icon_settings.png")
-        self.settings_btn.setText("  Settings" if self.is_expanded else "")
-        self.settings_btn.setIcon(QIcon("icons/icon_settings.png"))
-        self.settings_btn.setIconSize(QSize(20, 20))
-        self.settings_btn.clicked.connect(lambda: self.menu_changed.emit(4))
-        menu_layout.addWidget(self.settings_btn)
-        
-        layout.addWidget(self.menu_frame)
-        
-        # Store buttons for easy access
-        self.buttons = [self.home_btn, self.cpu_btn, self.pra_btn, self.help_btn, self.settings_btn]
-        
-    def setup_animation(self):
-        """Setup the sidebar animation"""
-        self.animation = QPropertyAnimation(self, b"maximumWidth")
-        self.animation.setDuration(300)
-        self.animation.setEasingCurve(QEasingCurve.Type.InOutQuart)
-        
-    def toggle_sidebar(self):
-        """Toggle sidebar expanded/collapsed state"""
-        if self.is_expanded:
-            self.collapse_sidebar()
-        else:
-            self.expand_sidebar()
-            
-    def expand_sidebar(self):
-        """Expand the sidebar"""
-        self.is_expanded = True
-        self.animation.setStartValue(self.collapsed_width)
-        self.animation.setEndValue(self.expanded_width)
-        self.animation.start()
-        
-        # Update button texts to show text with icons
-        self.home_btn.setText("  Home")
-        self.cpu_btn.setText("  CPU Scheduling")
-        self.pra_btn.setText("  Page Replacement")
-        self.help_btn.setText("  Help")
-        self.settings_btn.setText("  Settings")
-        
-    def collapse_sidebar(self):
-        """Collapse the sidebar"""
-        self.is_expanded = False
-        self.animation.setStartValue(self.expanded_width)
-        self.animation.setEndValue(self.collapsed_width)
-        self.animation.start()
-        
-        # Update button texts to show icons only
-        self.home_btn.setText("")
-        self.cpu_btn.setText("")
-        self.pra_btn.setText("")
-        self.help_btn.setText("")
-        self.settings_btn.setText("")
-        
-    def set_active_button(self, index):
-        """Set the active button"""
-        for i, btn in enumerate(self.buttons):
-            btn.setChecked(i == index)
-
-
-class SettingsPage(QWidget):
-    """Settings page with theme selection and other preferences"""
-    
-    theme_changed = Signal(str)  # Signal emitted when theme changes
-    
-    def __init__(self):
-        super().__init__()
-        self.settings = QSettings()
-        self.theme_manager = ThemeManager()
-        self.setup_ui()
-        self.load_settings()
-        
-    def setup_ui(self):
-        """Setup the settings UI"""
-        # Main layout with scroll area
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        
-        # Scroll area for settings
-        scroll_area = QScrollArea()
-        scroll_widget = QWidget()
-        scroll_layout = QVBoxLayout(scroll_widget)
-        
-        # Title
-        title = QLabel("Settings")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #ffffff; margin-bottom: 20px;")
-        scroll_layout.addWidget(title)
-        
-        # Theme settings group
-        theme_group = QGroupBox("Appearance")
-        theme_group.setStyleSheet("""
-            QGroupBox {
-                font-size: 16px;
-                font-weight: bold;
-                color: #ffffff;
-                border: 2px solid #72767d;
-                border-radius: 8px;
-                margin-top: 15px;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-            }
-        """)
-        
-        theme_layout = QFormLayout(theme_group)
-        theme_layout.setSpacing(15)
-        
-        # Theme selection
-        self.theme_combo = QComboBox()
-        available_themes = self.theme_manager.get_available_themes()
-        if available_themes:
-            self.theme_combo.addItems(available_themes)
-        else:
-            # Fallback if no themes are loaded
-            self.theme_combo.addItems(["Dark Theme (Default)"])
-        self.theme_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #40444b;
-                border: 1px solid #72767d;
-                padding: 8px 12px;
-                border-radius: 4px;
-                color: white;
-                font-size: 14px;
-                min-width: 200px;
-            }
-            QComboBox:hover {
-                border-color: #7289da;
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 20px;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 5px solid #c3c3c3;
-                margin-right: 5px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #40444b;
-                border: 1px solid #72767d;
-                selection-background-color: #7289da;
-                color: white;
-            }
-        """)
-        self.theme_combo.currentTextChanged.connect(self.on_theme_changed)
-        
-        theme_label = QLabel("Theme:")
-        theme_label.setStyleSheet("color: #c3c3c3; font-size: 14px;")
-        theme_layout.addRow(theme_label, self.theme_combo)
-        
-        scroll_layout.addWidget(theme_group)
-        
-        # Application settings group (placeholder for future settings)
-        app_group = QGroupBox("Application")
-        app_group.setStyleSheet(theme_group.styleSheet())
-        app_layout = QFormLayout(app_group)
-        
-        # Placeholder for future settings
-        placeholder_label = QLabel("More settings coming soon...")
-        placeholder_label.setStyleSheet("color: #c3c3c3; font-style: italic; font-size: 14px;")
-        app_layout.addWidget(placeholder_label)
-        
-        scroll_layout.addWidget(app_group)
-        
-        # Add stretch to push everything to the top
-        scroll_layout.addStretch()
-        
-        # Setup scroll area
-        scroll_area.setWidget(scroll_widget)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setStyleSheet("""
-            QScrollArea {
-                border: none;
-                background-color: transparent;
-            }
-            QScrollBar:vertical {
-                background-color: #40444b;
-                width: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #72767d;
-                border-radius: 6px;
-                min-height: 20px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #7289da;
-            }
-        """)
-        
-        main_layout.addWidget(scroll_area)
-        
-    def on_theme_changed(self, theme_name):
-        """Handle theme change"""
-        self.settings.setValue("theme", theme_name)
-        self.theme_changed.emit(theme_name)
-        
-    def load_settings(self):
-        """Load saved settings"""
-        saved_theme = self.settings.value("theme", "Dark Theme (Default)")
-        if saved_theme:
-            index = self.theme_combo.findText(saved_theme)
-            if index >= 0:
-                self.theme_combo.setCurrentIndex(index)
+# Import custom UI components from pages directory
+from pages.CustomTitleBar import CustomTitleBar
+from pages.Sidebar import CollapsibleSidebar
+from pages.HelpPage import HelpPage
+from pages.SettingsPage import SettingsPage
 
 
 class ModernMainWindow(QMainWindow):
@@ -608,9 +53,15 @@ class ModernMainWindow(QMainWindow):
         self.setup_ui()
         
         # Apply saved theme or default
-        saved_theme = self.settings.value("theme", "Dark Theme (Default)")
+        saved_theme = self.settings.value("theme", "Dracula")
         self.apply_theme(saved_theme)
-        
+    
+    def showEvent(self, event):
+        """Handle show event to ensure sidebar is on top"""
+        super().showEvent(event)
+        if hasattr(self, 'sidebar'):
+            self.sidebar.raise_()
+    
     def setup_ui(self):
         """Setup the main UI"""
         # Central widget
@@ -632,8 +83,10 @@ class ModernMainWindow(QMainWindow):
         content_layout.setSpacing(0)
         
         # Sidebar
-        self.sidebar = CollapsibleSidebar()
+        self.sidebar = CollapsibleSidebar(self)  # Pass self as parent
         self.sidebar.menu_changed.connect(self.change_page)
+        # Move sidebar to be on top of everything
+        self.sidebar.raise_()
         content_layout.addWidget(self.sidebar)
         
         # Content area
@@ -701,7 +154,7 @@ class ModernMainWindow(QMainWindow):
         self.content_stack.addWidget(self.cpu_page)
         
         # Home Page
-        self.home_page = self.create_placeholder_page("Home", "Welcome to the Scheduling Algorithms Practice Tool")
+        self.home_page = self.create_home_page()
         self.content_stack.addWidget(self.home_page)
         
         # CPU Page
@@ -712,13 +165,92 @@ class ModernMainWindow(QMainWindow):
         self.content_stack.addWidget(self.pra_page)
         
         # Help Page
-        self.help_page = self.create_placeholder_page("Help", "Help & Documentation")
+        self.help_page = HelpPage()
         self.content_stack.addWidget(self.help_page)
         
         # Settings Page
         self.settings_page = SettingsPage()
         self.settings_page.theme_changed.connect(self.apply_theme)
         self.content_stack.addWidget(self.settings_page)
+    
+    def create_home_page(self):
+        """Create the home page with logo and application information"""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(50, 50, 50, 50)
+        
+        # Logo
+        logo_label = QLabel()
+        logo_path = resource_path("Assets/Icons/QuantumQueue2.png")
+        if os.path.exists(logo_path):
+            pixmap = QPixmap(logo_path)
+            # Scale the logo to a reasonable size (max 400px width while maintaining aspect ratio)
+            scaled_pixmap = pixmap.scaled(400, 400, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            logo_label.setPixmap(scaled_pixmap)
+            logo_label.setAlignment(Qt.AlignCenter)
+            layout.addWidget(logo_label)
+        
+        # Add spacing
+        layout.addSpacing(30)
+        
+        # Application Name
+        app_name = QLabel("QuantumQueue")
+        app_name.setObjectName("appTitle")
+        app_name.setStyleSheet("""
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        """)
+        app_name.setAlignment(Qt.AlignCenter)
+        layout.addWidget(app_name)
+        
+        # Subtitle
+        subtitle = QLabel("CPU Scheduling and Page Replacement Algorithm Visualization")
+        subtitle.setObjectName("appSubtitle")
+        subtitle.setStyleSheet("""
+            font-size: 20px;
+            margin-bottom: 20px;
+        """)
+        subtitle.setAlignment(Qt.AlignCenter)
+        layout.addWidget(subtitle)
+        
+        # Add spacing
+        layout.addSpacing(20)
+        
+        # Description
+        description = QLabel(
+            "Includes customizable settings, such as different themes in the settings.\n"
+            "Tutorials for all algorithms are in the help section! \n\n"
+            "The tutorials includes all the steps needed to complete the algorithms.\n"
+            "No more having to rely on confusing videos or tutors!"
+        )
+        description.setObjectName("appDescription")
+        description.setStyleSheet("""
+            font-size: 16px;
+            line-height: 1.6;
+        """)
+        description.setAlignment(Qt.AlignCenter)
+        description.setWordWrap(True)
+        layout.addWidget(description)
+        
+        # Add spacing
+        layout.addSpacing(30)
+        
+        # Creator info
+        creator_info = QLabel("Created by Dian Brown")
+        creator_info.setObjectName("appAuthor")
+        creator_info.setStyleSheet("""
+            font-size: 14px;
+            font-style: italic;
+        """)
+        creator_info.setAlignment(Qt.AlignCenter)
+        layout.addWidget(creator_info)
+        
+        # Add stretch to push everything to center
+        layout.addStretch()
+        
+        return page
     
     def create_placeholder_page(self, title, subtitle):
         """Create a placeholder page with title and subtitle"""
@@ -752,6 +284,8 @@ class ModernMainWindow(QMainWindow):
         """Change the active page"""
         self.content_stack.setCurrentIndex(index)
         self.sidebar.set_active_button(index)
+        # Ensure sidebar stays on top after page change
+        self.sidebar.raise_()
         
     def apply_theme(self, theme_name):
         """Apply the selected theme to the application"""
@@ -760,7 +294,7 @@ class ModernMainWindow(QMainWindow):
         
         # Fallback to default theme if theme not found
         if not theme:
-            theme_name = "Dark Theme (Default)"
+            theme_name = "Dracula"
             theme = self.theme_manager.get_theme_colors(theme_name)
             
         # If still no theme found, use hardcoded fallback
@@ -792,11 +326,93 @@ class ModernMainWindow(QMainWindow):
                 "queue_block_text": "#ffffff"
             }
         
-        # Apply main window theme
+        # Apply main window theme with modern scrollbars
         self.setStyleSheet(f"""
             QMainWindow {{
                 background-color: {theme['main_bg']};
                 color: {theme['text_primary']};
+            }}
+            
+            /* Modern Scrollbars - Horizontal */
+            QScrollBar:horizontal {{
+                border: none;
+                background: {theme.get('scrollbar_bg', theme['input_bg'])};
+                height: 8px;
+                margin: 0px 21px 0 21px;
+                border-radius: 0px;
+            }}
+            QScrollBar::handle:horizontal {{
+                background: {theme.get('scrollbar_handle', theme['button_bg'])};
+                min-width: 25px;
+                border-radius: 4px;
+            }}
+            QScrollBar::handle:horizontal:hover {{
+                background: {theme.get('scrollbar_handle_hover', theme['button_hover'])};
+            }}
+            QScrollBar::add-line:horizontal {{
+                border: none;
+                background: {theme.get('scrollbar_border', theme['sidebar_border'])};
+                width: 20px;
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+                subcontrol-position: right;
+                subcontrol-origin: margin;
+            }}
+            QScrollBar::sub-line:horizontal {{
+                border: none;
+                background: {theme.get('scrollbar_border', theme['sidebar_border'])};
+                width: 20px;
+                border-top-left-radius: 4px;
+                border-bottom-left-radius: 4px;
+                subcontrol-position: left;
+                subcontrol-origin: margin;
+            }}
+            QScrollBar::up-arrow:horizontal, QScrollBar::down-arrow:horizontal {{
+                background: none;
+            }}
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+                background: none;
+            }}
+            
+            /* Modern Scrollbars - Vertical */
+            QScrollBar:vertical {{
+                border: none;
+                background: {theme.get('scrollbar_bg', theme['input_bg'])};
+                width: 8px;
+                margin: 21px 0 21px 0;
+                border-radius: 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {theme.get('scrollbar_handle', theme['button_bg'])};
+                min-height: 25px;
+                border-radius: 4px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background: {theme.get('scrollbar_handle_hover', theme['button_hover'])};
+            }}
+            QScrollBar::add-line:vertical {{
+                border: none;
+                background: {theme.get('scrollbar_border', theme['sidebar_border'])};
+                height: 20px;
+                border-bottom-left-radius: 4px;
+                border-bottom-right-radius: 4px;
+                subcontrol-position: bottom;
+                subcontrol-origin: margin;
+            }}
+            QScrollBar::sub-line:vertical {{
+                border: none;
+                background: {theme.get('scrollbar_border', theme['sidebar_border'])};
+                height: 20px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+                subcontrol-position: top;
+                subcontrol-origin: margin;
+            }}
+            QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {{
+                background: none;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
             }}
         """)
         
@@ -869,7 +485,7 @@ class ModernMainWindow(QMainWindow):
                 border: none;
                 padding: 8px 12px;
                 border-radius: 4px;
-                color: {theme['text_primary']};
+                color: {theme.get('button_text', theme['text_primary'])};
                 font-weight: bold;
                 font-size: 12px;
                 min-width: 70px;
@@ -923,6 +539,10 @@ class ModernMainWindow(QMainWindow):
                 }}
             """)
         
+        # Apply scheduling block color to CPU page
+        if hasattr(self.cpu_page, 'set_scheduling_block_color'):
+            self.cpu_page.set_scheduling_block_color(theme['scheduling_block_bg'])
+        
         # Apply PRA page theme  
         self.pra_page.setStyleSheet(f"""
             QWidget {{
@@ -937,7 +557,7 @@ class ModernMainWindow(QMainWindow):
                 border: none;
                 padding: 8px 12px;
                 border-radius: 4px;
-                color: {theme['text_primary']};
+                color: {theme.get('button_text', theme['text_primary'])};
                 font-weight: bold;
                 font-size: 12px;
                 min-width: 70px;
@@ -1009,6 +629,32 @@ class ModernMainWindow(QMainWindow):
                 }}
             """)
         
+        # Apply Home page theme
+        self.home_page.setStyleSheet(f"""
+            QWidget {{
+                background-color: {theme['main_bg']};
+            }}
+            QLabel {{
+                background-color: transparent;
+            }}
+            QLabel#appTitle {{
+                color: {theme.get('home_title', theme['button_bg'])};
+            }}
+            QLabel#appSubtitle {{
+                color: {theme.get('home_subtitle', theme['text_secondary'])};
+            }}
+            QLabel#appDescription {{
+                color: {theme.get('home_description', theme['text_secondary'])};
+            }}
+            QLabel#appAuthor {{
+                color: {theme.get('home_author', theme['sidebar_accent'])};
+            }}
+        """)
+        
+        # Apply Help page theme
+        if hasattr(self.help_page, 'apply_theme'):
+            self.help_page.apply_theme(theme)
+        
         # Update content stack
         self.content_stack.setStyleSheet(f"""
             QStackedWidget {{
@@ -1022,6 +668,14 @@ class ModernMainWindow(QMainWindow):
         
         # Save the theme setting
         self.settings.setValue("theme", theme_name)
+        
+        # Update the settings page combo box to reflect the current theme
+        index = self.settings_page.theme_combo.findText(theme_name)
+        if index >= 0:
+            # Block signals to prevent triggering theme_changed signal
+            self.settings_page.theme_combo.blockSignals(True)
+            self.settings_page.theme_combo.setCurrentIndex(index)
+            self.settings_page.theme_combo.blockSignals(False)
     
     def mousePressEvent(self, event):
         """Handle mouse press for window resizing"""
@@ -1139,7 +793,7 @@ def main():
     """Main application entry point"""
     app = QApplication(sys.argv)
     app.setApplicationName("CPU Scheduling & PRA Practice")
-    app.setOrganizationName("Your Name")
+    app.setOrganizationName("Dian Brown")
     app.setApplicationVersion("2.0")
     
     # Set application style

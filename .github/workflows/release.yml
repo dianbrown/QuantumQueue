@@ -1,0 +1,140 @@
+# GitHub Actions Workflow for Building and Releasing QuantumQueue
+
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller pillow
+    
+    - name: Build executable
+      run: |
+        python build_installer.py
+    
+    - name: Install Inno Setup
+      run: |
+        choco install innosetup -y
+    
+    - name: Create Windows installer
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" QuantumQueue.iss
+    
+    - name: Upload Windows installer
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-installer
+        path: dist/installers/*.exe
+        retention-days: 7
+
+  build-macos:
+    name: Build macOS DMG
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller pillow
+    
+    - name: Build app and DMG
+      run: |
+        python build_installer.py
+    
+    - name: Upload macOS DMG
+      uses: actions/upload-artifact@v3
+      with:
+        name: macos-dmg
+        path: dist/installers/*.dmg
+        retention-days: 7
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Download Windows installer
+      uses: actions/download-artifact@v3
+      with:
+        name: windows-installer
+        path: ./installers
+    
+    - name: Download macOS DMG
+      uses: actions/download-artifact@v3
+      with:
+        name: macos-dmg
+        path: ./installers
+    
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: QuantumQueue v${{ steps.get_version.outputs.VERSION }}
+        body: |
+          ## QuantumQueue - CPU Scheduling & Page Replacement Practice
+          
+          ### 📥 Downloads
+          
+          **Windows:**
+          - Download `QuantumQueue-*-Windows-Setup.exe`
+          - Run the installer
+          - Desktop shortcut will be created automatically
+          
+          **macOS:**
+          - Download `QuantumQueue-*-macOS.dmg`
+          - Open the DMG file
+          - Drag QuantumQueue to Applications folder
+          
+          ### ✨ Features
+          - Interactive CPU Scheduling algorithms practice
+          - Page Replacement Algorithms visualization
+          - Multiple themes available
+          - Step-by-step tutorials
+          
+          ### 📝 Changelog
+          See [CHANGELOG.md](CHANGELOG.md) for details.
+          
+          ### 🐛 Issues
+          Report bugs at: https://github.com/dianbrown/CPU-SchedulingApp/issues
+        files: |
+          installers/*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
