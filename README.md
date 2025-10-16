@@ -8,13 +8,10 @@
   <strong>Interactive learning tool for CPU Scheduling and Page Replacement Algorithms</strong>
 </p>
 
-<p align="center">
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-features">Features</a> •
-  <a href="#-installation">Installation</a> •
-  <a href="#-usage">Usage</a> •
-  <a href="#-screenshots">Screenshots</a>
-</p>
+just enter everything into the application, it has a built in random function and value editor for ease of use
+
+The TAT and WT are also calculated when you view the solution as well as the responsiveness per process.
+Feel free to enter your own values to view solutions or just practice the algorithms with the randomize function.
 
 ---
 
@@ -149,9 +146,7 @@ CPU_SchedulingPython/
 - ✅ **Shortest Job First (SJF)**: Non-preemptive shortest job
 - ✅ **SJF with Priority (SJFP)**: Priority + shortest job
 - ✅ **Shortest Remaining Time (SRT)**: Preemptive shortest remaining time
-
-### Future Algorithms to Implement
-- 🔲**Responsiveness per process**: Calculates the responsiveness and displays it
+- ✅ **Responsiveness per process**: Calculates the responsiveness and displays it
 
 ## 📖 How to Use the Application
 
@@ -161,6 +156,7 @@ CPU_SchedulingPython/
 3. **Fill Timeline**: Click cells to schedule processes manually
    - **Single click**: Fill one time slot
    - **Double click**: Auto-fill entire burst time
+   - **Right-Click**: Adds RS (Ready State) Markers
 4. **Check Solution**: Click "Check Solution" to see if you're correct
 5. **Show Answer**: Click "Show Solution" to see the correct schedule
 6. **Reset**: Click "Reset" to clear and try again
@@ -168,66 +164,5 @@ CPU_SchedulingPython/
 ### ⚙️ Advanced Features:
 - **Add/Delete Processes**: Modify the process list manually
 - **Edit Process Data**: Change arrival times, burst times, priorities
-- **New Grid**: Generate fresh timeline after editing processes
+- **Reset**: Generate fresh timeline after editing processes
 - **Metrics Display**: View waiting times, turnaround times, and averages
-
-## 👩‍💻 For Developers
-
-### Adding New Algorithms
-1. Create a new file in `algorithms/` directory
-2. Inherit from `BaseScheduler`
-3. Implement the `schedule()` method
-4. Add to the schedulers dictionary in `main_window.py`
-
-### Example Algorithm Implementation
-```python
-from .base_scheduler import BaseScheduler
-from models.process import Process
-from models.scheduling_result import SchedulingResult
-
-class MyScheduler(BaseScheduler):
-    @property
-    def name(self) -> str:
-        return "My Algorithm"
-    
-    def schedule(self, processes: List[Process]) -> SchedulingResult:
-        # Implement your algorithm logic here
-        timeline = [None] * 32
-        metrics = self._calculate_metrics(processes, timeline, start_times, end_times)
-        return SchedulingResult(timeline, metrics, self.name)
-```
-
-## Architecture Benefits
-
-### Separation of Concerns
-- **Models**: Pure data classes with no business logic
-- **Algorithms**: Independent scheduling implementations
-- **UI**: Clean interface separate from algorithm logic
-- **Utils**: Reusable utility functions
-
-### Extensibility
-- Easy to add new scheduling algorithms
-- Algorithms are self-contained and testable
-- Common functionality shared through base class
-- UI automatically supports new algorithms
-
-## Key Classes
-
-### Process
-Represents a single process with:
-- `id`: Process identifier (A, B, C, etc.)
-- `priority`: Priority level
-- `arrival`: Arrival time
-- `burst`: CPU burst time required
-
-### SchedulingResult
-Contains the results of algorithm execution:
-- `timeline`: List of process IDs at each time unit
-- `process_metrics`: Waiting/turnaround times per process
-- `algorithm_name`: Name of the algorithm used
-
-### BaseScheduler
-Abstract base class providing:
-- Common interface for all algorithms
-- Shared metric calculation utilities
-- Template for algorithm implementation
