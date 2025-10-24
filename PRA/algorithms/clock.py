@@ -43,9 +43,16 @@ class ClockReplacer(BaseReplacer):
         num_frames = len(frames_data)
         result = PageReplacementResult(page_sequence, num_frames)
         
-        # Sort frames by load time to establish clock order (remains in this order)
-        sorted_frames = sorted(frames_data, key=lambda f: f.load_time)
-        frame_order = [f.frame_id for f in sorted_frames]  # Clock order
+        # Clock order: Start with highest frame, then wrap to lowest and go up
+        # For frames [4,3,2,1,0], clock order should be: 4 -> 0 -> 1 -> 2 -> 3 -> 4 -> ...
+        frame_ids_sorted = sorted([f.frame_id for f in frames_data], reverse=True)
+        if frame_ids_sorted:
+            # Start with highest, then add rest in ascending order
+            highest = frame_ids_sorted[0]
+            rest = sorted([f for f in frame_ids_sorted if f != highest])
+            frame_order = [highest] + rest
+        else:
+            frame_order = [f.frame_id for f in frames_data]
         
         # Initialize frame states with their initial pages
         frame_pages = {}  # frame_id -> current_page
@@ -55,8 +62,12 @@ class ClockReplacer(BaseReplacer):
         # Initialize R-bits to 1 for all frames
         r_bits = {f.frame_id: 1 for f in frames_data}
         
-        # Pointer starts at frame with oldest page (first in load time order)
-        pointer_index = 0
+        # Pointer starts at the frame with the LOWEST load time (oldest page)
+        oldest_frame = min(frames_data, key=lambda f: f.load_time)
+        pointer_index = frame_order.index(oldest_frame.frame_id)
+        
+        # Track if this is the first fault (need to reset R-bits)
+        first_fault = True
         
         # Process each page request
         for time, page_id in enumerate(page_sequence):
@@ -78,24 +89,38 @@ class ClockReplacer(BaseReplacer):
                 result.add_access(page_id, time, True, current_pages)
                 
             else:
-                # PAGE FAULT
+                # PAGE FAULT - Clock Algorithm
                 
-                # Check if all R-bits are 1
-                if all(rbit == 1 for rbit in r_bits.values()):
-                    # Set all R-bits to 0
+                # Check if all R-bits are 1 (or first fault)
+                if first_fault or all(rbit == 1 for rbit in r_bits.values()):
+                    # Reset all R-bits to 0 BEFORE the fault
                     r_bits = {frame_id: 0 for frame_id in r_bits}
+                    first_fault = False
+                    
+                    # Victim is directly at pointer (all R-bits are 0 now)
+                    victim_index = pointer_index
+                else:
+                    # Normal case: Sweep to find victim
+                    # Start at pointer and sweep forward
+                    victim_index = pointer_index
+                    
+                    # While current frame has R-bit = 1, set to 0 and move forward
+                    while r_bits[frame_order[victim_index]] == 1:
+                        r_bits[frame_order[victim_index]] = 0
+                        victim_index = (victim_index + 1) % len(frame_order)
+                    
+                    # Now victim_index points to frame with R-bit = 0
                 
-                # Find victim frame using clock algorithm starting from pointer
-                victim_frame_id = self.find_victim_frame(frame_order, pointer_index, r_bits)
+                # Get the victim frame
+                victim_frame_id = frame_order[victim_index]
                 
-                # Replace page in victim frame
+                # Replace the page
                 frame_pages[victim_frame_id] = page_id
                 
-                # Set victim frame R-bit to 1
+                # Set the new page's R-bit to 1
                 r_bits[victim_frame_id] = 1
                 
-                # Move pointer to next frame in clock order
-                victim_index = frame_order.index(victim_frame_id)
+                # Move the clock hand forward to next frame
                 pointer_index = (victim_index + 1) % len(frame_order)
                 
                 # Record the state

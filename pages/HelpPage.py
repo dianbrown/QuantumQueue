@@ -1291,13 +1291,19 @@ class HelpPage(QWidget):
         elif "Second Chance" in algo_name or "Clock" in algo_name:
             # Initial state
             frames = ["2", "4", "8", "5"]  # F3, F2, F1, F0
-            # R-bits (reference bits) for each frame - all start at 0
-            r_bits = [0, 0, 0, 0]  # F3, F2, F1, F0
-            # Clock hand (queue pointer) - starts at oldest based on load time
-            # Load times: F2(6) oldest, F3(7), F0(12), F1(21) newest
-            # Queue order by frame index: [1, 0, 3, 2] means F2, F3, F0, F1
-            clock_queue = [1, 0, 3, 2]  # Frame indices in clock order
-            clock_hand = 0  # Points to current position in clock_queue
+            # Load times for each frame: F3(7), F2(6), F1(21), F0(12)
+            load_times = [7, 6, 21, 12]  # Corresponds to F3, F2, F1, F0
+            # R-bits (reference bits) for each frame - all start at 1
+            r_bits = [1, 1, 1, 1]  # F3, F2, F1, F0
+            # Clock order: Highest frame first, then 0,1,2,... (FIXED order, never changes)
+            # For frames F3,F2,F1,F0, the clock order is: F3 → F0 → F1 → F2 → F3 → ...
+            # Frame indices: [0, 3, 1, 2] means F3, F0, F1, F2
+            clock_queue = [0, 3, 1, 2]  # Frame indices in FIXED clock order
+            # Pointer starts at frame with LOWEST load time (F2 has load time 6)
+            # F2 is at index 1 in clock_queue
+            oldest_frame_idx = load_times.index(min(load_times))  # F2 = index 1
+            clock_hand = clock_queue.index(oldest_frame_idx)  # Position in clock_queue
+            first_fault = True  # Track if this is the first fault
             
             # Process each page reference up to the current step
             for ref_idx in range(min(step_num, len(page_sequence))):
@@ -1314,8 +1320,9 @@ class HelpPage(QWidget):
                         item.setBackground(hit_color)
                         item.setForeground(QColor("white"))
                     
-                    # Set R-bit to 1 for the accessed page (second chance)
+                    # Set R-bit to 1 for the accessed page
                     r_bits[frame_idx] = 1
+                    # Pointer stays at current position (no movement on hit)
                     
                     # Fill other frames with their current pages (no color)
                     for i, frame_page in enumerate(frames):
@@ -1325,42 +1332,32 @@ class HelpPage(QWidget):
                                 item.setText(frame_page)
                                 item.setBackground(QColor("#2a2a2a"))
                 else:
-                    # Page fault - use Second Chance algorithm
-                    victim_idx = None
-                    checks = 0
-                    max_checks = len(clock_queue) * 2  # Prevent infinite loop
+                    # Page fault - use Clock algorithm
                     
-                    while victim_idx is None and checks < max_checks:
-                        # Get frame at current clock hand position
-                        candidate_idx = clock_queue[clock_hand]
-                        
-                        if r_bits[candidate_idx] == 0:
-                            # R-bit is 0, replace this page
-                            victim_idx = candidate_idx
-                        else:
-                            # R-bit is 1, give second chance (set to 0)
-                            r_bits[candidate_idx] = 0
-                            # Move clock hand forward
-                            clock_hand = (clock_hand + 1) % len(clock_queue)
-                        
-                        checks += 1
-                    
-                    # If we couldn't find a victim (all had R-bit=1), replace at current position
-                    if victim_idx is None:
+                    # Check if all R-bits are 1 (or first fault)
+                    if first_fault or all(bit == 1 for bit in r_bits):
+                        # Reset all R-bits to 0
+                        r_bits = [0, 0, 0, 0]
+                        first_fault = False
+                        # Victim is directly at pointer position
                         victim_idx = clock_queue[clock_hand]
+                    else:
+                        # Normal case: Sweep to find victim
+                        sweep_pos = clock_hand
+                        # Sweep: skip R-bit=1 frames (set to 0), find R-bit=0
+                        while r_bits[clock_queue[sweep_pos]] == 1:
+                            r_bits[clock_queue[sweep_pos]] = 0
+                            sweep_pos = (sweep_pos + 1) % len(clock_queue)
+                        # Found victim with R-bit = 0
+                        victim_idx = clock_queue[sweep_pos]
                     
                     # Replace with new page
                     frames[victim_idx] = page
                     r_bits[victim_idx] = 1  # New page gets R-bit=1
                     
-                    # Move clock hand to next position for next replacement
-                    clock_hand = (clock_hand + 1) % len(clock_queue)
-                    
-                    # Update queue order - move replaced frame to end
-                    clock_queue.remove(victim_idx)
-                    clock_queue.append(victim_idx)
-                    # Reset clock hand to start
-                    clock_hand = 0
+                    # Move clock hand to next position after victim
+                    victim_pos = clock_queue.index(victim_idx)
+                    clock_hand = (victim_pos + 1) % len(clock_queue)
                     
                     # Color the replaced frame red
                     item = table.item(victim_idx, col)
@@ -2533,23 +2530,26 @@ class HelpPage(QWidget):
         Clock algorithm is a variant of Second Chance that uses a <b>circular queue with fixed positions</b>.
         <br><br>
         <b>How it works:</b><br>
-        • Pages arranged in a circular buffer (like a clock face)<br>
-        • Clock hand points to the oldest page<br>
-        • Each page has a reference bit (R-bit): 0 or 1<br>
-        • When page is accessed, R-bit set to 1<br>
-        • On page fault: clock hand sweeps forward<br>
-        &nbsp;&nbsp;- If R-bit = 0: Replace the page, advance hand<br>
-        &nbsp;&nbsp;- If R-bit = 1: Set to 0, advance hand, keep checking<br>
-        • <b>Key difference from Second Chance:</b> Pages stay in fixed positions
+        • Frames arranged in a fixed circular order: Highest frame → 0 → 1 → 2 → ... → Highest<br>
+        &nbsp;&nbsp;(e.g., for frames 4,3,2,1,0: order is 4 → 0 → 1 → 2 → 3 → 4 → ...)<br>
+        • Clock hand (pointer) starts at frame with <b>lowest load time</b> (oldest page)<br>
+        • Pointer moves through the fixed circular order<br>
+        • Each page has a reference bit (R-bit): initially all set to 1<br>
+        • On page hit: Set R-bit to 1, pointer stays at current position<br>
+        • On page fault with all R-bits = 1: Reset all R-bits to 0 first, then replace at pointer<br>
+        • On page fault with mixed R-bits: Sweep from pointer position<br>
+        &nbsp;&nbsp;- If R-bit = 1: Set to 0, move to next frame in cycle<br>
+        &nbsp;&nbsp;- If R-bit = 0: Replace this page, set R-bit to 1, move pointer to next<br>
+        • <b>Key point:</b> Pointer always moves in the same circular pattern regardless of frame IDs
         <br><br>
         <b>Advantages:</b><br>
         • No queue manipulation needed<br>
-        • More efficient than Second Chance<br>
-        • Simple circular pointer management<br>
-        • Better cache locality
+        • Simple fixed circular pattern<br>
+        • Efficient implementation<br>
+        • Approximates LRU behavior
         <br><br>
         <b>Disadvantages:</b><br>
-        • Still approximates LRU (not exact)<br>
-        • Clock hand may sweep entire circle<br>
+        • Not exact LRU replacement<br>
+        • May sweep through multiple frames<br>
         • Performance depends on reference patterns
         """
