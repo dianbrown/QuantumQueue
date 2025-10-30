@@ -5,6 +5,24 @@ All notable changes to QuantumQueue will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-10-30
+
+### Fixed
+- Fixed FCFS with Priority algorithm to use ready state time instead of arrival time for tie-breaking when priorities are equal
+  - Processes with same priority now correctly execute in order of when they entered the ready queue (FCFS)
+  - Fixes incorrect scheduling order for preempted processes with equal priority
+
+## [1.1.0] - 2025-10-24
+
+### Fixed
+- Fixed Clock Page Replacement Algorithm implementation
+  - Corrected initial R-bit values (now start at 1 instead of 0)
+  - Fixed frame order cycle (highest frame → 0 → 1 → 2 → ... → highest)
+  - Fixed pointer starting position (now starts at frame with lowest load time)
+  - Corrected sweep behavior during page faults
+  - Updated tutorial documentation to reflect correct algorithm behavior
+  - Fixed simulation code in help page
+
 ## [1.0.0] - 2025-10-16
 
 ### Added

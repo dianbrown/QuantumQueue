@@ -12,7 +12,7 @@ from pathlib import Path
 
 # Configuration
 APP_NAME = "QuantumQueue"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.1"
 AUTHOR = "dianbrown"
 DESCRIPTION = "CPU Scheduling & Page Replacement Practice Application"
 
