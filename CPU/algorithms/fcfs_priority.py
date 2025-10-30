@@ -44,6 +44,7 @@ class FCFSPriorityScheduler(BaseScheduler):
         
         remaining_processes = sorted(process_copies, key=lambda p: (p.arrival, p.id))
         ready_queue = []
+        ready_state_times = {}  # Track when each process entered ready state
         current_time = 1  # Start from time 1 to match grid headers
         start_times = {}
         end_times = {}
@@ -56,6 +57,8 @@ class FCFSPriorityScheduler(BaseScheduler):
             while remaining_processes and remaining_processes[0].arrival <= current_time:
                 new_process = remaining_processes.pop(0)
                 ready_queue.append(new_process)
+                # Record ready state time (when process enters ready queue)
+                ready_state_times[new_process.id] = current_time
                 
                 # Preemption check: if new process has higher priority than current
                 if (current_process and 
@@ -64,13 +67,15 @@ class FCFSPriorityScheduler(BaseScheduler):
                     # Preempt current process - save remaining burst time
                     current_process.burst = current_burst_left
                     ready_queue.append(current_process)
+                    # Update ready state time for preempted process
+                    ready_state_times[current_process.id] = current_time
                     current_process = None
             
-            # Sort ready queue by priority, then by arrival time (FCFS for same priority)
+            # Sort ready queue by priority, then by ready state time (FCFS for same priority), then by process ID
             if self.higher_is_better:
-                ready_queue.sort(key=lambda p: (-p.priority, p.arrival, p.id))
+                ready_queue.sort(key=lambda p: (-p.priority, ready_state_times.get(p.id, p.arrival), p.id))
             else:
-                ready_queue.sort(key=lambda p: (p.priority, p.arrival, p.id))
+                ready_queue.sort(key=lambda p: (p.priority, ready_state_times.get(p.id, p.arrival), p.id))
             
             # If no current process and ready queue has processes
             if not current_process and ready_queue:

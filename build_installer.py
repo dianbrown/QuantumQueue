@@ -18,7 +18,7 @@ if sys.platform == 'win32':
 
 # Configuration
 APP_NAME = "QuantumQueue"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.1.1"
 AUTHOR = "dianbrown"
 DESCRIPTION = "CPU Scheduling & Page Replacement Practice Application"
 
