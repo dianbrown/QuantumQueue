@@ -655,6 +655,10 @@ class ModernMainWindow(QMainWindow):
         if hasattr(self.help_page, 'apply_theme'):
             self.help_page.apply_theme(theme)
         
+        # Apply Settings page theme
+        if hasattr(self.settings_page, 'apply_theme'):
+            self.settings_page.apply_theme(theme)
+        
         # Update content stack
         self.content_stack.setStyleSheet(f"""
             QStackedWidget {{
