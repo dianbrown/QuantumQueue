@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QLabel,
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from resource_path import resource_path
+from pages.FCFSTutorialPage import FCFSTutorialPage
 
 
 class AlgorithmCard(QFrame):
@@ -43,6 +44,7 @@ class HelpPage(QWidget):
         super().__init__()
         self.current_theme = {}
         self.detail_pages = {}
+        self.tutorial_pages = {}  # Store tutorial page references
         self.setup_ui()
         
     def setup_ui(self):
@@ -232,7 +234,7 @@ class HelpPage(QWidget):
         
         # Back button
         back_idx = 1 if category == "CPU" else 2
-        back_btn = QPushButton("← Back to Algorithms")
+        back_btn = QPushButton("Back to Algorithms")
         back_btn.setObjectName("backBtn")
         back_btn.setMaximumWidth(180)
         back_btn.setCursor(Qt.PointingHandCursor)
@@ -260,11 +262,41 @@ class HelpPage(QWidget):
         desc.setTextFormat(Qt.RichText)
         content_layout.addWidget(desc)
         
+        # Add "View Example" button for algorithms with tutorials
+        if algo_name == "FCFS" and category == "CPU":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("FCFS"))
+            content_layout.addWidget(example_btn)
+        
         content_layout.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll)
         
         return page
+    
+    def _show_tutorial(self, algo_name):
+        """Show tutorial page for the specified algorithm"""
+        if algo_name == "FCFS":
+            if "FCFS" not in self.tutorial_pages:
+                # Create and add the FCFS tutorial page
+                tutorial = FCFSTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("CPU_FCFS", 0)))
+                self.tutorial_pages["FCFS"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                # Apply current theme if available
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                # Reset tutorial to first step when showing
+                tutorial_index = self.tutorial_pages["FCFS"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            
+            self.stack.setCurrentIndex(self.tutorial_pages["FCFS"])
     
     def _get_description(self, algo_name):
         """Get comprehensive algorithm description from AlgorithmRules"""
@@ -568,6 +600,12 @@ class HelpPage(QWidget):
                 for card in cards:
                     card.set_text_color(text_color)
         
+        # Apply theme to tutorial pages
+        for algo_name, page_index in self.tutorial_pages.items():
+            tutorial_widget = self.stack.widget(page_index)
+            if tutorial_widget and hasattr(tutorial_widget, 'apply_theme'):
+                tutorial_widget.apply_theme(theme)
+        
         self.setStyleSheet(f"""
             QWidget {{
                 background-color: {theme['main_bg']};
@@ -653,6 +691,22 @@ class HelpPage(QWidget):
             
             QPushButton#backBtn:hover {{
                 background-color: {theme.get('sidebar_hover', '#4a4f56')};
+            }}
+            
+            /* View Example button */
+            QPushButton#exampleBtn {{
+                background-color: {card_color};
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                color: {theme.get('button_text', '#ffffff')};
+                font-size: 16px;
+                font-weight: bold;
+                margin-top: 15px;
+            }}
+            
+            QPushButton#exampleBtn:hover {{
+                background-color: {theme.get('button_hover', '#677bc4')};
             }}
             
             /* Detail page */
