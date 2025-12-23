@@ -112,14 +112,14 @@ class FCFSPriorityTutorialPage(QWidget):
             })
     
     def _get_processes_from_table(self):
-        """Read process values from the process table"""
+        """Read process values from the unified table (columns 0-3 of timeline_grid)"""
         self.processes = []
-        for row in range(self.process_table.rowCount()):
+        for row in range(4):
             try:
-                process_id = self.process_table.item(row, 0).text() if self.process_table.item(row, 0) else chr(ord('A') + row)
-                priority = int(self.process_table.item(row, 1).text()) if self.process_table.item(row, 1) else 1
-                arrival = int(self.process_table.item(row, 2).text()) if self.process_table.item(row, 2) else 1
-                burst = int(self.process_table.item(row, 3).text()) if self.process_table.item(row, 3) else 1
+                process_id = self.timeline_grid.item(row, 0).text() if self.timeline_grid.item(row, 0) else chr(ord('A') + row)
+                priority = int(self.timeline_grid.item(row, 1).text()) if self.timeline_grid.item(row, 1) else 1
+                arrival = int(self.timeline_grid.item(row, 2).text()) if self.timeline_grid.item(row, 2) else 1
+                burst = int(self.timeline_grid.item(row, 3).text()) if self.timeline_grid.item(row, 3) else 1
                 
                 priority = max(1, min(10, priority))
                 arrival = max(1, min(30, arrival))
@@ -143,7 +143,8 @@ class FCFSPriorityTutorialPage(QWidget):
         """Handle cell value changes in the process table"""
         if self._updating_table:
             return
-        if column == 0:
+        # Only react to editable columns 1-3 (Priority, Arrival, Burst)
+        if column < 1 or column > 3:
             return
         
         self._get_processes_from_table()
@@ -452,23 +453,19 @@ class FCFSPriorityTutorialPage(QWidget):
         self.page_title.setObjectName("tutorialTitle")
         layout.addWidget(self.page_title)
         
-        # Process table
-        self.process_table = QTableWidget(4, 4)
-        self.process_table.setHorizontalHeaderLabels(["Process ID", "Priority", "Arrival", "Burst time"])
-        self.process_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.process_table.setMaximumHeight(170)
-        self.process_table.cellChanged.connect(self._on_table_cell_changed)
-        layout.addWidget(self.process_table)
-        
-        # Timeline grid
-        self.timeline_grid = QTableWidget(4, 33)
-        headers = ["Process ID"] + [str(i) for i in range(1, 33)]
+        # Unified table: Process info + Timeline (1-32)
+        self.timeline_grid = QTableWidget(4, 36)
+        headers = ["Process ID", "Priority", "Arrival", "Burst"] + [str(i) for i in range(1, 33)]
         self.timeline_grid.setHorizontalHeaderLabels(headers)
-        self.timeline_grid.setColumnWidth(0, 80)
-        for i in range(1, 33):
+        self.timeline_grid.setColumnWidth(0, 70)
+        self.timeline_grid.setColumnWidth(1, 55)
+        self.timeline_grid.setColumnWidth(2, 55)
+        self.timeline_grid.setColumnWidth(3, 45)
+        for i in range(4, 36):
             self.timeline_grid.setColumnWidth(i, 35)
         self.timeline_grid.verticalHeader().setDefaultSectionSize(30)
         self.timeline_grid.verticalHeader().hide()
+        self.timeline_grid.cellChanged.connect(self._on_table_cell_changed)
         self._setup_timeline_grid()
         layout.addWidget(self.timeline_grid)
         
@@ -519,25 +516,25 @@ class FCFSPriorityTutorialPage(QWidget):
         layout.addLayout(nav_layout)
     
     def _populate_process_table(self):
-        """Fill the process table with current process data"""
+        """Fill the unified table with current process data (cols 0-3)"""
         self._updating_table = True
         for i, proc in enumerate(self.processes):
             id_item = QTableWidgetItem(proc["id"])
             id_item.setFlags(id_item.flags() & ~Qt.ItemIsEditable)
             id_item.setTextAlignment(Qt.AlignCenter)
-            self.process_table.setItem(i, 0, id_item)
+            self.timeline_grid.setItem(i, 0, id_item)
             
             priority_item = QTableWidgetItem(str(proc["priority"]))
             priority_item.setTextAlignment(Qt.AlignCenter)
-            self.process_table.setItem(i, 1, priority_item)
+            self.timeline_grid.setItem(i, 1, priority_item)
             
             arrival_item = QTableWidgetItem(str(proc["arrival"]))
             arrival_item.setTextAlignment(Qt.AlignCenter)
-            self.process_table.setItem(i, 2, arrival_item)
+            self.timeline_grid.setItem(i, 2, arrival_item)
             
             burst_item = QTableWidgetItem(str(proc["burst"]))
             burst_item.setTextAlignment(Qt.AlignCenter)
-            self.process_table.setItem(i, 3, burst_item)
+            self.timeline_grid.setItem(i, 3, burst_item)
         self._updating_table = False
     
     def _on_random_clicked(self):
@@ -550,19 +547,16 @@ class FCFSPriorityTutorialPage(QWidget):
         self._show_step(0)
     
     def _setup_timeline_grid(self):
-        """Initialize the timeline grid with process IDs"""
-        for i, proc in enumerate(self.processes[:4]):
-            item = QTableWidgetItem(proc["id"])
-            item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-            item.setTextAlignment(Qt.AlignCenter)
-            self.timeline_grid.setItem(i, 0, item)
-            
-            for j in range(1, 33):
+        """Initialize the timeline portion of the grid (cols 4-35)"""
+        self._updating_table = True
+        for i in range(4):
+            for j in range(4, 36):
                 item = QTableWidgetItem("")
                 item.setTextAlignment(Qt.AlignCenter)
                 item.setBackground(Qt.white)
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 self.timeline_grid.setItem(i, j, item)
+        self._updating_table = False
     
     def _show_step(self, step_index):
         """Display a specific tutorial step"""
@@ -582,14 +576,14 @@ class FCFSPriorityTutorialPage(QWidget):
         self._update_timeline(step["timeline"], step["rs_markers"])
     
     def _update_timeline(self, timeline_data, rs_markers):
-        """Update the timeline grid based on step data"""
+        """Update the timeline grid based on step data (cols 4-35)"""
         if not self.timeline_grid:
             return
             
         process_to_row = {proc["id"]: i for i, proc in enumerate(self.processes[:4])}
         
         for row in range(4):
-            for col in range(1, 33):
+            for col in range(4, 36):
                 item = self.timeline_grid.item(row, col)
                 if item:
                     item.setBackground(Qt.white)
@@ -601,7 +595,8 @@ class FCFSPriorityTutorialPage(QWidget):
             if row is not None:
                 for t in times:
                     if 1 <= t <= 32:
-                        item = self.timeline_grid.item(row, t)
+                        col = t + 3
+                        item = self.timeline_grid.item(row, col)
                         if item:
                             item.setBackground(self.scheduling_block_color)
                             item.setText("-")
@@ -612,7 +607,8 @@ class FCFSPriorityTutorialPage(QWidget):
             if row is not None:
                 for t in times:
                     if 1 <= t <= 32:
-                        item = self.timeline_grid.item(row, t)
+                        col = t + 3
+                        item = self.timeline_grid.item(row, col)
                         if item:
                             current_text = item.text()
                             if current_text and current_text != "":

@@ -519,10 +519,10 @@ class HelpPage(QWidget):
             "FCFS": """
                 <h2>First Come First Served (FCFS)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>The simplest scheduling algorithm. Processes are executed in the exact order they arrive in the ready queue. Once a process starts running, it continues until it completes - no interruptions allowed.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>Sort all processes by arrival time</li>
                     <li>If two processes arrive at the same time, sort by Process ID</li>
@@ -530,7 +530,7 @@ class HelpPage(QWidget):
                     <li>If CPU is idle (no process ready), wait until next arrival</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>Convoy Effect:</b> Short processes stuck waiting behind long ones</li>
                     <li><b>Idle Time:</b> If next process hasn't arrived yet, CPU sits idle</li>
@@ -542,10 +542,10 @@ class HelpPage(QWidget):
             "FCFS Priority": """
                 <h2>FCFS with Priority (Preemptive)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>FCFS with priority preemption. Higher priority processes can interrupt lower priority ones immediately. Within the same priority level, FCFS ordering applies based on Ready State time.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>When a process arrives, record its Ready State time</li>
                     <li>If new process has HIGHER priority than running process → preempt immediately</li>
@@ -553,7 +553,7 @@ class HelpPage(QWidget):
                     <li>Preempted process gets NEW Ready State time = preemption time</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>Same Priority:</b> NO preemption - follow FCFS by Ready State</li>
                     <li><b>Priority Convention:</b> Higher number = Higher priority</li>
@@ -565,10 +565,10 @@ class HelpPage(QWidget):
             "SJF": """
                 <h2>Shortest Job First (SJF)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>Selects the process with the shortest burst time from the ready queue. Non-preemptive - once a process starts, it runs to completion. Optimal for minimizing average waiting time.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>Add all arrived processes to the ready queue</li>
                     <li>Sort ready queue by: Burst Time → Arrival Time → Process ID</li>
@@ -576,7 +576,7 @@ class HelpPage(QWidget):
                     <li>If no process is ready, advance time by 1</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>Starvation:</b> Long processes may never get CPU if short ones keep arriving</li>
                     <li><b>Same Burst Time:</b> Pick the one with earliest arrival</li>
@@ -588,10 +588,10 @@ class HelpPage(QWidget):
             "SJF Priority": """
                 <h2>SJF with Priority (Preemptive)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>Combines priority with SJF. A new process can preempt if it has higher priority OR same priority with shorter ORIGINAL burst time. Uses original burst for comparison, not remaining.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>Store ORIGINAL burst time for each process (never changes)</li>
                     <li>Check for preemption: higher priority OR (same priority AND shorter original burst)</li>
@@ -599,7 +599,7 @@ class HelpPage(QWidget):
                     <li>Execute for 1 time unit, repeat</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>CRITICAL:</b> Uses ORIGINAL burst, NOT remaining burst!</li>
                     <li><b>Preemption Check:</b> Both priority AND original burst matter</li>
@@ -611,10 +611,10 @@ class HelpPage(QWidget):
             "SRT": """
                 <h2>Shortest Remaining Time (SRT)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>Preemptive version of SJF. At any time, the process with the shortest REMAINING burst time runs. If a new process arrives with shorter remaining time, it preempts the current one.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>At each time unit, check all arrived processes</li>
                     <li>If new process has SHORTER remaining burst → preempt current</li>
@@ -622,7 +622,7 @@ class HelpPage(QWidget):
                     <li>Execute for 1 time unit, update remaining burst</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>EQUAL Remaining Time:</b> NO preemption - current process continues</li>
                     <li><b>SHORTER Remaining Time:</b> Preemption occurs immediately</li>
@@ -634,10 +634,10 @@ class HelpPage(QWidget):
             "Round Robin": """
                 <h2>Round Robin (RR)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>Each process gets a fixed time slice (quantum). When quantum expires, process moves to back of queue. Fair scheduling - all processes get CPU time. Uses "Ready State" to track eligibility.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>Set time quantum (default = 2)</li>
                     <li>Each process starts with Ready State = Arrival Time</li>
@@ -646,7 +646,7 @@ class HelpPage(QWidget):
                     <li>If burst remains: Update Ready State = current time, re-queue</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>Tie-breaker:</b> Same Ready State → pick NEWEST arrival (not oldest!)</li>
                     <li><b>Finishes Early:</b> If process completes before quantum, no re-queue</li>
@@ -658,10 +658,10 @@ class HelpPage(QWidget):
             "RR Priority": """
                 <h2>Round Robin with Priority</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>Round Robin with priority preemption. Higher priority processes can interrupt mid-quantum. Within same priority, normal RR rules apply. Combines fairness with priority handling.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>If new process has HIGHER priority → preempt immediately (even mid-quantum)</li>
                     <li>Filter to highest priority processes only</li>
@@ -670,7 +670,7 @@ class HelpPage(QWidget):
                     <li>On quantum expire: update Ready State, move to queue</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>Priority Preemption:</b> Happens IMMEDIATELY, even mid-quantum</li>
                     <li><b>Same Priority:</b> No preemption, follow normal RR rules</li>
@@ -683,10 +683,10 @@ class HelpPage(QWidget):
             "FIFO": """
                 <h2>First In First Out (FIFO)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>The simplest page replacement algorithm. Replaces the page that has been in memory the longest (first loaded). Uses a queue - oldest at front, newest at back.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>Sort frames by load time to establish queue order</li>
                     <li>On PAGE HIT: No change to queue (just mark hit)</li>
@@ -694,7 +694,7 @@ class HelpPage(QWidget):
                     <li>The replaced frame moves to back of queue</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>Page Hit:</b> Queue order does NOT change</li>
                     <li><b>Belady's Anomaly:</b> More frames can cause MORE faults!</li>
@@ -706,10 +706,10 @@ class HelpPage(QWidget):
             "LRU": """
                 <h2>Least Recently Used (LRU)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>Replaces the page that hasn't been USED for the longest time. Tracks actual page access, not just load time. On every access (hit or fault), the page becomes "most recently used".</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>Initial order: sort by load time (oldest = LRU)</li>
                     <li>On PAGE HIT: Move accessed page to MRU position (back of queue)</li>
@@ -717,7 +717,7 @@ class HelpPage(QWidget):
                     <li>New page goes to MRU position (back)</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>CRITICAL:</b> Hits UPDATE the queue order (unlike FIFO)</li>
                     <li><b>Multiple Hits:</b> Each hit refreshes position to MRU</li>
@@ -729,10 +729,10 @@ class HelpPage(QWidget):
             "Optimal": """
                 <h2>Optimal (OPT / Farthest in Future)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>Replaces the page that won't be used for the longest time in the FUTURE. Requires knowing the entire page sequence in advance. Theoretical best - used as benchmark.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>On PAGE HIT: No change needed</li>
                     <li>On PAGE FAULT: For each page in memory, find next use in future</li>
@@ -740,7 +740,7 @@ class HelpPage(QWidget):
                     <li>If tie: choose lowest frame number</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>Never Used Again:</b> Distance = infinity (highest priority for replacement)</li>
                     <li><b>Multiple "Never Used":</b> Pick LOWEST frame number</li>
@@ -752,10 +752,10 @@ class HelpPage(QWidget):
             "Second Chance": """
                 <h2>Second Chance (Enhanced FIFO)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>FIFO with a reference bit (R-bit). Pages with R-bit=1 get a "second chance" instead of being replaced. R-bit is set on access and cleared when given second chance.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>Initialize all R-bits = 1</li>
                     <li>On PAGE HIT: Set R-bit = 1 for that page</li>
@@ -764,7 +764,7 @@ class HelpPage(QWidget):
                     <li>New page gets R-bit = 1</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>All R-bits = 1:</b> Reset ALL to 0, then first in queue is victim</li>
                     <li><b>Page Hit:</b> Only updates R-bit, queue order unchanged</li>
@@ -776,10 +776,10 @@ class HelpPage(QWidget):
             "Clock": """
                 <h2>Clock (Circular Buffer)</h2>
                 
-                <h3>📖 How It Works</h3>
+                <h3>How It Works</h3>
                 <p>Circular implementation of Second Chance. Uses a clock hand pointer that sweeps around frames. Frames don't move - pointer moves. More efficient than Second Chance queue.</p>
                 
-                <h3>📋 Algorithm Steps</h3>
+                <h3>Algorithm Steps</h3>
                 <ol>
                     <li>Create circular frame order (highest ID first, then ascending)</li>
                     <li>Pointer starts at frame with oldest load time</li>
@@ -788,7 +788,7 @@ class HelpPage(QWidget):
                     <li>Sweep: R-bit=1 → clear and advance; R-bit=0 → replace, advance</li>
                 </ol>
                 
-                <h3>⚠️ Edge Cases & Watch Out For</h3>
+                <h3>Edge Cases & Watch Out For</h3>
                 <ul>
                     <li><b>First Fault:</b> Reset all R-bits to 0, select at pointer</li>
                     <li><b>All R-bits = 1:</b> Reset ALL, victim is at current pointer</li>
