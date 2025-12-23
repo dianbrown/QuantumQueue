@@ -1,6 +1,7 @@
 """
 PRA Optimal Tutorial Page - Step-by-step walkthrough of Optimal (Farthest in Future) Algorithm
 No queue - uses future page access distances to select victim
+Uses a unified table for frame input and solution display
 """
 
 import json
@@ -34,8 +35,7 @@ class PRAOptimalTutorialPage(QWidget):
         
         self.setup_ui()
         self._generate_random_problem()
-        self._populate_frame_table()
-        self._setup_solution_table()
+        self._setup_unified_table()
         self._generate_steps()
         self._show_step(0)
     
@@ -86,14 +86,14 @@ class PRAOptimalTutorialPage(QWidget):
             page = random.randint(1, 15)
             self.page_sequence.append(str(page))
     
-    def _get_data_from_tables(self):
-        """Read frame data and page sequence from tables"""
+    def _get_data_from_table(self):
+        """Read frame data from unified table"""
         self.frames = []
-        for row in range(self.frame_table.rowCount()):
+        for row in range(5):  # Fixed 5 frames
             try:
-                frame_id = self.frame_table.item(row, 0).text() if self.frame_table.item(row, 0) else str(row)
-                load_time = int(self.frame_table.item(row, 1).text()) if self.frame_table.item(row, 1) else 1
-                page = self.frame_table.item(row, 2).text() if self.frame_table.item(row, 2) else "1"
+                frame_id = self.unified_table.item(row, 0).text() if self.unified_table.item(row, 0) else str(row)
+                load_time = int(self.unified_table.item(row, 1).text()) if self.unified_table.item(row, 1) else 1
+                page = self.unified_table.item(row, 2).text() if self.unified_table.item(row, 2) else "1"
                 
                 load_time = max(1, min(30, load_time))
                 
@@ -112,20 +112,23 @@ class PRAOptimalTutorialPage(QWidget):
             self.page_sequence = []
     
     def _on_table_cell_changed(self, row, column):
-        """Handle cell value changes in the frame table"""
-        if self._updating_table or column == 0:
+        """Handle cell value changes in the unified table"""
+        if self._updating_table:
+            return
+        # Only react to changes in editable columns (1: Load Time, 2: Page in Memory)
+        if column < 1 or column > 2:
             return
         
-        self._get_data_from_tables()
-        self._setup_solution_table()
+        self._get_data_from_table()
+        self._rebuild_table_columns()
         self._generate_steps()
         self.current_step = 0
         self._show_step(0)
     
     def _on_page_sequence_changed(self):
         """Handle page sequence input changes"""
-        self._get_data_from_tables()
-        self._setup_solution_table()
+        self._get_data_from_table()
+        self._rebuild_table_columns()
         self._generate_steps()
         self.current_step = 0
         self._show_step(0)
@@ -327,13 +330,7 @@ class PRAOptimalTutorialPage(QWidget):
         self.page_title.setObjectName("tutorialTitle")
         layout.addWidget(self.page_title)
         
-        # Input section
-        input_section = QWidget()
-        input_layout = QVBoxLayout(input_section)
-        input_layout.setContentsMargins(0, 0, 0, 0)
-        input_layout.setSpacing(10)
-        
-        # Page sequence input (at the top)
+        # Page sequence input (above the unified table)
         page_seq_layout = QHBoxLayout()
         page_seq_label = QLabel("Page Sequence:")
         page_seq_label.setObjectName("sectionLabel")
@@ -343,23 +340,16 @@ class PRAOptimalTutorialPage(QWidget):
         self.page_input.setPlaceholderText("Enter page sequence (e.g., 7,0,1,2,0,3)")
         self.page_input.textChanged.connect(self._on_page_sequence_changed)
         page_seq_layout.addWidget(self.page_input)
-        input_layout.addLayout(page_seq_layout)
+        layout.addLayout(page_seq_layout)
         
-        # Frame table
-        self.frame_table = QTableWidget(5, 3)
-        self.frame_table.setHorizontalHeaderLabels(["Frame ID", "Load Time", "Page in Memory"])
-        self.frame_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.frame_table.setMaximumHeight(180)
-        self.frame_table.cellChanged.connect(self._on_table_cell_changed)
-        input_layout.addWidget(self.frame_table)
-        
-        layout.addWidget(input_section)
-        
-        # Solution table
-        self.solution_table = QTableWidget()
-        self.solution_table.setMaximumHeight(180)
-        self.solution_table.verticalHeader().hide()
-        layout.addWidget(self.solution_table)
+        # Unified table (Frame ID, Load Time, Page in Memory, then page sequence columns)
+        self.unified_table = QTableWidget(5, 3)  # Start with 5 rows, 3 columns
+        self.unified_table.setHorizontalHeaderLabels(["Frame ID", "Load Time", "Page in Memory"])
+        self.unified_table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.unified_table.setMaximumHeight(200)
+        self.unified_table.verticalHeader().hide()
+        self.unified_table.cellChanged.connect(self._on_table_cell_changed)
+        layout.addWidget(self.unified_table)
         
         # No queue visualization for Optimal - it uses future distances instead
         
@@ -367,6 +357,8 @@ class PRAOptimalTutorialPage(QWidget):
         step_frame = QFrame()
         step_frame.setObjectName("stepFrame")
         step_layout = QVBoxLayout(step_frame)
+        step_layout.setSpacing(5)
+        step_layout.setContentsMargins(15, 15, 15, 15)
         
         self.step_title = QLabel("Step 0: Initial State")
         self.step_title.setObjectName("stepTitle")
@@ -374,6 +366,7 @@ class PRAOptimalTutorialPage(QWidget):
         
         desc_scroll = QScrollArea()
         desc_scroll.setWidgetResizable(True)
+        desc_scroll.setMinimumHeight(150)
         desc_scroll.setMaximumHeight(220)  # Slightly taller for detailed descriptions
         desc_scroll.setObjectName("descriptionScroll")
         
@@ -383,6 +376,8 @@ class PRAOptimalTutorialPage(QWidget):
         self.step_description.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         desc_scroll.setWidget(self.step_description)
         step_layout.addWidget(desc_scroll)
+        
+        step_layout.addStretch(0)  # Prevent expansion
         
         layout.addWidget(step_frame)
         
@@ -409,65 +404,101 @@ class PRAOptimalTutorialPage(QWidget):
         nav_layout.addStretch()
         layout.addLayout(nav_layout)
     
-    def _populate_frame_table(self):
-        """Fill the frame table with current frame data"""
+    def _setup_unified_table(self):
+        """Setup the unified table with frame data and page sequence columns"""
         self._updating_table = True
-        self.frame_table.setRowCount(len(self.frames))
         
-        for i, frame in enumerate(self.frames):
-            id_item = QTableWidgetItem(frame["id"])
-            id_item.setFlags(id_item.flags() & ~Qt.ItemIsEditable)
-            id_item.setTextAlignment(Qt.AlignCenter)
-            self.frame_table.setItem(i, 0, id_item)
-            
-            load_item = QTableWidgetItem(str(frame["load_time"]))
-            load_item.setTextAlignment(Qt.AlignCenter)
-            self.frame_table.setItem(i, 1, load_item)
-            
-            page_item = QTableWidgetItem(frame["page"])
-            page_item.setTextAlignment(Qt.AlignCenter)
-            self.frame_table.setItem(i, 2, page_item)
-        
-        self.page_input.setText(",".join(self.page_sequence))
-        self._updating_table = False
-    
-    def _setup_solution_table(self):
-        """Setup the solution table structure"""
-        if not self.frames or not self.page_sequence:
-            self.solution_table.setRowCount(0)
-            self.solution_table.setColumnCount(0)
+        if not self.frames:
+            self.unified_table.setRowCount(0)
+            self.unified_table.setColumnCount(3)
+            self._updating_table = False
             return
         
         num_frames = len(self.frames)
-        num_pages = len(self.page_sequence)
+        num_pages = len(self.page_sequence) if self.page_sequence else 0
         
-        self.solution_table.setRowCount(num_frames)
-        self.solution_table.setColumnCount(num_pages + 2)
+        # Columns: Frame ID, Load Time, Page in Memory, then page request columns
+        total_columns = 3 + num_pages
+        self.unified_table.setRowCount(num_frames)
+        self.unified_table.setColumnCount(total_columns)
         
-        headers = ["Frame ID", "Page in Memory"] + self.page_sequence
-        self.solution_table.setHorizontalHeaderLabels(headers)
+        # Headers
+        headers = ["Frame ID", "Load Time", "Page in Memory"] + self.page_sequence
+        self.unified_table.setHorizontalHeaderLabels(headers)
         
-        self.solution_table.setColumnWidth(0, 70)
-        self.solution_table.setColumnWidth(1, 110)
-        for i in range(2, num_pages + 2):
-            self.solution_table.setColumnWidth(i, 35)
+        # Set column widths
+        self.unified_table.setColumnWidth(0, 70)
+        self.unified_table.setColumnWidth(1, 75)
+        self.unified_table.setColumnWidth(2, 120)
+        for i in range(3, total_columns):
+            self.unified_table.setColumnWidth(i, 40)
         
+        # Fill initial structure
         for row, frame in enumerate(self.frames):
+            # Frame ID (read-only)
             id_item = QTableWidgetItem(frame["id"])
             id_item.setFlags(id_item.flags() & ~Qt.ItemIsEditable)
             id_item.setTextAlignment(Qt.AlignCenter)
-            self.solution_table.setItem(row, 0, id_item)
+            self.unified_table.setItem(row, 0, id_item)
             
+            # Load Time (editable)
+            load_item = QTableWidgetItem(str(frame["load_time"]))
+            load_item.setTextAlignment(Qt.AlignCenter)
+            self.unified_table.setItem(row, 1, load_item)
+            
+            # Page in Memory (editable)
             page_item = QTableWidgetItem(frame["page"])
-            page_item.setFlags(page_item.flags() & ~Qt.ItemIsEditable)
             page_item.setTextAlignment(Qt.AlignCenter)
-            self.solution_table.setItem(row, 1, page_item)
+            self.unified_table.setItem(row, 2, page_item)
             
-            for col in range(2, num_pages + 2):
+            # Page request columns (empty initially, read-only)
+            for col in range(3, total_columns):
                 item = QTableWidgetItem("")
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 item.setTextAlignment(Qt.AlignCenter)
-                self.solution_table.setItem(row, col, item)
+                self.unified_table.setItem(row, col, item)
+        
+        # Set page sequence input
+        self.page_input.setText(",".join(self.page_sequence))
+        
+        self._updating_table = False
+    
+    def _rebuild_table_columns(self):
+        """Rebuild the table columns when page sequence changes"""
+        self._updating_table = True
+        
+        num_frames = len(self.frames) if self.frames else 5
+        num_pages = len(self.page_sequence) if self.page_sequence else 0
+        
+        total_columns = 3 + num_pages
+        self.unified_table.setColumnCount(total_columns)
+        
+        # Update headers
+        headers = ["Frame ID", "Load Time", "Page in Memory"] + self.page_sequence
+        self.unified_table.setHorizontalHeaderLabels(headers)
+        
+        # Set column widths
+        self.unified_table.setColumnWidth(0, 70)
+        self.unified_table.setColumnWidth(1, 75)
+        self.unified_table.setColumnWidth(2, 120)
+        for i in range(3, total_columns):
+            self.unified_table.setColumnWidth(i, 40)
+        
+        # Add/update page request columns (empty, read-only)
+        for row in range(num_frames):
+            for col in range(3, total_columns):
+                item = self.unified_table.item(row, col)
+                if not item:
+                    item = QTableWidgetItem("")
+                    item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                    item.setTextAlignment(Qt.AlignCenter)
+                    self.unified_table.setItem(row, col, item)
+                else:
+                    item.setText("")
+                    item.setBackground(QColor("white"))
+                    item.setForeground(QColor("black"))
+        
+        self._updating_table = False
     
     def _show_step(self, step_index):
         """Display a specific tutorial step"""
@@ -484,35 +515,40 @@ class PRAOptimalTutorialPage(QWidget):
         self.prev_btn.setEnabled(step_index > 0)
         self.next_btn.setEnabled(step_index < len(self.steps) - 1)
         
-        self._update_solution_table(step["solution_grid"], step["frame_state"])
+        self._update_unified_table(step["solution_grid"], step["frame_state"])
     
-    def _update_solution_table(self, solution_grid, frame_state):
-        """Update the solution table based on step data"""
+    def _update_unified_table(self, solution_grid, frame_state):
+        """Update the unified table based on step data"""
         if not self.frames:
             return
         
+        self._updating_table = True
+        
         frame_to_row = {f["id"]: i for i, f in enumerate(self.frames)}
         
-        for row in range(self.solution_table.rowCount()):
-            for col in range(2, self.solution_table.columnCount()):
-                item = self.solution_table.item(row, col)
+        # Reset all page request cells (columns 3+)
+        for row in range(self.unified_table.rowCount()):
+            for col in range(3, self.unified_table.columnCount()):
+                item = self.unified_table.item(row, col)
                 if item:
                     item.setText("")
                     item.setBackground(QColor("white"))
                     item.setForeground(QColor("black"))
         
+        # Update "Page in Memory" column (col 2) with current frame state
         for frame_id, page in frame_state.items():
             row = frame_to_row.get(frame_id)
             if row is not None:
-                item = self.solution_table.item(row, 1)
+                item = self.unified_table.item(row, 2)
                 if item:
                     item.setText(page)
         
+        # Fill in solution grid cells
         for (frame_id, col_idx), cell_data in solution_grid.items():
             row = frame_to_row.get(frame_id)
             if row is not None:
-                col = col_idx + 2
-                item = self.solution_table.item(row, col)
+                col = col_idx + 3  # Offset for Frame ID, Load Time, and Page in Memory columns
+                item = self.unified_table.item(row, col)
                 if item:
                     item.setText(cell_data["text"])
                     if cell_data["is_hit"]:
@@ -521,12 +557,13 @@ class PRAOptimalTutorialPage(QWidget):
                     else:
                         item.setBackground(self.fault_color)
                         item.setForeground(QColor("white"))
+        
+        self._updating_table = False
     
     def _on_random_clicked(self):
         """Handle random generation button click"""
         self._generate_random_problem()
-        self._populate_frame_table()
-        self._setup_solution_table()
+        self._setup_unified_table()
         self._generate_steps()
         self.current_step = 0
         self._show_step(0)
@@ -544,7 +581,7 @@ class PRAOptimalTutorialPage(QWidget):
         super().showEvent(event)
         if self.current_step < len(self.steps):
             step = self.steps[self.current_step]
-            self._update_solution_table(step["solution_grid"], step["frame_state"])
+            self._update_unified_table(step["solution_grid"], step["frame_state"])
     
     def apply_theme(self, theme: dict):
         """Apply theme colors to the tutorial page"""
@@ -691,4 +728,4 @@ class PRAOptimalTutorialPage(QWidget):
         
         if self.current_step < len(self.steps):
             step = self.steps[self.current_step]
-            self._update_solution_table(step["solution_grid"], step["frame_state"])
+            self._update_unified_table(step["solution_grid"], step["frame_state"])

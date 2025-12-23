@@ -313,12 +313,15 @@ class SJFPriorityTutorialPage(QWidget):
         step_frame = QFrame()
         step_frame.setObjectName("stepFrame")
         step_layout = QVBoxLayout(step_frame)
+        step_layout.setSpacing(5)
+        step_layout.setContentsMargins(15, 15, 15, 15)
         self.step_title = QLabel("Step 0: Initial State")
         self.step_title.setObjectName("stepTitle")
         step_layout.addWidget(self.step_title)
         
         desc_scroll = QScrollArea()
         desc_scroll.setWidgetResizable(True)
+        desc_scroll.setMinimumHeight(120)
         desc_scroll.setMaximumHeight(200)
         desc_scroll.setObjectName("descriptionScroll")
         self.step_description = QLabel("")
@@ -327,6 +330,7 @@ class SJFPriorityTutorialPage(QWidget):
         self.step_description.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         desc_scroll.setWidget(self.step_description)
         step_layout.addWidget(desc_scroll)
+        step_layout.addStretch(0)  # Prevent expansion
         layout.addWidget(step_frame)
         
         nav_layout = QHBoxLayout()
