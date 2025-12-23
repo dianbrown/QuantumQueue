@@ -1,0 +1,42 @@
+{
+  "algorithm": "Round_Robin_Priority",
+  "algorithm_name": "Round Robin with Priority (Preemptive)",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "Round Robin with Priority combines PRIORITY PREEMPTION with QUANTUM-based scheduling.\n\nCore Rules:\n- Higher priority preempts IMMEDIATELY (even mid-quantum)\n- Same priority: Regular Round Robin (RS-based, quantum-limited)\n- Quantum = {quantum} time units\n- RS (Ready State) updates on quantum expiration\n- Tie-breaker for same priority/RS: newest arrival\n\nOur problem set has {num_processes} processes: {process_list}."
+    },
+    "show_arrivals": {
+      "title": "Step 1: Mark Arrival Times (RS)",
+      "description": "Mark initial Ready State times.\n\nInitial RS = Arrival time:\n{arrival_info}\n\nRemember: Higher priority can preempt mid-quantum!\nSame priority follows Round Robin rules."
+    },
+    "first_block": {
+      "title": "Step {step}: Process {process_id} begins (P={priority}, Q {quantum_used}/{quantum})",
+      "description": "At t={current_time}, selecting highest priority from ready queue...\n\nReady queue (by Priority → RS → newest arrival):\n{ready_list}\n\nSelected: {process_id} (Priority={priority}, RS={rs_time})"
+    },
+    "continue_quantum": {
+      "title": "Step {step}: Process {process_id} continues (P={priority}, Q {quantum_used}/{quantum})",
+      "description": "Process {process_id} continues within its quantum.\n\nPriority: {priority} (highest in queue)\nQuantum progress: {quantum_used} of {quantum}\nRemaining burst: {remaining}"
+    },
+    "preemption_priority": {
+      "title": "Step {step}: PREEMPTION! {new_process} interrupts {old_process}",
+      "description": "Process {new_process} (Priority={new_priority}) arrives at t={current_time}!\n\nHigher priority than {old_process} (Priority={old_priority}).\nMid-quantum preemption! {old_process} used {quantum_used}/{quantum} of quantum.\n\n{old_process} returns to queue with RS={old_rs}.\nQuantum counter resets for {new_process}."
+    },
+    "quantum_expire": {
+      "title": "Step {step}: Quantum expires! {process_id} re-queues",
+      "description": "Process {process_id}'s quantum of {quantum} has expired!\n\nPriority: {priority} (no higher priority waiting)\n{process_id} has {remaining} blocks left.\nNew RS time = {new_rs}\n{process_id} moves to back of its priority group."
+    },
+    "process_complete": {
+      "title": "Step {step}: Process {process_id} completes!",
+      "description": "Process {process_id} finishes execution!\n\nPriority: {priority}, Burst: {burst}\nCompleted at t={end_time}\nUsed {quantum_used}/{quantum} of current quantum.\nWaiting time: {wait_time}, Turnaround: {tat}"
+    },
+    "no_preemption_same_priority": {
+      "title": "Step {step}: {new_process} arrives (same priority)",
+      "description": "Process {new_process} (P={priority}) arrives at t={current_time}.\n\nSame priority as {current_process} - NO mid-quantum preemption.\n{current_process} continues its quantum.\n{new_process} enters queue with RS={rs_time}."
+    },
+    "final": {
+      "title": "Step {step}: Final Solution",
+      "description": "Round Robin Priority Scheduling Complete! (Quantum = {quantum})\n\nExecution Order: {execution_order}\n\nMetrics:\n{metrics}\n\nAverage Waiting Time: {avg_wait}\nAverage Turnaround Time: {avg_tat}\n\nNote: Priority preemption + quantum rotation = responsive + fair scheduling."
+    }
+  }
+}
