@@ -1,0 +1,34 @@
+{
+  "algorithm": "FCFS",
+  "algorithm_name": "First Come First Served",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "FCFS (First Come First Served) is a non-preemptive scheduling algorithm.\n\nCore Rules:\n- Processes execute in the order they arrive\n- Once a process starts, it runs to completion\n- Tie-breaker: Process ID (alphabetical order)\n\nOur problem set has {num_processes} processes: {process_list} with different arrival times."
+    },
+    "show_arrivals": {
+      "title": "Step 1: Sort by Arrival Time",
+      "description": "First, sort all processes by arrival time. If arrivals are equal, use Process ID.\n\nSorted order: {sorted_order}\n\nRS (Ready State) markers show when each process enters the ready queue.\nThis is always the first step - mark the arrival times on the timeline."
+    },
+    "first_process_first_block": {
+      "title": "Step {step}: Process {process_id} begins execution",
+      "description": "Process {process_id} arrives first at t={arrival} and has burst time of {burst}.\n\nSince FCFS is non-preemptive, {process_id} will run to completion.\nWe start by coloring in the first block at t={current_time}.\n\nBlocks to fill: {burst} total"
+    },
+    "process_start": {
+      "title": "Step {step}: Process {process_id} begins execution",
+      "description": "Process {process_id} arrived at t={arrival}{wait_context}.\n\n{prev_process} finished at t={prev_end}, so {process_id} starts now at t={current_time}.\n{process_id} has burst time of {burst}, so we begin coloring in its blocks.\n\n{wait_info}"
+    },
+    "continue_block": {
+      "title": "Step {step}: Process {process_id} continues (t={current_time})",
+      "description": "Process {process_id} continues execution at time t={current_time}.\n\nThis is block {block_num} of {burst} for process {process_id}.\nBlocks remaining after this: {remaining}"
+    },
+    "process_complete_block": {
+      "title": "Step {step}: Process {process_id} completes (t={current_time})",
+      "description": "Process {process_id} completes its final block!\n\nStarted at t={start_time}, completed at t={end_time}.\nTotal execution: {burst} time units.\nWaiting time: {wait_time} (started at {start_time} - arrived at {arrival})"
+    },
+    "final": {
+      "title": "Step {step}: Final Solution",
+      "description": "FCFS Scheduling Complete!\n\nExecution Order: {execution_order}\n\nMetrics:\n{metrics}\n\nAverage Waiting Time: {avg_wait}\nAverage Turnaround Time: {avg_tat}"
+    }
+  }
+}

@@ -1,17 +1,22 @@
 """
-FCFS Tutorial Page - Step-by-step walkthrough of First Come First Served algorithm
-Supports multiple problem sets with dropdown selector
+FCFS Tutorial Page - Dynamic step-by-step walkthrough of First Come First Served algorithm
+Supports custom input or random process generation with per-block step progression
 """
 
+import json
+import os
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
                               QLabel, QTableWidget, QTableWidgetItem, QFrame,
-                              QScrollArea, QHeaderView, QComboBox)
+                              QScrollArea, QHeaderView)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QFont
 
+# Import the existing ProcessGenerator
+from CPU.utils.process_generator import ProcessGenerator
+
 
 class FCFSTutorialPage(QWidget):
-    """Step-by-step FCFS algorithm tutorial page with multiple problem sets"""
+    """Step-by-step FCFS algorithm tutorial page with dynamic step generation"""
     
     # Signal to navigate back to help page
     back_requested = Signal()
@@ -19,468 +24,353 @@ class FCFSTutorialPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_step = 0
-        self.current_set_index = 0
         self.current_theme = {}
         self.scheduling_block_color = QColor("#ffff00")  # Default yellow
         
-        # Define all problem sets
-        self.problem_sets = self._create_problem_sets()
+        # Process data
+        self.processes = []
+        self.steps = []
         
-        # Current problem set
-        self.processes = self.problem_sets[0]["processes"]
-        self.steps = self.problem_sets[0]["steps"]
+        # Flag to prevent recursive updates
+        self._updating_table = False
+        
+        # Load step descriptions from JSON
+        self.step_templates = self._load_step_templates()
         
         self.setup_ui()
+        
+        # Generate initial random set and initialize the tutorial
+        self._generate_random_processes()
+        self._populate_process_table()
+        self._setup_timeline_grid()
+        self._generate_steps()
         self._show_step(0)
     
-    def _create_problem_sets(self):
-        """Create all problem sets with their steps"""
-        return [
-            self._create_set_1(),
-            self._create_set_2(),
-            self._create_set_3(),
+    def _load_step_templates(self):
+        """Load step description templates from JSON file"""
+        # Try multiple paths for the JSON file
+        possible_paths = [
+            os.path.join(os.path.dirname(__file__), '..', 'tutorial_kb', 'fcfs_steps.json'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'tutorial_kb', 'fcfs_steps.json'),
+            'tutorial_kb/fcfs_steps.json',
         ]
+        
+        for path in possible_paths:
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                continue
+        
+        # Return default templates if file not found
+        return self._get_default_templates()
     
-    def _create_set_1(self):
-        """Problem Set 1: Original set"""
-        processes = [
-            {"id": "A", "priority": 4, "arrival": 11, "burst": 8},
-            {"id": "B", "priority": 1, "arrival": 13, "burst": 9},
-            {"id": "C", "priority": 2, "arrival": 6, "burst": 9},
-            {"id": "D", "priority": 3, "arrival": 1, "burst": 6},
-        ]
-        
-        # FCFS sorted order: by (arrival, id) -> D(1), C(6), A(11), B(13)
-        steps = [
-            {
-                "title": "Step 0: Initial State",
-                "description": (
-                    "FCFS (First Come First Served) is a non-preemptive scheduling algorithm.\n\n"
-                    "Core Rules:\n"
-                    "- Processes execute in the order they arrive\n"
-                    "- Once a process starts, it runs to completion\n"
-                    "- Tie-breaker: Process ID (alphabetical order)\n\n"
-                    "Our problem set has 4 processes: A, B, C, D with different arrival times."
-                ),
-                "timeline": {},
-                "rs_markers": {}
-            },
-            {
-                "title": "Step 1: Sort by Arrival Time",
-                "description": (
-                    "First, sort all processes by arrival time. If arrivals are equal, use Process ID.\n\n"
-                    "Sorted order: D(1) -> C(6) -> A(11) -> B(13)\n\n"
-                    "RS (Ready State) markers show when each process enters the ready queue.\n"
-                    "This is always the first step - mark the arrival times on the timeline."
-                ),
-                "timeline": {},
-                "rs_markers": {
-                    "D": [1],
-                    "C": [6],
-                    "A": [11],
-                    "B": [13],
-                }
-            },
-            {
-                "title": "Step 2: Execute Process D",
-                "description": (
-                    "Process D arrives first at t=1 and has burst time of 6.\n\n"
-                    "Since FCFS is non-preemptive, D runs from t=1 to t=6 (6 time units).\n\n"
-                    "D completes at t=7 (end time = start + burst = 1 + 6 = 7)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 7)),
+    def _get_default_templates(self):
+        """Return default step templates if JSON file not found"""
+        return {
+            "step_types": {
+                "initial": {
+                    "title": "Step 0: Initial State",
+                    "description": "FCFS (First Come First Served) is a non-preemptive scheduling algorithm.\n\nCore Rules:\n- Processes execute in the order they arrive\n- Once a process starts, it runs to completion\n- Tie-breaker: Process ID (alphabetical order)"
                 },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [6],
-                    "A": [11],
-                    "B": [13],
-                }
-            },
-            {
-                "title": "Step 3: Execute Process C",
-                "description": (
-                    "Process C arrived at t=6 (while D was still running).\n\n"
-                    "D finishes at t=7, so C starts immediately at t=7.\n"
-                    "C has burst time of 9, so it runs from t=7 to t=15.\n\n"
-                    "Note: Even though C arrived at t=6, it had to wait for D to complete."
-                ),
-                "timeline": {
-                    "D": list(range(1, 7)),
-                    "C": list(range(7, 16)),
+                "show_arrivals": {
+                    "title": "Step 1: Sort by Arrival Time",
+                    "description": "First, sort all processes by arrival time. If arrivals are equal, use Process ID.\n\nRS (Ready State) markers show when each process enters the ready queue."
                 },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [6],
-                    "A": [11],
-                    "B": [13],
-                }
-            },
-            {
-                "title": "Step 4: Execute Process A",
-                "description": (
-                    "Process A arrived at t=11 (while C was running).\n\n"
-                    "C finishes at t=16, so A starts at t=16.\n"
-                    "A has burst time of 8, so it runs from t=16 to t=23.\n\n"
-                    "A waited from t=11 to t=16 (waiting time = 5)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 7)),
-                    "C": list(range(7, 16)),
-                    "A": list(range(16, 24)),
+                "first_process_first_block": {
+                    "title": "Step {step}: Process {process_id} begins execution",
+                    "description": "Process {process_id} arrives first at t={arrival} and has burst time of {burst}."
                 },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [6],
-                    "A": [11],
-                    "B": [13],
-                }
-            },
-            {
-                "title": "Step 5: Execute Process B",
-                "description": (
-                    "Process B arrived at t=13 (while C was still running).\n\n"
-                    "A finishes at t=24, so B starts at t=24.\n"
-                    "B has burst time of 9, so it runs from t=24 to t=32.\n\n"
-                    "B waited from t=13 to t=24 (waiting time = 11)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 7)),
-                    "C": list(range(7, 16)),
-                    "A": list(range(16, 24)),
-                    "B": list(range(24, 33)),
+                "process_start": {
+                    "title": "Step {step}: Process {process_id} begins execution",
+                    "description": "Process {process_id} starts at t={current_time}."
                 },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [6],
-                    "A": [11],
-                    "B": [13],
-                }
-            },
-            {
-                "title": "Step 6: Final Solution",
-                "description": (
-                    "FCFS Scheduling Complete!\n\n"
-                    "Execution Order: D -> C -> A -> B\n\n"
-                    "Metrics:\n"
-                    "- Process D: Start=1, End=7, TAT=6, WT=0\n"
-                    "- Process C: Start=7, End=16, TAT=10, WT=1\n"
-                    "- Process A: Start=16, End=24, TAT=13, WT=5\n"
-                    "- Process B: Start=24, End=32 (truncated), TAT=19, WT=11\n\n"
-                    "Average Waiting Time: (0+1+5+11)/4 = 4.25\n"
-                    "Average Turnaround Time: (6+10+13+19)/4 = 12.0"
-                ),
-                "timeline": {
-                    "D": list(range(1, 7)),
-                    "C": list(range(7, 16)),
-                    "A": list(range(16, 24)),
-                    "B": list(range(24, 33)),
+                "continue_block": {
+                    "title": "Step {step}: Process {process_id} continues (t={current_time})",
+                    "description": "Process {process_id} continues. Block {block_num} of {burst}."
                 },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [6],
-                    "A": [11],
-                    "B": [13],
+                "process_complete_block": {
+                    "title": "Step {step}: Process {process_id} completes",
+                    "description": "Process {process_id} completes at t={end_time}."
+                },
+                "final": {
+                    "title": "Step {step}: Final Solution",
+                    "description": "FCFS Scheduling Complete!"
                 }
-            },
-        ]
-        
-        return {"name": "FCFS Tutorial 1", "processes": processes, "steps": steps}
+            }
+        }
     
-    def _create_set_2(self):
-        """Problem Set 2: Second set from user's image"""
-        processes = [
-            {"id": "A", "priority": 4, "arrival": 27, "burst": 4},
-            {"id": "B", "priority": 1, "arrival": 9, "burst": 8},
-            {"id": "C", "priority": 1, "arrival": 19, "burst": 7},
-            {"id": "D", "priority": 2, "arrival": 1, "burst": 13},
-        ]
+    def _generate_random_processes(self):
+        """Generate random process values using the main app's ProcessGenerator"""
+        # Use the existing ProcessGenerator with unique arrivals for FCFS
+        generated = ProcessGenerator.generate_processes(num_processes=4, unique_arrivals=True)
         
-        # FCFS sorted order: by (arrival, id) -> D(1), B(9), C(19), A(27)
-        steps = [
-            {
-                "title": "Step 0: Initial State",
-                "description": (
-                    "FCFS (First Come First Served) is a non-preemptive scheduling algorithm.\n\n"
-                    "Core Rules:\n"
-                    "- Processes execute in the order they arrive\n"
-                    "- Once a process starts, it runs to completion\n"
-                    "- Tie-breaker: Process ID (alphabetical order)\n\n"
-                    "Our problem set has 4 processes: A, B, C, D with different arrival times."
-                ),
-                "timeline": {},
-                "rs_markers": {}
-            },
-            {
-                "title": "Step 1: Sort by Arrival Time",
-                "description": (
-                    "First, sort all processes by arrival time. If arrivals are equal, use Process ID.\n\n"
-                    "Sorted order: D(1) -> B(9) -> C(19) -> A(27)\n\n"
-                    "RS (Ready State) markers show when each process enters the ready queue.\n"
-                    "This is always the first step - mark the arrival times on the timeline."
-                ),
-                "timeline": {},
-                "rs_markers": {
-                    "D": [1],
-                    "B": [9],
-                    "C": [19],
-                    "A": [27],
-                }
-            },
-            {
-                "title": "Step 2: Execute Process D",
-                "description": (
-                    "Process D arrives first at t=1 and has burst time of 13.\n\n"
-                    "Since FCFS is non-preemptive, D runs from t=1 to t=13 (13 time units).\n\n"
-                    "D completes at t=14 (end time = start + burst = 1 + 13 = 14)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 14)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "B": [9],
-                    "C": [19],
-                    "A": [27],
-                }
-            },
-            {
-                "title": "Step 3: Execute Process B",
-                "description": (
-                    "Process B arrived at t=9 (while D was running).\n\n"
-                    "D finishes at t=14, so B starts at t=14.\n"
-                    "B has burst time of 8, so it runs from t=14 to t=21.\n\n"
-                    "B waited from t=9 to t=14 (waiting time = 5)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 14)),
-                    "B": list(range(14, 22)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "B": [9],
-                    "C": [19],
-                    "A": [27],
-                }
-            },
-            {
-                "title": "Step 4: Execute Process C",
-                "description": (
-                    "Process C arrived at t=19 (while B was running).\n\n"
-                    "B finishes at t=22, so C starts at t=22.\n"
-                    "C has burst time of 7, so it runs from t=22 to t=28.\n\n"
-                    "C waited from t=19 to t=22 (waiting time = 3)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 14)),
-                    "B": list(range(14, 22)),
-                    "C": list(range(22, 29)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "B": [9],
-                    "C": [19],
-                    "A": [27],
-                }
-            },
-            {
-                "title": "Step 5: Execute Process A",
-                "description": (
-                    "Process A arrived at t=27 (while C was running).\n\n"
-                    "C finishes at t=29, so A starts at t=29.\n"
-                    "A has burst time of 4, so it runs from t=29 to t=32.\n\n"
-                    "A waited from t=27 to t=29 (waiting time = 2)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 14)),
-                    "B": list(range(14, 22)),
-                    "C": list(range(22, 29)),
-                    "A": list(range(29, 33)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "B": [9],
-                    "C": [19],
-                    "A": [27],
-                }
-            },
-            {
-                "title": "Step 6: Final Solution",
-                "description": (
-                    "FCFS Scheduling Complete!\n\n"
-                    "Execution Order: D -> B -> C -> A\n\n"
-                    "Metrics:\n"
-                    "- Process D: Start=1, End=14, TAT=13, WT=0\n"
-                    "- Process B: Start=14, End=22, TAT=13, WT=5\n"
-                    "- Process C: Start=22, End=29, TAT=10, WT=3\n"
-                    "- Process A: Start=29, End=32 (truncated), TAT=5, WT=2\n\n"
-                    "Average Waiting Time: (0+5+3+2)/4 = 2.5\n"
-                    "Average Turnaround Time: (13+13+10+5)/4 = 10.25"
-                ),
-                "timeline": {
-                    "D": list(range(1, 14)),
-                    "B": list(range(14, 22)),
-                    "C": list(range(22, 29)),
-                    "A": list(range(29, 33)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "B": [9],
-                    "C": [19],
-                    "A": [27],
-                }
-            },
-        ]
-        
-        return {"name": "FCFS Tutorial 2", "processes": processes, "steps": steps}
+        self.processes = []
+        for proc in generated:
+            self.processes.append({
+                "id": proc.id,
+                "priority": proc.priority,
+                "arrival": proc.arrival,
+                "burst": proc.burst
+            })
     
-    def _create_set_3(self):
-        """Problem Set 3: Third set from user's image"""
-        processes = [
-            {"id": "A", "priority": 4, "arrival": 5, "burst": 5},
-            {"id": "B", "priority": 1, "arrival": 9, "burst": 8},
-            {"id": "C", "priority": 3, "arrival": 3, "burst": 7},
-            {"id": "D", "priority": 2, "arrival": 1, "burst": 11},
-        ]
+    def _get_processes_from_table(self):
+        """Read process values from the process table"""
+        self.processes = []
+        for row in range(self.process_table.rowCount()):
+            try:
+                process_id = self.process_table.item(row, 0).text() if self.process_table.item(row, 0) else chr(ord('A') + row)
+                priority = int(self.process_table.item(row, 1).text()) if self.process_table.item(row, 1) else 1
+                arrival = int(self.process_table.item(row, 2).text()) if self.process_table.item(row, 2) else 1
+                burst = int(self.process_table.item(row, 3).text()) if self.process_table.item(row, 3) else 1
+                
+                # Validate values
+                priority = max(1, min(10, priority))
+                arrival = max(1, min(30, arrival))
+                burst = max(1, min(15, burst))
+                
+                self.processes.append({
+                    "id": process_id,
+                    "priority": priority,
+                    "arrival": arrival,
+                    "burst": burst
+                })
+            except (ValueError, AttributeError):
+                # Use defaults if parsing fails
+                self.processes.append({
+                    "id": chr(ord('A') + row),
+                    "priority": 1,
+                    "arrival": 1,
+                    "burst": 3
+                })
+    
+    def _on_table_cell_changed(self, row, column):
+        """Handle cell value changes in the process table"""
+        # Skip if we're currently updating the table programmatically
+        if self._updating_table:
+            return
         
-        # FCFS sorted order: by (arrival, id) -> D(1), C(3), A(5), B(9)
-        steps = [
-            {
-                "title": "Step 0: Initial State",
-                "description": (
-                    "FCFS (First Come First Served) is a non-preemptive scheduling algorithm.\n\n"
-                    "Core Rules:\n"
-                    "- Processes execute in the order they arrive\n"
-                    "- Once a process starts, it runs to completion\n"
-                    "- Tie-breaker: Process ID (alphabetical order)\n\n"
-                    "Our problem set has 4 processes: A, B, C, D with different arrival times."
-                ),
-                "timeline": {},
-                "rs_markers": {}
-            },
-            {
-                "title": "Step 1: Sort by Arrival Time",
-                "description": (
-                    "First, sort all processes by arrival time. If arrivals are equal, use Process ID.\n\n"
-                    "Sorted order: D(1) -> C(3) -> A(5) -> B(9)\n\n"
-                    "RS (Ready State) markers show when each process enters the ready queue.\n"
-                    "This is always the first step - mark the arrival times on the timeline."
-                ),
-                "timeline": {},
-                "rs_markers": {
-                    "D": [1],
-                    "C": [3],
-                    "A": [5],
-                    "B": [9],
-                }
-            },
-            {
-                "title": "Step 2: Execute Process D",
-                "description": (
-                    "Process D arrives first at t=1 and has burst time of 11.\n\n"
-                    "Since FCFS is non-preemptive, D runs from t=1 to t=11 (11 time units).\n\n"
-                    "D completes at t=12 (end time = start + burst = 1 + 11 = 12)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 12)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [3],
-                    "A": [5],
-                    "B": [9],
-                }
-            },
-            {
-                "title": "Step 3: Execute Process C",
-                "description": (
-                    "Process C arrived at t=3 (while D was running).\n\n"
-                    "D finishes at t=12, so C starts at t=12.\n"
-                    "C has burst time of 7, so it runs from t=12 to t=18.\n\n"
-                    "C waited from t=3 to t=12 (waiting time = 9)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 12)),
-                    "C": list(range(12, 19)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [3],
-                    "A": [5],
-                    "B": [9],
-                }
-            },
-            {
-                "title": "Step 4: Execute Process A",
-                "description": (
-                    "Process A arrived at t=5 (while D was running).\n\n"
-                    "C finishes at t=19, so A starts at t=19.\n"
-                    "A has burst time of 5, so it runs from t=19 to t=23.\n\n"
-                    "A waited from t=5 to t=19 (waiting time = 14)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 12)),
-                    "C": list(range(12, 19)),
-                    "A": list(range(19, 24)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [3],
-                    "A": [5],
-                    "B": [9],
-                }
-            },
-            {
-                "title": "Step 5: Execute Process B",
-                "description": (
-                    "Process B arrived at t=9 (while D was running).\n\n"
-                    "A finishes at t=24, so B starts at t=24.\n"
-                    "B has burst time of 8, so it runs from t=24 to t=31.\n\n"
-                    "B waited from t=9 to t=24 (waiting time = 15)."
-                ),
-                "timeline": {
-                    "D": list(range(1, 12)),
-                    "C": list(range(12, 19)),
-                    "A": list(range(19, 24)),
-                    "B": list(range(24, 32)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [3],
-                    "A": [5],
-                    "B": [9],
-                }
-            },
-            {
-                "title": "Step 6: Final Solution",
-                "description": (
-                    "FCFS Scheduling Complete!\n\n"
-                    "Execution Order: D -> C -> A -> B\n\n"
-                    "Metrics:\n"
-                    "- Process D: Start=1, End=12, TAT=11, WT=0\n"
-                    "- Process C: Start=12, End=19, TAT=16, WT=9\n"
-                    "- Process A: Start=19, End=24, TAT=19, WT=14\n"
-                    "- Process B: Start=24, End=32, TAT=23, WT=15\n\n"
-                    "Average Waiting Time: (0+9+14+15)/4 = 9.5\n"
-                    "Average Turnaround Time: (11+16+19+23)/4 = 17.25"
-                ),
-                "timeline": {
-                    "D": list(range(1, 12)),
-                    "C": list(range(12, 19)),
-                    "A": list(range(19, 24)),
-                    "B": list(range(24, 32)),
-                },
-                "rs_markers": {
-                    "D": [1],
-                    "C": [3],
-                    "A": [5],
-                    "B": [9],
-                }
-            },
-        ]
+        # Skip the Process ID column (column 0)
+        if column == 0:
+            return
         
-        return {"name": "FCFS Tutorial 3", "processes": processes, "steps": steps}
+        # Read all values from table and regenerate steps
+        self._get_processes_from_table()
+        self._generate_steps()
+        self.current_step = 0
+        self._setup_timeline_grid()
+        self._show_step(0)
+    
+    def _generate_steps(self):
+        """Generate tutorial steps dynamically based on current processes"""
+        self.steps = []
+        templates = self.step_templates.get("step_types", {})
+        
+        # Sort processes by arrival, then by ID (FCFS order)
+        sorted_procs = sorted(self.processes, key=lambda p: (p['arrival'], p['id']))
+        process_list = ", ".join([p['id'] for p in self.processes])
+        sorted_order = " -> ".join([f"{p['id']}({p['arrival']})" for p in sorted_procs])
+        
+        # Build RS markers dict
+        rs_markers = {p['id']: [p['arrival']] for p in self.processes}
+        
+        # Step 0: Initial State
+        initial = templates.get("initial", {})
+        self.steps.append({
+            "title": initial.get("title", "Step 0: Initial State"),
+            "description": initial.get("description", "").format(
+                num_processes=len(self.processes),
+                process_list=process_list
+            ),
+            "timeline": {},
+            "rs_markers": {}
+        })
+        
+        # Step 1: Show RS markers
+        arrivals = templates.get("show_arrivals", {})
+        self.steps.append({
+            "title": arrivals.get("title", "Step 1: Sort by Arrival Time"),
+            "description": arrivals.get("description", "").format(
+                sorted_order=sorted_order
+            ),
+            "timeline": {},
+            "rs_markers": rs_markers.copy()
+        })
+        
+        # Generate per-block steps
+        step_num = 2
+        current_time = 1
+        timeline = {}
+        start_times = {}
+        end_times = {}
+        prev_process = None
+        prev_end = None
+        
+        for proc_idx, proc in enumerate(sorted_procs):
+            pid = proc['id']
+            burst = proc['burst']
+            arrival = proc['arrival']
+            
+            # Advance to arrival if needed
+            if current_time < arrival:
+                current_time = arrival
+            
+            start_times[pid] = current_time
+            
+            # Generate a step for each block of this process
+            for block_num in range(1, burst + 1):
+                # Initialize timeline for this process if needed
+                if pid not in timeline:
+                    timeline[pid] = []
+                
+                # Add current time block
+                timeline[pid].append(current_time)
+                
+                # Determine step type and description
+                is_first_process = (proc_idx == 0)
+                is_first_block = (block_num == 1)
+                is_last_block = (block_num == burst)
+                remaining = burst - block_num
+                
+                if is_first_block:
+                    if is_first_process:
+                        # First process, first block
+                        tmpl = templates.get("first_process_first_block", {})
+                        title = tmpl.get("title", "Step {step}: Process {process_id} begins")
+                        desc = tmpl.get("description", "Process {process_id} starts.")
+                    else:
+                        # Subsequent process starts
+                        tmpl = templates.get("process_start", {})
+                        title = tmpl.get("title", "Step {step}: Process {process_id} begins")
+                        desc = tmpl.get("description", "Process {process_id} starts.")
+                        
+                        # Context about waiting
+                        wait_context = f" (while {prev_process} was running)" if prev_process else ""
+                        wait_time = current_time - arrival
+                        wait_info = f"{pid} waited from t={arrival} to t={current_time} (waiting time = {wait_time})." if wait_time > 0 else f"{pid} starts immediately upon arriving."
+                        
+                        desc = desc.format(
+                            step=step_num,
+                            process_id=pid,
+                            arrival=arrival,
+                            burst=burst,
+                            current_time=current_time,
+                            prev_process=prev_process or "N/A",
+                            prev_end=prev_end or "N/A",
+                            wait_context=wait_context,
+                            wait_info=wait_info
+                        )
+                        title = title.format(step=step_num, process_id=pid, current_time=current_time)
+                        
+                        self.steps.append({
+                            "title": title,
+                            "description": desc,
+                            "timeline": {k: v.copy() for k, v in timeline.items()},
+                            "rs_markers": rs_markers.copy()
+                        })
+                        step_num += 1
+                        current_time += 1
+                        continue
+                    
+                    title = title.format(step=step_num, process_id=pid, current_time=current_time)
+                    desc = desc.format(
+                        step=step_num,
+                        process_id=pid,
+                        arrival=arrival,
+                        burst=burst,
+                        current_time=current_time
+                    )
+                elif is_last_block:
+                    # Last block - process completes
+                    end_time = current_time + 1
+                    end_times[pid] = end_time
+                    wait_time = start_times[pid] - arrival
+                    
+                    tmpl = templates.get("process_complete_block", {})
+                    title = tmpl.get("title", "Step {step}: Process {process_id} completes")
+                    desc = tmpl.get("description", "Process {process_id} completes.")
+                    
+                    title = title.format(step=step_num, process_id=pid, current_time=current_time)
+                    desc = desc.format(
+                        step=step_num,
+                        process_id=pid,
+                        start_time=start_times[pid],
+                        end_time=end_time,
+                        burst=burst,
+                        wait_time=wait_time,
+                        arrival=arrival,
+                        current_time=current_time
+                    )
+                    
+                    prev_process = pid
+                    prev_end = end_time
+                else:
+                    # Middle block - continue
+                    tmpl = templates.get("continue_block", {})
+                    title = tmpl.get("title", "Step {step}: Process {process_id} continues")
+                    desc = tmpl.get("description", "Process {process_id} continues.")
+                    
+                    title = title.format(step=step_num, process_id=pid, current_time=current_time)
+                    desc = desc.format(
+                        step=step_num,
+                        process_id=pid,
+                        block_num=block_num,
+                        burst=burst,
+                        remaining=remaining,
+                        current_time=current_time
+                    )
+                
+                self.steps.append({
+                    "title": title,
+                    "description": desc,
+                    "timeline": {k: v.copy() for k, v in timeline.items()},
+                    "rs_markers": rs_markers.copy()
+                })
+                step_num += 1
+                current_time += 1
+            
+            # Record end time
+            end_times[pid] = current_time
+        
+        # Final step with metrics
+        execution_order = " -> ".join([p['id'] for p in sorted_procs])
+        metrics_lines = []
+        total_wait = 0
+        total_tat = 0
+        
+        for proc in sorted_procs:
+            pid = proc['id']
+            start = start_times.get(pid, 0)
+            end = end_times.get(pid, 0)
+            burst = proc['burst']
+            arrival = proc['arrival']
+            tat = end - arrival
+            wait = start - arrival
+            total_wait += wait
+            total_tat += tat
+            metrics_lines.append(f"- Process {pid}: Start={start}, End={end}, TAT={tat}, WT={wait}")
+        
+        metrics = "\n".join(metrics_lines)
+        avg_wait = total_wait / len(self.processes) if self.processes else 0
+        avg_tat = total_tat / len(self.processes) if self.processes else 0
+        
+        final_tmpl = templates.get("final", {})
+        self.steps.append({
+            "title": final_tmpl.get("title", "Final Solution").format(step=step_num),
+            "description": final_tmpl.get("description", "Complete!").format(
+                step=step_num,
+                execution_order=execution_order,
+                metrics=metrics,
+                avg_wait=f"{avg_wait:.2f}",
+                avg_tat=f"{avg_tat:.2f}"
+            ),
+            "timeline": {k: v.copy() for k, v in timeline.items()},
+            "rs_markers": rs_markers.copy()
+        })
+        
+        # Update step indicator
+        if hasattr(self, 'step_indicator'):
+            self.step_indicator.setText(f"Step 0 of {len(self.steps) - 1}")
     
     def setup_ui(self):
         """Setup the tutorial UI"""
@@ -488,7 +378,7 @@ class FCFSTutorialPage(QWidget):
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(15)
         
-        # Top row: Back button and Problem Set selector
+        # Top row: Back button and Generate Random button
         top_layout = QHBoxLayout()
         
         self.back_btn = QPushButton("Back to Help")
@@ -500,32 +390,26 @@ class FCFSTutorialPage(QWidget):
         
         top_layout.addStretch()
         
-        # Problem set selector
-        selector_label = QLabel("Problem Set:")
-        selector_label.setObjectName("selectorLabel")
-        top_layout.addWidget(selector_label)
-        
-        self.set_selector = QComboBox()
-        self.set_selector.setObjectName("setSelector")
-        self.set_selector.setMinimumWidth(180)
-        for ps in self.problem_sets:
-            self.set_selector.addItem(ps["name"])
-        self.set_selector.currentIndexChanged.connect(self._on_set_changed)
-        top_layout.addWidget(self.set_selector)
+        # Random generation button (no emoji)
+        self.random_btn = QPushButton("Generate Random")
+        self.random_btn.setObjectName("randomBtn")
+        self.random_btn.setCursor(Qt.PointingHandCursor)
+        self.random_btn.clicked.connect(self._on_random_clicked)
+        top_layout.addWidget(self.random_btn)
         
         layout.addLayout(top_layout)
         
         # Title
-        self.page_title = QLabel(self.problem_sets[0]["name"])
+        self.page_title = QLabel("FCFS Tutorial")
         self.page_title.setObjectName("tutorialTitle")
         layout.addWidget(self.page_title)
         
-        # Process table
+        # Process table (original style, but editable)
         self.process_table = QTableWidget(4, 4)
         self.process_table.setHorizontalHeaderLabels(["Process ID", "Priority", "Arrival", "Burst time"])
         self.process_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.process_table.setMaximumHeight(170)
-        self._populate_process_table()
+        self.process_table.cellChanged.connect(self._on_table_cell_changed)
         layout.addWidget(self.process_table)
         
         # Timeline grid
@@ -587,34 +471,44 @@ class FCFSTutorialPage(QWidget):
         nav_layout.addStretch()
         layout.addLayout(nav_layout)
     
-    def _on_set_changed(self, index):
-        """Handle problem set selection change"""
-        self.current_set_index = index
-        self.processes = self.problem_sets[index]["processes"]
-        self.steps = self.problem_sets[index]["steps"]
-        
-        # Update title
-        self.page_title.setText(self.problem_sets[index]["name"])
-        
-        # Refresh tables
-        self._populate_process_table()
-        self._setup_timeline_grid()
-        
-        # Reset to first step
-        self.current_step = 0
-        self._show_step(0)
-    
     def _populate_process_table(self):
-        """Fill the process table with current problem set data"""
+        """Fill the process table with current process data"""
+        self._updating_table = True
         for i, proc in enumerate(self.processes):
-            self.process_table.setItem(i, 0, QTableWidgetItem(proc["id"]))
-            self.process_table.setItem(i, 1, QTableWidgetItem(str(proc["priority"])))
-            self.process_table.setItem(i, 2, QTableWidgetItem(str(proc["arrival"])))
-            self.process_table.setItem(i, 3, QTableWidgetItem(str(proc["burst"])))
+            # Process ID (read-only)
+            id_item = QTableWidgetItem(proc["id"])
+            id_item.setFlags(id_item.flags() & ~Qt.ItemIsEditable)
+            id_item.setTextAlignment(Qt.AlignCenter)
+            self.process_table.setItem(i, 0, id_item)
+            
+            # Priority (editable)
+            priority_item = QTableWidgetItem(str(proc["priority"]))
+            priority_item.setTextAlignment(Qt.AlignCenter)
+            self.process_table.setItem(i, 1, priority_item)
+            
+            # Arrival (editable)
+            arrival_item = QTableWidgetItem(str(proc["arrival"]))
+            arrival_item.setTextAlignment(Qt.AlignCenter)
+            self.process_table.setItem(i, 2, arrival_item)
+            
+            # Burst (editable)
+            burst_item = QTableWidgetItem(str(proc["burst"]))
+            burst_item.setTextAlignment(Qt.AlignCenter)
+            self.process_table.setItem(i, 3, burst_item)
+        self._updating_table = False
+    
+    def _on_random_clicked(self):
+        """Handle random generation button click"""
+        self._generate_random_processes()
+        self._populate_process_table()
+        self._generate_steps()
+        self.current_step = 0
+        self._setup_timeline_grid()
+        self._show_step(0)
     
     def _setup_timeline_grid(self):
         """Initialize the timeline grid with process IDs"""
-        for i, proc in enumerate(self.processes):
+        for i, proc in enumerate(self.processes[:4]):
             # Process ID column
             item = QTableWidgetItem(proc["id"])
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
@@ -653,12 +547,12 @@ class FCFSTutorialPage(QWidget):
     
     def _update_timeline(self, timeline_data, rs_markers):
         """Update the timeline grid based on step data"""
-        # Skip if timeline grid is not visible or not fully initialized
-        if not self.timeline_grid or not self.timeline_grid.isVisible():
+        # Skip if timeline grid is not fully initialized
+        if not self.timeline_grid:
             return
             
         # Create process ID to row mapping
-        process_to_row = {proc["id"]: i for i, proc in enumerate(self.processes)}
+        process_to_row = {proc["id"]: i for i, proc in enumerate(self.processes[:4])}
         
         # Clear all cells first
         for row in range(4):
@@ -746,28 +640,18 @@ class FCFSTutorialPage(QWidget):
                 background-color: transparent;
             }}
             
-            QLabel#selectorLabel {{
-                font-size: 14px;
-                color: {text_color};
-                background-color: transparent;
-            }}
-            
-            QComboBox#setSelector {{
+            QPushButton#randomBtn {{
                 background-color: {input_bg};
                 border: 1px solid {table_grid};
-                padding: 8px 12px;
+                padding: 10px 20px;
                 border-radius: 6px;
                 color: {text_color};
                 font-size: 14px;
             }}
             
-            QComboBox#setSelector:hover {{
+            QPushButton#randomBtn:hover {{
+                background-color: {theme.get('sidebar_hover', '#4a4f56')};
                 border: 1px solid {button_bg};
-            }}
-            
-            QComboBox#setSelector::drop-down {{
-                border: none;
-                padding-right: 10px;
             }}
             
             QLabel#stepTitle {{
