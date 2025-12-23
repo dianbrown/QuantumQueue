@@ -16,6 +16,7 @@ from pages.SJFPriorityTutorialPage import SJFPriorityTutorialPage
 from pages.SRTTutorialPage import SRTTutorialPage
 from pages.RoundRobinTutorialPage import RoundRobinTutorialPage
 from pages.RoundRobinPriorityTutorialPage import RoundRobinPriorityTutorialPage
+from pages.PRAFIFOTutorialPage import PRAFIFOTutorialPage
 
 
 class AlgorithmCard(QFrame):
@@ -325,6 +326,15 @@ class HelpPage(QWidget):
             example_btn.clicked.connect(lambda: self._show_tutorial("RR Priority"))
             content_layout.addWidget(example_btn)
         
+        # PRA Tutorials
+        if algo_name == "FIFO" and category == "PRA":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("PRA_FIFO"))
+            content_layout.addWidget(example_btn)
+        
         content_layout.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll)
@@ -437,6 +447,22 @@ class HelpPage(QWidget):
                 if tutorial_widget:
                     tutorial_widget.reset_tutorial()
             self.stack.setCurrentIndex(self.tutorial_pages["RR Priority"])
+        
+        # PRA Tutorials
+        elif algo_name == "PRA_FIFO":
+            if "PRA_FIFO" not in self.tutorial_pages:
+                tutorial = PRAFIFOTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("PRA_FIFO", 0)))
+                self.tutorial_pages["PRA_FIFO"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                tutorial_index = self.tutorial_pages["PRA_FIFO"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            self.stack.setCurrentIndex(self.tutorial_pages["PRA_FIFO"])
     
     def _get_description(self, algo_name):
         """Get comprehensive algorithm description from AlgorithmRules"""
