@@ -10,6 +10,7 @@ from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon
 from resource_path import resource_path
 from pages.FCFSTutorialPage import FCFSTutorialPage
+from pages.FCFSPriorityTutorialPage import FCFSPriorityTutorialPage
 
 
 class AlgorithmCard(QFrame):
@@ -271,6 +272,14 @@ class HelpPage(QWidget):
             example_btn.clicked.connect(lambda: self._show_tutorial("FCFS"))
             content_layout.addWidget(example_btn)
         
+        if algo_name == "FCFS Priority" and category == "CPU":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("FCFS Priority"))
+            content_layout.addWidget(example_btn)
+        
         content_layout.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll)
@@ -281,22 +290,33 @@ class HelpPage(QWidget):
         """Show tutorial page for the specified algorithm"""
         if algo_name == "FCFS":
             if "FCFS" not in self.tutorial_pages:
-                # Create and add the FCFS tutorial page
                 tutorial = FCFSTutorialPage()
                 tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("CPU_FCFS", 0)))
                 self.tutorial_pages["FCFS"] = self.stack.count()
                 self.stack.addWidget(tutorial)
-                # Apply current theme if available
                 if self.current_theme:
                     tutorial.apply_theme(self.current_theme)
             else:
-                # Reset tutorial to first step when showing
                 tutorial_index = self.tutorial_pages["FCFS"]
                 tutorial_widget = self.stack.widget(tutorial_index)
                 if tutorial_widget:
                     tutorial_widget.reset_tutorial()
-            
             self.stack.setCurrentIndex(self.tutorial_pages["FCFS"])
+        
+        elif algo_name == "FCFS Priority":
+            if "FCFS Priority" not in self.tutorial_pages:
+                tutorial = FCFSPriorityTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("CPU_FCFS Priority", 0)))
+                self.tutorial_pages["FCFS Priority"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                tutorial_index = self.tutorial_pages["FCFS Priority"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            self.stack.setCurrentIndex(self.tutorial_pages["FCFS Priority"])
     
     def _get_description(self, algo_name):
         """Get comprehensive algorithm description from AlgorithmRules"""
