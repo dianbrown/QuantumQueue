@@ -13,6 +13,7 @@ from pages.FCFSTutorialPage import FCFSTutorialPage
 from pages.FCFSPriorityTutorialPage import FCFSPriorityTutorialPage
 from pages.SJFTutorialPage import SJFTutorialPage
 from pages.SJFPriorityTutorialPage import SJFPriorityTutorialPage
+from pages.SRTTutorialPage import SRTTutorialPage
 
 
 class AlgorithmCard(QFrame):
@@ -298,6 +299,14 @@ class HelpPage(QWidget):
             example_btn.clicked.connect(lambda: self._show_tutorial("SJF Priority"))
             content_layout.addWidget(example_btn)
         
+        if algo_name == "SRT" and category == "CPU":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("SRT"))
+            content_layout.addWidget(example_btn)
+        
         content_layout.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll)
@@ -365,6 +374,21 @@ class HelpPage(QWidget):
                 if tutorial_widget:
                     tutorial_widget.reset_tutorial()
             self.stack.setCurrentIndex(self.tutorial_pages["SJF Priority"])
+        
+        elif algo_name == "SRT":
+            if "SRT" not in self.tutorial_pages:
+                tutorial = SRTTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("CPU_SRT", 0)))
+                self.tutorial_pages["SRT"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                tutorial_index = self.tutorial_pages["SRT"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            self.stack.setCurrentIndex(self.tutorial_pages["SRT"])
     
     def _get_description(self, algo_name):
         """Get comprehensive algorithm description from AlgorithmRules"""
