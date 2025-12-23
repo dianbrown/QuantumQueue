@@ -1,0 +1,42 @@
+{
+  "algorithm": "SJF_Priority",
+  "algorithm_name": "SJF with Priority (Preemptive)",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "SJF with Priority is a PREEMPTIVE scheduling algorithm.\n\nCore Rules:\n- Higher priority can preempt lower priority\n- Same priority: SHORTER ORIGINAL burst can preempt\n- Uses ORIGINAL burst for comparison (NOT remaining!)\n- Tie-breakers: Priority → Original Burst → Arrival → ID\n\nOur problem set has {num_processes} processes: {process_list}."
+    },
+    "show_arrivals": {
+      "title": "Step 1: Mark Arrival Times (RS)",
+      "description": "Mark when each process arrives.\n\nArrival order: {arrival_order}\n\nRS markers show when processes enter the ready queue.\nIMPORTANT: This algorithm uses ORIGINAL burst for ALL comparisons!"
+    },
+    "first_block": {
+      "title": "Step {step}: Process {process_id} begins (P={priority}, Burst={burst})",
+      "description": "At t={current_time}, selecting from ready queue...\n\nReady: {ready_list}\nSorted by Priority (desc) → Original Burst (asc)\n\nSelected: {process_id} (Priority={priority}, Original Burst={burst})"
+    },
+    "continue_block": {
+      "title": "Step {step}: Process {process_id} continues (t={current_time})",
+      "description": "Process {process_id} continues execution.\n\nNo higher priority or shorter-burst process has arrived.\nBlock {block_num} of {burst}. Remaining: {remaining}"
+    },
+    "preemption_priority": {
+      "title": "Step {step}: PREEMPTION! {new_process} interrupts {old_process}",
+      "description": "Process {new_process} (Priority={new_priority}) arrives at t={current_time}!\n\n{old_process} (Priority={old_priority}) is preempted - LOWER priority.\n\n{old_process} returns to ready queue with {old_remaining} blocks remaining.\nNote: {old_process}'s original burst ({old_burst}) stays constant for future comparisons."
+    },
+    "preemption_burst": {
+      "title": "Step {step}: PREEMPTION! {new_process} interrupts {old_process}",
+      "description": "Process {new_process} arrives at t={current_time}!\n\nBoth have Priority={priority}, but:\n- {new_process} original burst: {new_burst}\n- {old_process} original burst: {old_burst}\n\n{new_process} has SHORTER original burst → preempts!\n{old_process} returns to queue with {old_remaining} blocks remaining."
+    },
+    "no_preemption": {
+      "title": "Step {step}: {new_process} arrives (no preemption)",
+      "description": "Process {new_process} (P={new_priority}, Burst={new_burst}) arrives at t={current_time}.\n\nCurrent: {current_process} (P={current_priority}, Burst={current_burst})\n\nNo preemption - {reason}\n{new_process} waits in ready queue."
+    },
+    "process_complete": {
+      "title": "Step {step}: Process {process_id} completes!",
+      "description": "Process {process_id} finishes execution!\n\nPriority: {priority}, Original Burst: {burst}\nStarted: t={start_time}, Completed: t={end_time}\nWaiting time: {wait_time}, Turnaround: {tat}"
+    },
+    "final": {
+      "title": "Step {step}: Final Solution",
+      "description": "SJF with Priority Scheduling Complete!\n\nExecution Order: {execution_order}\n\nMetrics:\n{metrics}\n\nAverage Waiting Time: {avg_wait}\nAverage Turnaround Time: {avg_tat}\n\nNote: ORIGINAL burst was used for all comparisons, not remaining burst."
+    }
+  }
+}

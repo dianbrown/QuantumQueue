@@ -1,0 +1,38 @@
+{
+  "algorithm": "SJF",
+  "algorithm_name": "Shortest Job First",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "SJF (Shortest Job First) is a NON-PREEMPTIVE scheduling algorithm.\n\nCore Rules:\n- Select the process with the SHORTEST burst time from ready queue\n- Once a process starts, it runs to completion\n- Tie-breakers: Burst time → Arrival time → Process ID\n\nOur problem set has {num_processes} processes: {process_list}."
+    },
+    "show_arrivals": {
+      "title": "Step 1: Mark Arrival Times (RS)",
+      "description": "Mark when each process arrives and enters the ready queue.\n\nArrival order: {arrival_order}\n\nRS (Ready State) markers show when each process becomes available for scheduling.\nUnlike FCFS, arrival order does NOT determine execution order!"
+    },
+    "first_block": {
+      "title": "Step {step}: Process {process_id} begins (Burst={burst})",
+      "description": "At t={current_time}, checking ready queue for shortest burst...\n\nReady processes: {ready_list}\nShortest burst: {process_id} with burst time {burst}\n\n{process_id} starts execution and will run to completion."
+    },
+    "continue_block": {
+      "title": "Step {step}: Process {process_id} continues (t={current_time})",
+      "description": "Process {process_id} (Burst={burst}) continues execution.\n\nSJF is non-preemptive, so {process_id} runs uninterrupted.\nThis is block {block_num} of {burst}.\nBlocks remaining: {remaining}"
+    },
+    "process_complete": {
+      "title": "Step {step}: Process {process_id} completes!",
+      "description": "Process {process_id} finishes execution!\n\nBurst time: {burst} (shortest available when selected)\nStarted at t={start_time}, completed at t={end_time}.\nWaiting time: {wait_time}\nTurnaround time: {tat}"
+    },
+    "select_next": {
+      "title": "Step {step}: Selecting next process",
+      "description": "CPU is free. Checking ready queue at t={current_time}...\n\nReady processes (sorted by Burst → Arrival → ID):\n{ready_list}\n\nSelected: {process_id} (Burst={burst}, Arrival={arrival})"
+    },
+    "idle": {
+      "title": "Step {step}: CPU Idle (t={current_time})",
+      "description": "No process is ready at t={current_time}.\n\nWaiting for next arrival...\nNext process arrives at t={next_arrival}."
+    },
+    "final": {
+      "title": "Step {step}: Final Solution",
+      "description": "SJF Scheduling Complete!\n\nExecution Order: {execution_order}\n(Processes ran in order of shortest burst, not arrival!)\n\nMetrics:\n{metrics}\n\nAverage Waiting Time: {avg_wait}\nAverage Turnaround Time: {avg_tat}\n\nNote: SJF minimizes average waiting time but can cause starvation for long processes."
+    }
+  }
+}

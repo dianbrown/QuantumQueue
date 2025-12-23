@@ -11,6 +11,8 @@ from PySide6.QtGui import QIcon
 from resource_path import resource_path
 from pages.FCFSTutorialPage import FCFSTutorialPage
 from pages.FCFSPriorityTutorialPage import FCFSPriorityTutorialPage
+from pages.SJFTutorialPage import SJFTutorialPage
+from pages.SJFPriorityTutorialPage import SJFPriorityTutorialPage
 
 
 class AlgorithmCard(QFrame):
@@ -280,6 +282,22 @@ class HelpPage(QWidget):
             example_btn.clicked.connect(lambda: self._show_tutorial("FCFS Priority"))
             content_layout.addWidget(example_btn)
         
+        if algo_name == "SJF" and category == "CPU":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("SJF"))
+            content_layout.addWidget(example_btn)
+        
+        if algo_name == "SJF Priority" and category == "CPU":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("SJF Priority"))
+            content_layout.addWidget(example_btn)
+        
         content_layout.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll)
@@ -317,6 +335,36 @@ class HelpPage(QWidget):
                 if tutorial_widget:
                     tutorial_widget.reset_tutorial()
             self.stack.setCurrentIndex(self.tutorial_pages["FCFS Priority"])
+        
+        elif algo_name == "SJF":
+            if "SJF" not in self.tutorial_pages:
+                tutorial = SJFTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("CPU_SJF", 0)))
+                self.tutorial_pages["SJF"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                tutorial_index = self.tutorial_pages["SJF"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            self.stack.setCurrentIndex(self.tutorial_pages["SJF"])
+        
+        elif algo_name == "SJF Priority":
+            if "SJF Priority" not in self.tutorial_pages:
+                tutorial = SJFPriorityTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("CPU_SJF Priority", 0)))
+                self.tutorial_pages["SJF Priority"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                tutorial_index = self.tutorial_pages["SJF Priority"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            self.stack.setCurrentIndex(self.tutorial_pages["SJF Priority"])
     
     def _get_description(self, algo_name):
         """Get comprehensive algorithm description from AlgorithmRules"""
