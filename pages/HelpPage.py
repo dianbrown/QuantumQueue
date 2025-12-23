@@ -17,6 +17,8 @@ from pages.SRTTutorialPage import SRTTutorialPage
 from pages.RoundRobinTutorialPage import RoundRobinTutorialPage
 from pages.RoundRobinPriorityTutorialPage import RoundRobinPriorityTutorialPage
 from pages.PRAFIFOTutorialPage import PRAFIFOTutorialPage
+from pages.PRALRUTutorialPage import PRALRUTutorialPage
+from pages.PRAOptimalTutorialPage import PRAOptimalTutorialPage
 
 
 class AlgorithmCard(QFrame):
@@ -335,6 +337,22 @@ class HelpPage(QWidget):
             example_btn.clicked.connect(lambda: self._show_tutorial("PRA_FIFO"))
             content_layout.addWidget(example_btn)
         
+        if algo_name == "LRU" and category == "PRA":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("PRA_LRU"))
+            content_layout.addWidget(example_btn)
+        
+        if algo_name == "Optimal" and category == "PRA":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("PRA_Optimal"))
+            content_layout.addWidget(example_btn)
+        
         content_layout.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll)
@@ -463,6 +481,36 @@ class HelpPage(QWidget):
                 if tutorial_widget:
                     tutorial_widget.reset_tutorial()
             self.stack.setCurrentIndex(self.tutorial_pages["PRA_FIFO"])
+        
+        elif algo_name == "PRA_LRU":
+            if "PRA_LRU" not in self.tutorial_pages:
+                tutorial = PRALRUTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("PRA_LRU", 0)))
+                self.tutorial_pages["PRA_LRU"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                tutorial_index = self.tutorial_pages["PRA_LRU"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            self.stack.setCurrentIndex(self.tutorial_pages["PRA_LRU"])
+        
+        elif algo_name == "PRA_Optimal":
+            if "PRA_Optimal" not in self.tutorial_pages:
+                tutorial = PRAOptimalTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("PRA_Optimal", 0)))
+                self.tutorial_pages["PRA_Optimal"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                tutorial_index = self.tutorial_pages["PRA_Optimal"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            self.stack.setCurrentIndex(self.tutorial_pages["PRA_Optimal"])
     
     def _get_description(self, algo_name):
         """Get comprehensive algorithm description from AlgorithmRules"""

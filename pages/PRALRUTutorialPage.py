@@ -1,0 +1,754 @@
+"""
+PRA LRU Tutorial Page - Step-by-step walkthrough of LRU Page Replacement Algorithm
+Key difference from FIFO: On HIT, move accessed frame to back of queue (MRU position)
+"""
+
+import json
+import os
+import random
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
+                              QLabel, QTableWidget, QTableWidgetItem, QFrame,
+                              QScrollArea, QHeaderView, QLineEdit)
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor
+
+
+class QueueBlockWidget(QLabel):
+    """Visual block representing a frame in the queue (read-only display)"""
+    
+    def __init__(self, frame_id: str, parent=None):
+        super().__init__(parent)
+        self.frame_id = frame_id
+        self.setText(f"F{frame_id}")
+        self.setAlignment(Qt.AlignCenter)
+        self.setFixedSize(50, 30)
+        self.theme_colors = {}
+        self.update_style()
+    
+    def set_theme_colors(self, theme_colors: dict):
+        """Set theme colors for the block."""
+        self.theme_colors = theme_colors
+        self.update_style()
+    
+    def update_style(self):
+        """Update the stylesheet."""
+        bg_color = self.theme_colors.get('queue_block_bg', '#4a90e2')
+        border_color = self.theme_colors.get('queue_block_border', '#357abd')
+        text_color = self.theme_colors.get('queue_block_text', 'white')
+        
+        self.setStyleSheet(f"""
+            QLabel {{
+                background-color: {bg_color};
+                color: {text_color};
+                border: 2px solid {border_color};
+                border-radius: 3px;
+                font-weight: bold;
+                font-size: 12px;
+            }}
+        """)
+
+
+class PRALRUTutorialPage(QWidget):
+    """Step-by-step LRU Page Replacement Algorithm tutorial"""
+    
+    back_requested = Signal()
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.current_step = 0
+        self.current_theme = {}
+        self.hit_color = QColor("#4caf50")  # Green for hits
+        self.fault_color = QColor("#f44336")  # Red for faults
+        
+        # Frame and page data
+        self.frames = []
+        self.page_sequence = []
+        self.steps = []
+        self.queue_blocks = []
+        
+        self._updating_table = False
+        self.step_templates = self._load_step_templates()
+        
+        self.setup_ui()
+        self._generate_random_problem()
+        self._populate_frame_table()
+        self._setup_solution_table()
+        self._generate_steps()
+        self._show_step(0)
+    
+    def _load_step_templates(self):
+        """Load step description templates from JSON file"""
+        possible_paths = [
+            os.path.join(os.path.dirname(__file__), '..', 'tutorial_kb', 'pra_lru_steps.json'),
+            'tutorial_kb/pra_lru_steps.json',
+        ]
+        for path in possible_paths:
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                continue
+        return {"step_types": {}}
+    
+    def _generate_random_problem(self):
+        """Generate random frame data and page sequence"""
+        # Always generate exactly 5 frames for the tutorial
+        num_frames = 5
+        
+        self.frames = []
+        
+        # Generate unique load times (1-20, no duplicates)
+        available_load_times = list(range(1, 21))
+        random.shuffle(available_load_times)
+        selected_load_times = available_load_times[:num_frames]
+        
+        # Generate frames with descending IDs
+        used_pages = set()
+        for i in range(num_frames):
+            frame_id = str(num_frames - 1 - i)
+            load_time = selected_load_times[i]
+            
+            # Generate unique page for initial state (1-15)
+            page = random.randint(1, 15)
+            while page in used_pages:
+                page = random.randint(1, 15)
+            used_pages.add(page)
+            
+            self.frames.append({
+                "id": frame_id,
+                "load_time": load_time,
+                "page": str(page)
+            })
+        
+        # Generate random page sequence (8-16 pages)
+        sequence_length = random.randint(8, 16)
+        self.page_sequence = []
+        
+        for _ in range(sequence_length):
+            page = random.randint(1, 15)
+            self.page_sequence.append(str(page))
+    
+    def _get_data_from_tables(self):
+        """Read frame data and page sequence from tables"""
+        self.frames = []
+        for row in range(self.frame_table.rowCount()):
+            try:
+                frame_id = self.frame_table.item(row, 0).text() if self.frame_table.item(row, 0) else str(row)
+                load_time = int(self.frame_table.item(row, 1).text()) if self.frame_table.item(row, 1) else 1
+                page = self.frame_table.item(row, 2).text() if self.frame_table.item(row, 2) else "1"
+                
+                load_time = max(1, min(30, load_time))
+                
+                self.frames.append({
+                    "id": frame_id,
+                    "load_time": load_time,
+                    "page": page
+                })
+            except (ValueError, AttributeError):
+                self.frames.append({"id": str(row), "load_time": 1, "page": "1"})
+        
+        seq_text = self.page_input.text().strip()
+        if seq_text:
+            self.page_sequence = [p.strip() for p in seq_text.split(',') if p.strip()]
+        else:
+            self.page_sequence = []
+    
+    def _on_table_cell_changed(self, row, column):
+        """Handle cell value changes in the frame table"""
+        if self._updating_table or column == 0:
+            return
+        
+        self._get_data_from_tables()
+        self._setup_solution_table()
+        self._generate_steps()
+        self.current_step = 0
+        self._show_step(0)
+    
+    def _on_page_sequence_changed(self):
+        """Handle page sequence input changes"""
+        self._get_data_from_tables()
+        self._setup_solution_table()
+        self._generate_steps()
+        self.current_step = 0
+        self._show_step(0)
+    
+    def _generate_steps(self):
+        """Generate tutorial steps dynamically based on current data"""
+        self.steps = []
+        templates = self.step_templates.get("step_types", {})
+        
+        if not self.frames or not self.page_sequence:
+            return
+        
+        # Build initial frame state
+        frame_state = {f["id"]: f["page"] for f in self.frames}
+        frame_list = ", ".join([f"F{f['id']}={f['page']}" for f in self.frames])
+        
+        # Sort frames by load time to get initial queue order
+        sorted_frames = sorted(self.frames, key=lambda f: (f['load_time'], f['id']))
+        queue_order = [f["id"] for f in sorted_frames]
+        queue_order_str = " -> ".join([f"F{fid}" for fid in queue_order])
+        
+        # Step 0: Initial State
+        initial = templates.get("initial", {})
+        self.steps.append({
+            "title": initial.get("title", "Step 0: Initial State"),
+            "description": initial.get("description", "").format(
+                num_frames=len(self.frames),
+                frame_list=frame_list
+            ),
+            "solution_grid": {},
+            "queue_order": [],
+            "frame_state": frame_state.copy()
+        })
+        
+        # Step 1: Order Queue by Load Time
+        order_queue = templates.get("order_queue", {})
+        self.steps.append({
+            "title": order_queue.get("title", "Step 1: Order Queue"),
+            "description": order_queue.get("description", "").format(
+                queue_order=queue_order_str
+            ),
+            "solution_grid": {},
+            "queue_order": queue_order.copy(),
+            "frame_state": frame_state.copy()
+        })
+        
+        # Process each page request
+        step_num = 2
+        solution_grid = {}
+        current_queue = queue_order.copy()
+        page_hits = 0
+        page_faults = 0
+        
+        for col_idx, requested_page in enumerate(self.page_sequence):
+            # Check if page is in memory (HIT)
+            hit_frame = None
+            for frame_id, page in frame_state.items():
+                if page == requested_page:
+                    hit_frame = frame_id
+                    break
+            
+            if hit_frame:
+                # PAGE HIT - LRU: Move accessed frame to back of queue
+                page_hits += 1
+                
+                # Mark this cell in solution grid
+                solution_grid[(hit_frame, col_idx)] = {"text": requested_page, "is_hit": True}
+                
+                # LRU DIFFERENCE: Move frame to back (MRU position)
+                current_queue.remove(hit_frame)
+                current_queue.append(hit_frame)
+                
+                hit_tmpl = templates.get("page_hit", {})
+                self.steps.append({
+                    "title": hit_tmpl.get("title", f"Step {step_num}: HIT").format(
+                        step=step_num, page=requested_page
+                    ),
+                    "description": hit_tmpl.get("description", "").format(
+                        step=step_num, page=requested_page, frame_id=hit_frame
+                    ),
+                    "solution_grid": {k: v.copy() for k, v in solution_grid.items()},
+                    "queue_order": current_queue.copy(),
+                    "frame_state": frame_state.copy()
+                })
+            else:
+                # PAGE FAULT
+                page_faults += 1
+                
+                # Victim is at front of queue (LRU)
+                victim_frame = current_queue[0]
+                old_page = frame_state[victim_frame]
+                
+                # Update frame state
+                frame_state[victim_frame] = requested_page
+                
+                # Update queue: move victim to back (now MRU)
+                current_queue.pop(0)
+                current_queue.append(victim_frame)
+                
+                # Mark this cell in solution grid
+                solution_grid[(victim_frame, col_idx)] = {"text": requested_page, "is_hit": False}
+                
+                fault_tmpl = templates.get("page_fault", {})
+                self.steps.append({
+                    "title": fault_tmpl.get("title", f"Step {step_num}: FAULT").format(
+                        step=step_num, page=requested_page
+                    ),
+                    "description": fault_tmpl.get("description", "").format(
+                        step=step_num, page=requested_page, victim_frame=victim_frame,
+                        old_page=old_page
+                    ),
+                    "solution_grid": {k: v.copy() for k, v in solution_grid.items()},
+                    "queue_order": current_queue.copy(),
+                    "frame_state": frame_state.copy()
+                })
+            
+            step_num += 1
+        
+        # Final step with statistics
+        total_requests = len(self.page_sequence)
+        hit_ratio = f"{(page_hits / total_requests * 100):.1f}%" if total_requests > 0 else "0%"
+        fault_ratio = f"{(page_faults / total_requests * 100):.1f}%" if total_requests > 0 else "0%"
+        
+        frame_contents = "\n".join([f"- Frame {fid}: Page {page}" for fid, page in frame_state.items()])
+        
+        final_tmpl = templates.get("final", {})
+        self.steps.append({
+            "title": final_tmpl.get("title", "Final Results").format(step=step_num),
+            "description": final_tmpl.get("description", "").format(
+                step=step_num,
+                frame_contents=frame_contents,
+                total_requests=total_requests,
+                page_hits=page_hits,
+                page_faults=page_faults,
+                hit_ratio=hit_ratio,
+                fault_ratio=fault_ratio
+            ),
+            "solution_grid": {k: v.copy() for k, v in solution_grid.items()},
+            "queue_order": current_queue.copy(),
+            "frame_state": frame_state.copy()
+        })
+        
+        if hasattr(self, 'step_indicator'):
+            self.step_indicator.setText(f"Step 0 of {len(self.steps) - 1}")
+    
+    def setup_ui(self):
+        """Setup the tutorial UI"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(15)
+        
+        # Top row: Back button and Generate Random button
+        top_layout = QHBoxLayout()
+        
+        self.back_btn = QPushButton("Back to Help")
+        self.back_btn.setObjectName("backBtn")
+        self.back_btn.setMaximumWidth(150)
+        self.back_btn.setCursor(Qt.PointingHandCursor)
+        self.back_btn.clicked.connect(self.back_requested.emit)
+        top_layout.addWidget(self.back_btn)
+        
+        top_layout.addStretch()
+        
+        self.random_btn = QPushButton("Generate Random")
+        self.random_btn.setObjectName("randomBtn")
+        self.random_btn.setCursor(Qt.PointingHandCursor)
+        self.random_btn.clicked.connect(self._on_random_clicked)
+        top_layout.addWidget(self.random_btn)
+        
+        layout.addLayout(top_layout)
+        
+        # Title
+        self.page_title = QLabel("LRU Page Replacement Tutorial")
+        self.page_title.setObjectName("tutorialTitle")
+        layout.addWidget(self.page_title)
+        
+        # Input section
+        input_section = QWidget()
+        input_layout = QVBoxLayout(input_section)
+        input_layout.setContentsMargins(0, 0, 0, 0)
+        input_layout.setSpacing(10)
+        
+        # Page sequence input (at the top)
+        page_seq_layout = QHBoxLayout()
+        page_seq_label = QLabel("Page Sequence:")
+        page_seq_label.setObjectName("sectionLabel")
+        page_seq_layout.addWidget(page_seq_label)
+        
+        self.page_input = QLineEdit()
+        self.page_input.setPlaceholderText("Enter page sequence (e.g., 7,0,1,2,0,3)")
+        self.page_input.textChanged.connect(self._on_page_sequence_changed)
+        page_seq_layout.addWidget(self.page_input)
+        input_layout.addLayout(page_seq_layout)
+        
+        # Frame table
+        self.frame_table = QTableWidget(5, 3)
+        self.frame_table.setHorizontalHeaderLabels(["Frame ID", "Load Time", "Page in Memory"])
+        self.frame_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.frame_table.setMaximumHeight(180)
+        self.frame_table.cellChanged.connect(self._on_table_cell_changed)
+        input_layout.addWidget(self.frame_table)
+        
+        layout.addWidget(input_section)
+        
+        # Solution table
+        self.solution_table = QTableWidget()
+        self.solution_table.setMaximumHeight(180)
+        self.solution_table.verticalHeader().hide()
+        layout.addWidget(self.solution_table)
+        
+        # Queue visualization section
+        queue_section = QWidget()
+        queue_layout = QVBoxLayout(queue_section)
+        queue_layout.setContentsMargins(0, 10, 0, 10)
+        
+        self.queue_label = QLabel("Queue Order (LRU -> MRU):")
+        self.queue_label.setObjectName("sectionLabel")
+        queue_layout.addWidget(self.queue_label)
+        
+        self.queue_container = QWidget()
+        self.queue_container_layout = QHBoxLayout(self.queue_container)
+        self.queue_container_layout.setSpacing(8)
+        self.queue_container_layout.setContentsMargins(10, 10, 10, 10)
+        self.queue_container_layout.setAlignment(Qt.AlignLeft)
+        queue_layout.addWidget(self.queue_container)
+        
+        layout.addWidget(queue_section)
+        
+        # Step info section
+        step_frame = QFrame()
+        step_frame.setObjectName("stepFrame")
+        step_layout = QVBoxLayout(step_frame)
+        
+        self.step_title = QLabel("Step 0: Initial State")
+        self.step_title.setObjectName("stepTitle")
+        step_layout.addWidget(self.step_title)
+        
+        desc_scroll = QScrollArea()
+        desc_scroll.setWidgetResizable(True)
+        desc_scroll.setMaximumHeight(180)
+        desc_scroll.setObjectName("descriptionScroll")
+        
+        self.step_description = QLabel("")
+        self.step_description.setObjectName("stepDescription")
+        self.step_description.setWordWrap(True)
+        self.step_description.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        desc_scroll.setWidget(self.step_description)
+        step_layout.addWidget(desc_scroll)
+        
+        layout.addWidget(step_frame)
+        
+        # Navigation buttons
+        nav_layout = QHBoxLayout()
+        nav_layout.addStretch()
+        
+        self.prev_btn = QPushButton("Previous")
+        self.prev_btn.setObjectName("navBtn")
+        self.prev_btn.setCursor(Qt.PointingHandCursor)
+        self.prev_btn.clicked.connect(self._prev_step)
+        nav_layout.addWidget(self.prev_btn)
+        
+        self.step_indicator = QLabel("Step 0 of 0")
+        self.step_indicator.setObjectName("stepIndicator")
+        nav_layout.addWidget(self.step_indicator)
+        
+        self.next_btn = QPushButton("Next")
+        self.next_btn.setObjectName("navBtn")
+        self.next_btn.setCursor(Qt.PointingHandCursor)
+        self.next_btn.clicked.connect(self._next_step)
+        nav_layout.addWidget(self.next_btn)
+        
+        nav_layout.addStretch()
+        layout.addLayout(nav_layout)
+    
+    def _populate_frame_table(self):
+        """Fill the frame table with current frame data"""
+        self._updating_table = True
+        self.frame_table.setRowCount(len(self.frames))
+        
+        for i, frame in enumerate(self.frames):
+            id_item = QTableWidgetItem(frame["id"])
+            id_item.setFlags(id_item.flags() & ~Qt.ItemIsEditable)
+            id_item.setTextAlignment(Qt.AlignCenter)
+            self.frame_table.setItem(i, 0, id_item)
+            
+            load_item = QTableWidgetItem(str(frame["load_time"]))
+            load_item.setTextAlignment(Qt.AlignCenter)
+            self.frame_table.setItem(i, 1, load_item)
+            
+            page_item = QTableWidgetItem(frame["page"])
+            page_item.setTextAlignment(Qt.AlignCenter)
+            self.frame_table.setItem(i, 2, page_item)
+        
+        self.page_input.setText(",".join(self.page_sequence))
+        self._updating_table = False
+    
+    def _setup_solution_table(self):
+        """Setup the solution table structure"""
+        if not self.frames or not self.page_sequence:
+            self.solution_table.setRowCount(0)
+            self.solution_table.setColumnCount(0)
+            return
+        
+        num_frames = len(self.frames)
+        num_pages = len(self.page_sequence)
+        
+        self.solution_table.setRowCount(num_frames)
+        self.solution_table.setColumnCount(num_pages + 2)
+        
+        headers = ["Frame ID", "Page in Memory"] + self.page_sequence
+        self.solution_table.setHorizontalHeaderLabels(headers)
+        
+        self.solution_table.setColumnWidth(0, 70)
+        self.solution_table.setColumnWidth(1, 110)
+        for i in range(2, num_pages + 2):
+            self.solution_table.setColumnWidth(i, 35)
+        
+        for row, frame in enumerate(self.frames):
+            id_item = QTableWidgetItem(frame["id"])
+            id_item.setFlags(id_item.flags() & ~Qt.ItemIsEditable)
+            id_item.setTextAlignment(Qt.AlignCenter)
+            self.solution_table.setItem(row, 0, id_item)
+            
+            page_item = QTableWidgetItem(frame["page"])
+            page_item.setFlags(page_item.flags() & ~Qt.ItemIsEditable)
+            page_item.setTextAlignment(Qt.AlignCenter)
+            self.solution_table.setItem(row, 1, page_item)
+            
+            for col in range(2, num_pages + 2):
+                item = QTableWidgetItem("")
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                item.setTextAlignment(Qt.AlignCenter)
+                self.solution_table.setItem(row, col, item)
+    
+    def _update_queue_display(self, queue_order):
+        """Update the visual queue blocks"""
+        for block in self.queue_blocks:
+            block.setParent(None)
+        self.queue_blocks.clear()
+        
+        for frame_id in queue_order:
+            block = QueueBlockWidget(frame_id, self.queue_container)
+            if self.current_theme:
+                block.set_theme_colors({
+                    'queue_block_bg': self.current_theme.get('button_bg', '#4a90e2'),
+                    'queue_block_border': self.current_theme.get('button_hover', '#357abd'),
+                    'queue_block_text': self.current_theme.get('button_text', 'white')
+                })
+            self.queue_blocks.append(block)
+            self.queue_container_layout.addWidget(block)
+    
+    def _show_step(self, step_index):
+        """Display a specific tutorial step"""
+        if step_index < 0 or step_index >= len(self.steps):
+            return
+        
+        self.current_step = step_index
+        step = self.steps[step_index]
+        
+        self.step_title.setText(step["title"])
+        self.step_description.setText(step["description"])
+        self.step_indicator.setText(f"Step {step_index} of {len(self.steps) - 1}")
+        
+        self.prev_btn.setEnabled(step_index > 0)
+        self.next_btn.setEnabled(step_index < len(self.steps) - 1)
+        
+        self._update_solution_table(step["solution_grid"], step["frame_state"])
+        self._update_queue_display(step["queue_order"])
+    
+    def _update_solution_table(self, solution_grid, frame_state):
+        """Update the solution table based on step data"""
+        if not self.frames:
+            return
+        
+        frame_to_row = {f["id"]: i for i, f in enumerate(self.frames)}
+        
+        for row in range(self.solution_table.rowCount()):
+            for col in range(2, self.solution_table.columnCount()):
+                item = self.solution_table.item(row, col)
+                if item:
+                    item.setText("")
+                    item.setBackground(QColor("white"))
+                    item.setForeground(QColor("black"))
+        
+        for frame_id, page in frame_state.items():
+            row = frame_to_row.get(frame_id)
+            if row is not None:
+                item = self.solution_table.item(row, 1)
+                if item:
+                    item.setText(page)
+        
+        for (frame_id, col_idx), cell_data in solution_grid.items():
+            row = frame_to_row.get(frame_id)
+            if row is not None:
+                col = col_idx + 2
+                item = self.solution_table.item(row, col)
+                if item:
+                    item.setText(cell_data["text"])
+                    if cell_data["is_hit"]:
+                        item.setBackground(self.hit_color)
+                        item.setForeground(QColor("white"))
+                    else:
+                        item.setBackground(self.fault_color)
+                        item.setForeground(QColor("white"))
+    
+    def _on_random_clicked(self):
+        """Handle random generation button click"""
+        self._generate_random_problem()
+        self._populate_frame_table()
+        self._setup_solution_table()
+        self._generate_steps()
+        self.current_step = 0
+        self._show_step(0)
+    
+    def _next_step(self):
+        self._show_step(self.current_step + 1)
+    
+    def _prev_step(self):
+        self._show_step(self.current_step - 1)
+    
+    def reset_tutorial(self):
+        self._show_step(0)
+    
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self.current_step < len(self.steps):
+            step = self.steps[self.current_step]
+            self._update_solution_table(step["solution_grid"], step["frame_state"])
+            self._update_queue_display(step["queue_order"])
+    
+    def apply_theme(self, theme: dict):
+        """Apply theme colors to the tutorial page"""
+        self.current_theme = theme
+        
+        text_color = theme.get('text_primary', '#ffffff')
+        text_secondary = theme.get('text_secondary', '#c3c3c3')
+        button_bg = theme.get('button_bg', '#7289da')
+        button_hover = theme.get('button_hover', '#677bc4')
+        input_bg = theme.get('input_bg', '#40444b')
+        table_bg = theme.get('table_bg', '#40444b')
+        table_grid = theme.get('table_grid', '#72767d')
+        header_bg = theme.get('header_bg', '#2c2f33')
+        
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {theme.get('main_bg', '#36393f')};
+                color: {text_color};
+            }}
+            
+            QLabel#tutorialTitle {{
+                font-size: 28px;
+                font-weight: bold;
+                color: {button_bg};
+                background-color: transparent;
+            }}
+            
+            QLabel#sectionLabel {{
+                font-size: 14px;
+                font-weight: bold;
+                color: {text_color};
+                background-color: transparent;
+            }}
+            
+            QPushButton#randomBtn {{
+                background-color: {input_bg};
+                border: 1px solid {table_grid};
+                padding: 10px 20px;
+                border-radius: 6px;
+                color: {text_color};
+                font-size: 14px;
+            }}
+            
+            QPushButton#randomBtn:hover {{
+                background-color: {theme.get('sidebar_hover', '#4a4f56')};
+                border: 1px solid {button_bg};
+            }}
+            
+            QLabel#stepTitle {{
+                font-size: 20px;
+                font-weight: bold;
+                color: {text_color};
+                background-color: transparent;
+            }}
+            
+            QLabel#stepDescription {{
+                font-size: 14px;
+                color: {text_color};
+                background-color: transparent;
+                padding: 10px;
+            }}
+            
+            QLabel#stepIndicator {{
+                font-size: 14px;
+                color: {text_secondary};
+                background-color: transparent;
+                margin: 0 20px;
+            }}
+            
+            QFrame#stepFrame {{
+                background-color: {input_bg};
+                border: 1px solid {table_grid};
+                border-radius: 8px;
+                padding: 15px;
+            }}
+            
+            QScrollArea#descriptionScroll {{
+                border: none;
+                background-color: transparent;
+            }}
+            
+            QPushButton#backBtn {{
+                background-color: {input_bg};
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                color: {text_color};
+                font-size: 14px;
+            }}
+            
+            QPushButton#backBtn:hover {{
+                background-color: {theme.get('sidebar_hover', '#4a4f56')};
+            }}
+            
+            QPushButton#navBtn {{
+                background-color: {button_bg};
+                border: none;
+                padding: 10px 30px;
+                border-radius: 6px;
+                color: {theme.get('button_text', '#ffffff')};
+                font-size: 14px;
+                font-weight: bold;
+            }}
+            
+            QPushButton#navBtn:hover {{
+                background-color: {button_hover};
+            }}
+            
+            QPushButton#navBtn:disabled {{
+                background-color: {input_bg};
+                color: {text_secondary};
+            }}
+            
+            QTableWidget {{
+                background-color: {table_bg};
+                gridline-color: {table_grid};
+                border: 1px solid {table_grid};
+                color: {text_color};
+            }}
+            
+            QTableWidget::item {{
+                padding: 5px;
+            }}
+            
+            QHeaderView::section {{
+                background-color: {header_bg};
+                color: {text_color};
+                padding: 5px;
+                border: 1px solid {table_grid};
+            }}
+            
+            QLineEdit {{
+                background-color: {input_bg};
+                border: 1px solid {table_grid};
+                border-radius: 4px;
+                padding: 8px;
+                color: {text_color};
+            }}
+            
+            QLineEdit:focus {{
+                border: 1px solid {button_bg};
+            }}
+        """)
+        
+        for block in self.queue_blocks:
+            block.set_theme_colors({
+                'queue_block_bg': button_bg,
+                'queue_block_border': button_hover,
+                'queue_block_text': theme.get('button_text', 'white')
+            })
+        
+        if self.current_step < len(self.steps):
+            step = self.steps[self.current_step]
+            self._update_solution_table(step["solution_grid"], step["frame_state"])
+            self._update_queue_display(step["queue_order"])
