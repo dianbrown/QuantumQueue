@@ -1,0 +1,34 @@
+{
+  "algorithm": "Second Chance",
+  "algorithm_name": "Second Chance (Enhanced FIFO) Page Replacement",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "Second Chance is an enhanced FIFO algorithm that gives pages a 'second chance' before replacement.\n\nCore Rules:\n- Uses R-bit (Reference bit) to track recently used pages\n- Initial R-bit = 1 for all frames\n- On page hit: Set R-bit = 1 for that frame\n- On page fault: Examine front of queue\n  - If R-bit = 0: Select as victim\n  - If R-bit = 1: Set to 0, move to back, continue\n- If ALL R-bits are 1: Clear all to 0 first\n\nWe have {num_frames} frames with initial pages: {frame_list}"
+    },
+    "order_queue": {
+      "title": "Step 1: Order Queue by Load Time",
+      "description": "First, we order the frame queue by load time (oldest first).\n\nThis establishes the FIFO base order for the Second Chance algorithm.\n\nQueue order (oldest to newest): {queue_order}\n\nAll frames start with R-bit = 1 (recently loaded).\n\nR-bit values: {rbit_values}"
+    },
+    "page_hit": {
+      "title": "Step {step}: Page {page} - HIT",
+      "description": "Page {page} is requested.\n\nPage {page} is already in Frame {frame_id}.\n\nResult: PAGE HIT - No replacement needed.\n\nR-bit Action: Frame {frame_id}'s R-bit is set to 1 (refreshed).\n\nQueue order remains unchanged.\n\nCurrent R-bits: {rbit_values}"
+    },
+    "page_fault_all_rbits_one": {
+      "title": "Step {step}: Page {page} - FAULT (Reset R-bits)",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nAll R-bits are 1! Resetting all R-bits to 0 first.\n\nAfter reset, Frame {victim_frame} at front of queue has R-bit = 0.\nVictim: Frame {victim_frame} (R-bit = 0)\nOld page {old_page} is replaced with page {page}.\n\nNew page's R-bit = 1. Frame {victim_frame} moves to back of queue.\n\nCurrent R-bits: {rbit_values}"
+    },
+    "page_fault_second_chance": {
+      "title": "Step {step}: Page {page} - FAULT (Second Chance Given)",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nSecond Chance Process:\n{second_chance_log}\n\nVictim: Frame {victim_frame} (R-bit was 0)\nOld page {old_page} is replaced with page {page}.\n\nNew page's R-bit = 1. Frame {victim_frame} moves to back of queue.\n\nQueue order: {queue_order}\nCurrent R-bits: {rbit_values}"
+    },
+    "page_fault_direct": {
+      "title": "Step {step}: Page {page} - FAULT",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nFrame {victim_frame} at front of queue has R-bit = 0.\nVictim: Frame {victim_frame}\nOld page {old_page} is replaced with page {page}.\n\nNew page's R-bit = 1. Frame {victim_frame} moves to back of queue.\n\nQueue order: {queue_order}\nCurrent R-bits: {rbit_values}"
+    },
+    "final": {
+      "title": "Step {step}: Final Results",
+      "description": "Second Chance Page Replacement Complete!\n\nFinal Frame Contents:\n{frame_contents}\n\nFinal R-bit Values:\n{rbit_summary}\n\nStatistics:\n- Total Page Requests: {total_requests}\n- Page Hits: {page_hits}\n- Page Faults: {page_faults}\n- Hit Ratio: {hit_ratio}\n- Fault Ratio: {fault_ratio}\n\nThe Second Chance algorithm reduces page faults compared to pure FIFO by avoiding replacement of recently used pages."
+    }
+  }
+}
