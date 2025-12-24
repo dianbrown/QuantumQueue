@@ -20,6 +20,7 @@ from pages.PRAFIFOTutorialPage import PRAFIFOTutorialPage
 from pages.PRALRUTutorialPage import PRALRUTutorialPage
 from pages.PRAOptimalTutorialPage import PRAOptimalTutorialPage
 from pages.SecondChanceTutorialPage import SecondChanceTutorialPage
+from pages.ClockTutorialPage import ClockTutorialPage
 
 
 class AlgorithmCard(QFrame):
@@ -362,6 +363,14 @@ class HelpPage(QWidget):
             example_btn.clicked.connect(lambda: self._show_tutorial("PRA_Second Chance"))
             content_layout.addWidget(example_btn)
         
+        if algo_name == "Clock" and category == "PRA":
+            example_btn = QPushButton("View Example")
+            example_btn.setObjectName("exampleBtn")
+            example_btn.setCursor(Qt.PointingHandCursor)
+            example_btn.setMaximumWidth(200)
+            example_btn.clicked.connect(lambda: self._show_tutorial("PRA_Clock"))
+            content_layout.addWidget(example_btn)
+        
         content_layout.addStretch()
         scroll.setWidget(content)
         layout.addWidget(scroll)
@@ -535,6 +544,21 @@ class HelpPage(QWidget):
                 if tutorial_widget:
                     tutorial_widget.reset_tutorial()
             self.stack.setCurrentIndex(self.tutorial_pages["PRA_Second Chance"])
+        
+        elif algo_name == "PRA_Clock":
+            if "PRA_Clock" not in self.tutorial_pages:
+                tutorial = ClockTutorialPage()
+                tutorial.back_requested.connect(lambda: self.stack.setCurrentIndex(self.detail_pages.get("PRA_Clock", 0)))
+                self.tutorial_pages["PRA_Clock"] = self.stack.count()
+                self.stack.addWidget(tutorial)
+                if self.current_theme:
+                    tutorial.apply_theme(self.current_theme)
+            else:
+                tutorial_index = self.tutorial_pages["PRA_Clock"]
+                tutorial_widget = self.stack.widget(tutorial_index)
+                if tutorial_widget:
+                    tutorial_widget.reset_tutorial()
+            self.stack.setCurrentIndex(self.tutorial_pages["PRA_Clock"])
     
     def _get_description(self, algo_name):
         """Get comprehensive algorithm description from AlgorithmRules"""
