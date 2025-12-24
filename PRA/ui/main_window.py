@@ -108,8 +108,9 @@ class DraggableFrameBlock(QLabel):
         mime_data.setText(self.frame_id)
         drag.setMimeData(mime_data)
         
-        # Create drag pixmap
+        # Create drag pixmap - fill with transparent first to initialize paint device
         pixmap = QPixmap(self.size())
+        pixmap.fill(Qt.transparent)
         self.render(pixmap)
         drag.setPixmap(pixmap)
         drag.setHotSpot(event.pos())

@@ -147,10 +147,6 @@ class CustomTitleBar(QFrame):
             }}
         """)
         
-        # Force update
-        self.update()
-        self.repaint()
-        
         self.app_name.setStyleSheet(f"""
             QLabel {{
                 color: {text_color};

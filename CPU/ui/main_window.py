@@ -21,8 +21,7 @@ class CPUSchedulingApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.processes: List[Process] = []
-        self.timeline_grid: Optional[QTableWidget] = None
-        self.process_table: Optional[QTableWidget] = None
+        self.unified_table: Optional[QTableWidget] = None  # Unified table replaces both process_table and timeline_grid
         self.current_schedule: List[Optional[str]] = []
         self.solution_result: Optional[SchedulingResult] = None
         self.is_locked = False
@@ -31,6 +30,7 @@ class CPUSchedulingApp(QMainWindow):
         self.algorithm_name_label: Optional[QLabel] = None
         self.quantum_spinbox: Optional[QSpinBox] = None
         self.rs_markers = {}  # Track RS markers: {(row, col): True}
+        self._updating_table = False  # Flag to prevent recursion
         
         # Initialize schedulers
         self.schedulers = {
@@ -48,7 +48,7 @@ class CPUSchedulingApp(QMainWindow):
         
         self.init_ui()
         self.add_sample_processes()
-        self.update_timeline_grid()
+        self.update_unified_table()
 
     def init_ui(self):
         """Initialize the user interface."""
@@ -93,64 +93,17 @@ class CPUSchedulingApp(QMainWindow):
         controls_layout.addStretch()
         main_layout.addLayout(controls_layout)
         
-        # Main content layout
-        content_layout = QHBoxLayout()
+        # Fixed spacing below dropdown (same height as a label would take)
+        main_layout.addSpacing(20)
         
-        # Left panel - Process input table
-        left_panel = QVBoxLayout()
-        left_panel.addWidget(QLabel("Process Input:"))
+        # Unified table (combines process input + timeline grid)
+        self.setup_unified_table()
+        main_layout.addWidget(self.unified_table, stretch=1)  # Table expands to fill available space
         
-        self.setup_process_table()
-        left_panel.addWidget(self.process_table)
+        # Add tiny spacing between table and console
+        main_layout.addSpacing(8)
         
-        # Process control buttons
-        process_controls = QHBoxLayout()
-        process_controls.setSpacing(5)  # Reduce spacing between buttons
-        
-        add_btn = QPushButton("Add Process")
-        add_btn.clicked.connect(self.add_process)
-        add_btn.setMinimumWidth(80)  # Set minimum width
-        
-        delete_btn = QPushButton("Delete Process")
-        delete_btn.clicked.connect(self.delete_process)
-        delete_btn.setMinimumWidth(90)  # Set minimum width
-        
-        randomize_btn = QPushButton("Randomize")
-        randomize_btn.clicked.connect(self.randomize_processes)
-        randomize_btn.setMinimumWidth(75)  # Set minimum width
-        
-        process_controls.addWidget(add_btn)
-        process_controls.addWidget(delete_btn)
-        process_controls.addWidget(randomize_btn)
-        left_panel.addLayout(process_controls)
-        
-        # Solution control buttons
-        solution_controls = QHBoxLayout()
-        check_btn = QPushButton("Check Solution")
-        check_btn.clicked.connect(self.check_solution)
-        show_btn = QPushButton("Show Solution")
-        show_btn.clicked.connect(self.show_solution)
-        reset_btn = QPushButton("Reset")
-        reset_btn.clicked.connect(self.reset_grid)
-        
-        solution_controls.addWidget(check_btn)
-        solution_controls.addWidget(show_btn)
-        solution_controls.addWidget(reset_btn)
-        left_panel.addLayout(solution_controls)
-        
-        left_widget = QWidget()
-        left_widget.setLayout(left_panel)
-        left_widget.setFixedWidth(380)  # Increased from 300 to 380 pixels
-        content_layout.addWidget(left_widget)
-        
-        # Center panel - Timeline grid
-        right_panel = QVBoxLayout()
-        right_panel.addWidget(QLabel("Timeline Grid:"))
-        
-        self.setup_timeline_grid()
-        right_panel.addWidget(self.timeline_grid)
-        
-        # Results display with scroll area
+        # Console/Results section - directly under the table
         self.results_label = QLabel("")
         self.results_label.setWordWrap(True)
         self.results_label.setStyleSheet("""
@@ -167,8 +120,8 @@ class CPUSchedulingApp(QMainWindow):
         self.results_scroll_area = QScrollArea()
         self.results_scroll_area.setWidget(self.results_label)
         self.results_scroll_area.setWidgetResizable(True)
-        self.results_scroll_area.setMinimumHeight(150)
-        self.results_scroll_area.setMaximumHeight(200)
+        self.results_scroll_area.setMinimumHeight(100)
+        self.results_scroll_area.setMaximumHeight(150)
         self.results_scroll_area.setStyleSheet("""
             QScrollArea {
                 border: 1px solid #555;
@@ -177,48 +130,134 @@ class CPUSchedulingApp(QMainWindow):
             }
         """)
         
-        right_panel.addWidget(self.results_scroll_area)
+        main_layout.addWidget(self.results_scroll_area)
         
-        right_widget = QWidget()
-        right_widget.setLayout(right_panel)
-        content_layout.addWidget(right_widget)
+        # Add spacing between console and buttons
+        main_layout.addSpacing(15)
         
-        main_layout.addLayout(content_layout)
+        # Buttons section - centered with spacing from bottom
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(15)
+        
+        # Add stretch to center buttons horizontally
+        buttons_layout.addStretch()
+        
+        # Button rows container
+        buttons_container = QVBoxLayout()
+        buttons_container.setSpacing(10)
+        
+        # Uniform button size - all buttons exactly the same
+        btn_width = 130
+        btn_height = 40
+        btn_style = f"min-width: {btn_width}px; max-width: {btn_width}px; min-height: {btn_height}px; max-height: {btn_height}px;"
+        
+        # First row of buttons
+        row1_layout = QHBoxLayout()
+        row1_layout.setSpacing(10)
+        
+        add_btn = QPushButton("Add Process")
+        add_btn.clicked.connect(self.add_process)
+        add_btn.setFixedWidth(btn_width)
+        add_btn.setFixedHeight(btn_height)
+        add_btn.setStyleSheet(btn_style)
+        
+        delete_btn = QPushButton("Delete Process")
+        delete_btn.clicked.connect(self.delete_process)
+        delete_btn.setFixedWidth(btn_width)
+        delete_btn.setFixedHeight(btn_height)
+        delete_btn.setStyleSheet(btn_style)
+        
+        randomize_btn = QPushButton("Randomize")
+        randomize_btn.clicked.connect(self.randomize_processes)
+        randomize_btn.setFixedWidth(btn_width)
+        randomize_btn.setFixedHeight(btn_height)
+        randomize_btn.setStyleSheet(btn_style)
+        
+        row1_layout.addWidget(add_btn)
+        row1_layout.addWidget(delete_btn)
+        row1_layout.addWidget(randomize_btn)
+        buttons_container.addLayout(row1_layout)
+        
+        # Second row of buttons
+        row2_layout = QHBoxLayout()
+        row2_layout.setSpacing(10)
+        
+        check_btn = QPushButton("Check Solution")
+        check_btn.clicked.connect(self.check_solution)
+        check_btn.setFixedWidth(btn_width)
+        check_btn.setFixedHeight(btn_height)
+        check_btn.setStyleSheet(btn_style)
+        
+        show_btn = QPushButton("Show Solution")
+        show_btn.clicked.connect(self.show_solution)
+        show_btn.setFixedWidth(btn_width)
+        show_btn.setFixedHeight(btn_height)
+        show_btn.setStyleSheet(btn_style)
+        
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_grid)
+        reset_btn.setFixedWidth(btn_width)
+        reset_btn.setFixedHeight(btn_height)
+        reset_btn.setStyleSheet(btn_style)
+        
+        row2_layout.addWidget(check_btn)
+        row2_layout.addWidget(show_btn)
+        row2_layout.addWidget(reset_btn)
+        buttons_container.addLayout(row2_layout)
+        
+        buttons_layout.addLayout(buttons_container)
+        
+        # Add stretch to center buttons horizontally
+        buttons_layout.addStretch()
+        
+        main_layout.addLayout(buttons_layout)
+        
+        # Add spacing at the bottom of the page
+        main_layout.addSpacing(25)
 
-    def setup_process_table(self):
-        """Set up the process input table."""
-        self.process_table = QTableWidget(0, 4)
-        self.process_table.setHorizontalHeaderLabels(["Process ID", "Priority", "Arrival", "Burst time"])
-        self.process_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-    def setup_timeline_grid(self):
-        """Set up the timeline grid for visualization."""
-        self.timeline_grid = QTableWidget(0, 33)
+    def setup_unified_table(self):
+        """Set up the unified table combining process input and timeline grid."""
+        # 36 columns: 4 for process input + 32 for timeline
+        self.unified_table = QTableWidget(0, 36)
         
         # Set up headers
-        headers = ["Process ID"] + [str(i) for i in range(1, 33)]
-        self.timeline_grid.setHorizontalHeaderLabels(headers)
+        headers = ["Process ID", "Priority", "Arrival", "Burst"] + [str(i) for i in range(1, 33)]
+        self.unified_table.setHorizontalHeaderLabels(headers)
         
         # Set column widths
-        self.timeline_grid.setColumnWidth(0, 80)
-        for i in range(1, 33):
-            self.timeline_grid.setColumnWidth(i, 35)  # Increased from 30 to 35 to fit "RS" text
+        self.unified_table.setColumnWidth(0, 70)   # Process ID
+        self.unified_table.setColumnWidth(1, 55)   # Priority
+        self.unified_table.setColumnWidth(2, 55)   # Arrival
+        self.unified_table.setColumnWidth(3, 45)   # Burst
+        for i in range(4, 36):
+            self.unified_table.setColumnWidth(i, 35)  # Timeline columns
         
         # Connect cell events
-        self.timeline_grid.cellClicked.connect(self.on_cell_clicked)
-        self.timeline_grid.cellEntered.connect(self.on_cell_hover)
+        self.unified_table.cellClicked.connect(self.on_cell_clicked)
+        self.unified_table.cellEntered.connect(self.on_cell_hover)
+        self.unified_table.cellChanged.connect(self.on_cell_changed)
         
         # Enable context menu
-        self.timeline_grid.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.timeline_grid.customContextMenuRequested.connect(self.show_context_menu)
-        self.timeline_grid.cellDoubleClicked.connect(self.on_cell_double_clicked)
+        self.unified_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.unified_table.customContextMenuRequested.connect(self.show_context_menu)
+        self.unified_table.cellDoubleClicked.connect(self.on_cell_double_clicked)
         
         # Enable mouse tracking for better responsiveness
-        self.timeline_grid.setMouseTracking(True)
+        self.unified_table.setMouseTracking(True)
         
         # Set row height
-        self.timeline_grid.verticalHeader().setDefaultSectionSize(30)
-        self.timeline_grid.verticalHeader().hide()
+        self.unified_table.verticalHeader().setDefaultSectionSize(30)
+        self.unified_table.verticalHeader().hide()
+
+    def on_cell_changed(self, row, column):
+        """Handle cell value changes in the unified table."""
+        if self._updating_table:
+            return
+        # Only react to changes in editable input columns (1-3: Priority, Arrival, Burst)
+        if column < 1 or column > 3:
+            return
+        # Read and update processes from table
+        self.read_process_table()
 
     def set_scheduling_block_color(self, color):
         """Set the color for scheduling blocks in the timeline grid."""
@@ -229,21 +268,17 @@ class CPUSchedulingApp(QMainWindow):
 
     def refresh_colored_blocks(self, old_color):
         """Refresh all colored blocks in the timeline grid with the new color."""
-        if not self.timeline_grid:
+        if not self.unified_table:
             return
             
-        # Iterate through all cells in the timeline grid
-        for row in range(self.timeline_grid.rowCount()):
-            for col in range(1, self.timeline_grid.columnCount()):  # Skip process ID column
-                item = self.timeline_grid.item(row, col)
+        # Iterate through all cells in the timeline portion (columns 4+)
+        for row in range(self.unified_table.rowCount()):
+            for col in range(4, self.unified_table.columnCount()):  # Timeline starts at column 4
+                item = self.unified_table.item(row, col)
                 if item:
-                    # Check if this cell was colored with the old scheduling color
-                    # We check both the old color and common scheduling block indicators
                     item_color = item.background().color()
                     item_text = item.text()
                     
-                    # If the cell has the old scheduling color or contains a dash (scheduling block marker)
-                    # and is not white, update it to the new color
                     if (item_color.name().lower() == old_color.name().lower() or 
                         (item_text in ["-", "-\nRS"] and item_color != Qt.white)):
                         item.setBackground(self.scheduling_block_color)
@@ -257,96 +292,96 @@ class CPUSchedulingApp(QMainWindow):
             Process("D", 3, 1, 6)
         ]
         self.processes = sample_processes
-        self.update_process_table()
 
-    def update_process_table(self):
-        """Update the process table with current processes."""
-        self.process_table.setRowCount(len(self.processes))
-        for i, process in enumerate(self.processes):
-            self.process_table.setItem(i, 0, QTableWidgetItem(process.id))
-            self.process_table.setItem(i, 1, QTableWidgetItem(str(process.priority)))
-            self.process_table.setItem(i, 2, QTableWidgetItem(str(process.arrival)))
-            self.process_table.setItem(i, 3, QTableWidgetItem(str(process.burst)))
-
-    def update_timeline_grid(self):
-        """Update the timeline grid with current processes."""
+    def update_unified_table(self):
+        """Update the unified table with current processes."""
+        self._updating_table = True
+        
         if not self.processes:
-            self.timeline_grid.setRowCount(0)
+            self.unified_table.setRowCount(0)
+            self._updating_table = False
             return
-            
+        
         # Save current RS markers
         old_rs_markers = self.rs_markers.copy()
         
-        # Clear all existing cells first
-        for i in range(self.timeline_grid.rowCount()):
-            for j in range(1, self.timeline_grid.columnCount()):
-                item = self.timeline_grid.item(i, j)
-                if item:
-                    item.setBackground(Qt.white)
-                    item.setText("")
-        
-        self.timeline_grid.setRowCount(len(self.processes))
+        self.unified_table.setRowCount(len(self.processes))
         
         for i, process in enumerate(self.processes):
-            # Process ID column
-            item = QTableWidgetItem(process.id)
-            item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-            item.setTextAlignment(Qt.AlignCenter)
-            self.timeline_grid.setItem(i, 0, item)
+            # Process ID column (read-only)
+            id_item = QTableWidgetItem(process.id)
+            id_item.setFlags(id_item.flags() & ~Qt.ItemIsEditable)
+            id_item.setTextAlignment(Qt.AlignCenter)
+            self.unified_table.setItem(i, 0, id_item)
             
-            # Timeline columns - create fresh cells
-            for j in range(1, 33):
+            # Priority column (editable)
+            priority_item = QTableWidgetItem(str(process.priority))
+            priority_item.setTextAlignment(Qt.AlignCenter)
+            self.unified_table.setItem(i, 1, priority_item)
+            
+            # Arrival column (editable)
+            arrival_item = QTableWidgetItem(str(process.arrival))
+            arrival_item.setTextAlignment(Qt.AlignCenter)
+            self.unified_table.setItem(i, 2, arrival_item)
+            
+            # Burst column (editable)
+            burst_item = QTableWidgetItem(str(process.burst))
+            burst_item.setTextAlignment(Qt.AlignCenter)
+            self.unified_table.setItem(i, 3, burst_item)
+            
+            # Timeline columns (4-35)
+            for j in range(4, 36):
                 item = QTableWidgetItem("")
                 item.setTextAlignment(Qt.AlignCenter)
-                item.setBackground(Qt.white)  # Ensure white background
+                item.setBackground(Qt.white)
                 if not self.is_locked:
                     item.setFlags(item.flags() | Qt.ItemIsEditable)
                 else:
                     item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                self.timeline_grid.setItem(i, j, item)
+                self.unified_table.setItem(i, j, item)
         
         # Restore RS markers
         self.rs_markers = old_rs_markers
         for (row, col) in self.rs_markers:
-            if row < self.timeline_grid.rowCount() and col < self.timeline_grid.columnCount():
+            if row < self.unified_table.rowCount() and col < self.unified_table.columnCount():
                 self.update_cell_display(row, col)
+        
+        self._updating_table = False
 
     def on_cell_clicked(self, row: int, col: int):
         """Handle cell click events."""
-        if col == 0 or self.is_locked:
+        # Only handle timeline columns (4+)
+        if col < 4 or self.is_locked:
             return
             
-        item = self.timeline_grid.item(row, col)
+        item = self.unified_table.item(row, col)
         if item is None:
             return
             
         # Clear all other cells in this column first
-        for r in range(self.timeline_grid.rowCount()):
-            other_item = self.timeline_grid.item(r, col)
+        for r in range(self.unified_table.rowCount()):
+            other_item = self.unified_table.item(r, col)
             if other_item and r != row:
                 other_item.setBackground(Qt.white)
-                other_item.setForeground(QColor(0, 0, 0))  # Black text
-                # Handle RS marker preservation when clearing
+                other_item.setForeground(QColor(0, 0, 0))
                 if (r, col) in self.rs_markers:
                     other_item.setText("RS")
-                    other_item.setForeground(QColor(128, 128, 128))  # Gray for RS
+                    other_item.setForeground(QColor(128, 128, 128))
                 else:
                     other_item.setText("")
         
         # Toggle current cell
         if item.background().color().name().lower() == self.scheduling_block_color.name().lower():
             item.setBackground(Qt.white)
-            item.setForeground(QColor(0, 0, 0))  # Black text
-            # Handle RS marker preservation when turning off scheduling block
+            item.setForeground(QColor(0, 0, 0))
             if (row, col) in self.rs_markers:
                 item.setText("RS")
-                item.setForeground(QColor(128, 128, 128))  # Gray for RS
+                item.setForeground(QColor(128, 128, 128))
             else:
                 item.setText("")
         else:
             item.setBackground(self.scheduling_block_color)
-            item.setForeground(QColor(0, 0, 0))  # Black text
-            # Handle RS marker preservation when turning on scheduling block
+            item.setForeground(QColor(0, 0, 0))
             if (row, col) in self.rs_markers:
                 item.setText("-\nRS")
             else:
@@ -354,41 +389,38 @@ class CPUSchedulingApp(QMainWindow):
 
     def on_cell_hover(self, row: int, col: int):
         """Handle cell hover events."""
-        if col == 0 or self.is_locked:
+        if col < 4 or self.is_locked:
             return
-        # Could add hover effects here if needed
 
     def on_cell_double_clicked(self, row: int, col: int):
         """Handle cell double-click events."""
-        if col == 0 or self.is_locked:
+        # Only handle timeline columns (4+)
+        if col < 4 or self.is_locked:
             return
             
-        # Double-click fills multiple consecutive cells for the process
-        item = self.timeline_grid.item(row, col)
+        item = self.unified_table.item(row, col)
         if item is None:
             return
             
         # Clear all cells in this column first
-        for r in range(self.timeline_grid.rowCount()):
-            other_item = self.timeline_grid.item(r, col)
+        for r in range(self.unified_table.rowCount()):
+            other_item = self.unified_table.item(r, col)
             if other_item:
                 other_item.setBackground(Qt.white)
                 other_item.setText("")
         
         # Find the process burst time and fill consecutive cells
-        process_id = self.timeline_grid.item(row, 0).text()
+        process_id = self.unified_table.item(row, 0).text()
         process = next((p for p in self.processes if p.id == process_id), None)
         
         if process:
-            # Fill burst_time number of cells starting from clicked column
             for i in range(process.burst):
-                if col + i < self.timeline_grid.columnCount():
-                    cell_item = self.timeline_grid.item(row, col + i)
+                if col + i < self.unified_table.columnCount():
+                    cell_item = self.unified_table.item(row, col + i)
                     if cell_item:
-                        # Clear other processes in this column
-                        for r in range(self.timeline_grid.rowCount()):
+                        for r in range(self.unified_table.rowCount()):
                             if r != row:
-                                other_item = self.timeline_grid.item(r, col + i)
+                                other_item = self.unified_table.item(r, col + i)
                                 if other_item:
                                     other_item.setBackground(Qt.white)
                                     other_item.setText("")
@@ -398,20 +430,19 @@ class CPUSchedulingApp(QMainWindow):
 
     def show_context_menu(self, position):
         """Show context menu for RS markers."""
-        item = self.timeline_grid.itemAt(position)
+        item = self.unified_table.itemAt(position)
         if item is None:
             return
             
         row = item.row()
         col = item.column()
         
-        # Only allow RS markers in timeline columns (not process ID column)
-        if col == 0:
+        # Only allow RS markers in timeline columns (4+)
+        if col < 4:
             return
             
         menu = QMenu(self)
         
-        # Check if RS marker exists at this position
         has_rs_marker = (row, col) in self.rs_markers
         
         if has_rs_marker:
@@ -421,14 +452,11 @@ class CPUSchedulingApp(QMainWindow):
             action = menu.addAction("Add RS Marker")
             action.triggered.connect(lambda: self.add_rs_marker(row, col))
             
-        menu.exec(self.timeline_grid.mapToGlobal(position))
+        menu.exec(self.unified_table.mapToGlobal(position))
 
     def add_rs_marker(self, row: int, col: int):
         """Add RS marker to a cell."""
-        # Remove any existing RS marker in this row (only one per process)
         self.remove_rs_markers_in_row(row)
-        
-        # Add new RS marker
         self.rs_markers[(row, col)] = True
         self.update_cell_display(row, col)
 
@@ -447,7 +475,7 @@ class CPUSchedulingApp(QMainWindow):
 
     def update_cell_display(self, row: int, col: int):
         """Update cell display to show/hide RS marker."""
-        item = self.timeline_grid.item(row, col)
+        item = self.unified_table.item(row, col)
         if item is None:
             return
             
@@ -455,31 +483,25 @@ class CPUSchedulingApp(QMainWindow):
         current_text = item.text()
         
         if has_rs_marker:
-            # Add RS marker as overlay text (keep existing content)
             if current_text and current_text != "" and "RS" not in current_text:
                 item.setText(f"{current_text}\nRS")
             else:
                 item.setText("RS")
-            # Set light gray color for RS text
             item.setForeground(QColor(128, 128, 128))
         else:
-            # Remove RS marker but keep other content
             if current_text and "RS" in current_text:
                 new_text = current_text.replace("\nRS", "").replace("RS", "")
                 item.setText(new_text)
-            # Reset text color to black
             item.setForeground(QColor(0, 0, 0))
 
     def on_algorithm_changed(self):
         """Handle algorithm selection change."""
         algorithm = self.algorithm_combo.currentText()
         
-        # Show/hide quantum controls for Round Robin algorithms
         is_round_robin = "Round Robin" in algorithm
         self.quantum_label.setVisible(is_round_robin)
         self.quantum_spinbox.setVisible(is_round_robin)
         
-        # Update scheduler with current quantum if needed
         if is_round_robin:
             self.update_round_robin_scheduler()
         
@@ -499,16 +521,14 @@ class CPUSchedulingApp(QMainWindow):
     def add_process(self):
         """Add a new process."""
         next_id = chr(ord('A') + len(self.processes))
-        new_process = Process(next_id, 1, 1, 1)  # Start arrival at 1 instead of 0
+        new_process = Process(next_id, 1, 1, 1)
         self.processes.append(new_process)
         
-        # Clear solution state
         self.solution_result = None
         self.current_schedule = []
         self.is_locked = False
         
-        self.update_process_table()
-        self.update_timeline_grid()
+        self.update_unified_table()
         if self.results_label:
             self.results_label.setText("")
 
@@ -517,73 +537,61 @@ class CPUSchedulingApp(QMainWindow):
         if self.processes:
             self.processes.pop()
             
-            # Clear solution state
             self.solution_result = None
             self.current_schedule = []
             self.is_locked = False
             
-            self.update_process_table()
-            self.update_timeline_grid()
+            self.update_unified_table()
             if self.results_label:
                 self.results_label.setText("")
 
     def randomize_processes(self):
         """Generate random processes."""
-        # Check if current algorithm needs unique arrival times
         algorithm = self.algorithm_combo.currentText()
         
-        # Only basic FCFS and Round Robin need unique arrivals (no priority variants)
         algorithms_needing_unique_arrivals = ["FCFS", "Round Robin (Q="]
-        
-        # Use unique arrivals only for pure FCFS and Round Robin (not priority variants)
         unique_arrivals = (algorithm == "FCFS" or algorithm.startswith("Round Robin (Q="))
         
         self.processes = ProcessGenerator.generate_processes(unique_arrivals=unique_arrivals)
         
-        # If using Round Robin, also randomize quantum
         if "Round Robin" in algorithm:
             quantum = ProcessGenerator.generate_quantum()
             self.quantum_spinbox.setValue(quantum)
             self.update_round_robin_scheduler()
         
-        # Clear any existing solution state
         self.solution_result = None
         self.current_schedule = []
         self.is_locked = False
         
-        # Update both table and grid
-        self.update_process_table()
-        self.update_timeline_grid()
+        self.update_unified_table()
         
-        # Clear results display
         if self.results_label:
             self.results_label.setText("")
 
     def read_process_table(self):
-        """Read processes from the table."""
+        """Read processes from the unified table (columns 0-3)."""
         self.processes = []
-        for i in range(self.process_table.rowCount()):
-            process_id = self.process_table.item(i, 0).text()
-            priority = int(self.process_table.item(i, 1).text())
-            arrival = int(self.process_table.item(i, 2).text())
-            burst = int(self.process_table.item(i, 3).text())
-            self.processes.append(Process(process_id, priority, arrival, burst))
+        for i in range(self.unified_table.rowCount()):
+            try:
+                process_id = self.unified_table.item(i, 0).text() if self.unified_table.item(i, 0) else chr(ord('A') + i)
+                priority = int(self.unified_table.item(i, 1).text()) if self.unified_table.item(i, 1) else 1
+                arrival = int(self.unified_table.item(i, 2).text()) if self.unified_table.item(i, 2) else 1
+                burst = int(self.unified_table.item(i, 3).text()) if self.unified_table.item(i, 3) else 1
+                self.processes.append(Process(process_id, priority, arrival, burst))
+            except (ValueError, AttributeError):
+                pass
 
     def check_solution(self):
         """Check the student's solution against the correct solution."""
         self.read_process_table()
         
-        # Get the selected algorithm
         algorithm_name = self.algorithm_combo.currentText()
         scheduler = self.schedulers[algorithm_name]
         
-        # Calculate correct solution
         self.solution_result = scheduler.schedule(self.processes)
         
-        # Get student's schedule
         student_schedule = self.get_student_schedule()
         
-        # Compare schedules
         mismatches = []
         min_len = min(len(student_schedule), len(self.solution_result.timeline))
         
@@ -591,13 +599,11 @@ class CPUSchedulingApp(QMainWindow):
             if student_schedule[i] != self.solution_result.timeline[i]:
                 mismatches.append(i)
         
-        # Display results
         if not mismatches:
             result_text = "<b>✓ Correct solution!</b><br><br>"
         else:
             result_text = f"<b>✗ Incorrect.</b> Mismatches at times: {mismatches[:10]}<br><br>"
         
-        # Add metrics
         result_text += "<b>Waiting & Turnaround Times:</b><br>"
         total_waiting = 0
         total_turnaround = 0
@@ -614,13 +620,11 @@ class CPUSchedulingApp(QMainWindow):
             avg_turnaround = self.solution_result.get_average_turnaround_time()
             result_text += f"<br><b>Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}</b>"
         
-        # Add responsiveness calculations
         result_text += "<br><br><b>Responsiveness (Burst/TAT):</b><br>"
         total_responsiveness = 0
         process_count = 0
         
         for process_id, metrics in self.solution_result.process_metrics.items():
-            # Find the process to get its burst time
             process = next((p for p in self.processes if p.id == process_id), None)
             if process and metrics.turnaround > 0:
                 responsiveness = process.burst / metrics.turnaround
@@ -638,18 +642,14 @@ class CPUSchedulingApp(QMainWindow):
         """Show the correct solution."""
         self.read_process_table()
         
-        # Get the selected algorithm
         algorithm_name = self.algorithm_combo.currentText()
         scheduler = self.schedulers[algorithm_name]
         
-        # Calculate solution
         self.solution_result = scheduler.schedule(self.processes)
         
-        # Fill the grid with the solution
         self.fill_grid_with_schedule(self.solution_result.timeline)
         self.is_locked = True
         
-        # Show metrics
         result_text = "<b>Solution displayed and locked.</b><br><br>"
         result_text += "<b>Waiting & Turnaround Times:</b><br>"
         
@@ -663,13 +663,11 @@ class CPUSchedulingApp(QMainWindow):
             avg_turnaround = self.solution_result.get_average_turnaround_time()
             result_text += f"<br><b>Average: WT={avg_waiting:.1f}, TAT={avg_turnaround:.1f}</b>"
         
-        # Add responsiveness calculations
         result_text += "<br><br><b>Responsiveness (Burst/TAT):</b><br>"
         total_responsiveness = 0
         process_count = 0
         
         for process_id, metrics in self.solution_result.process_metrics.items():
-            # Find the process to get its burst time
             process = next((p for p in self.processes if p.id == process_id), None)
             if process and metrics.turnaround > 0:
                 responsiveness = process.burst / metrics.turnaround
@@ -688,36 +686,34 @@ class CPUSchedulingApp(QMainWindow):
         self.is_locked = False
         self.results_label.setText("")
         
-        # Clear RS markers
         self.rs_markers.clear()
         
-        for i in range(self.timeline_grid.rowCount()):
-            for j in range(1, self.timeline_grid.columnCount()):
-                item = self.timeline_grid.item(i, j)
+        # Reset only timeline columns (4+)
+        for i in range(self.unified_table.rowCount()):
+            for j in range(4, self.unified_table.columnCount()):
+                item = self.unified_table.item(i, j)
                 if item:
                     item.setBackground(Qt.white)
                     item.setText("")
                     item.setFlags(item.flags() | Qt.ItemIsEditable)
-                    item.setForeground(QColor(0, 0, 0))  # Reset text color
+                    item.setForeground(QColor(0, 0, 0))
 
     def get_student_schedule(self) -> List[Optional[str]]:
         """Get the student's schedule from the grid."""
         schedule = []
         
-        # Grid columns 1-32 represent times 1-32
-        for time_col in range(1, 33):
+        # Timeline columns 4-35 represent times 1-32
+        for time_col in range(4, 36):
             assigned_process = None
-            for row in range(self.timeline_grid.rowCount()):
-                item = self.timeline_grid.item(row, time_col)
+            for row in range(self.unified_table.rowCount()):
+                item = self.unified_table.item(row, time_col)
                 if item:
-                    # Check if cell is colored (not white) - compare with current scheduling block color
                     item_color = item.background().color()
-                    # A cell is considered scheduled if it's not white and has text content
                     is_white = item_color == Qt.white or item_color.name().lower() == "#ffffff"
                     has_content = item.text() and item.text().strip() and item.text() != "RS"
                     
                     if not is_white and has_content:
-                        process_id = self.timeline_grid.item(row, 0).text()
+                        process_id = self.unified_table.item(row, 0).text()
                         assigned_process = process_id
                         break
             schedule.append(assigned_process)
@@ -726,29 +722,28 @@ class CPUSchedulingApp(QMainWindow):
 
     def fill_grid_with_schedule(self, schedule: List[Optional[str]]):
         """Fill the grid with a given schedule."""
-        # Clear grid first
-        for i in range(self.timeline_grid.rowCount()):
-            for j in range(1, self.timeline_grid.columnCount()):
-                item = self.timeline_grid.item(i, j)
+        # Clear timeline portion only (columns 4+)
+        for i in range(self.unified_table.rowCount()):
+            for j in range(4, self.unified_table.columnCount()):
+                item = self.unified_table.item(i, j)
                 if item:
                     item.setBackground(Qt.white)
                     item.setText("")
-                    item.setForeground(QColor(0, 0, 0))  # Reset text color
+                    item.setForeground(QColor(0, 0, 0))
         
-        # Fill with schedule
         process_to_row = {}
         for i, process in enumerate(self.processes):
             process_to_row[process.id] = i
         
-        # Timeline index i corresponds to grid column i+1 (time i+1)
+        # Timeline index i corresponds to grid column i+4 (time i+1)
         for time_index, process_id in enumerate(schedule):
-            grid_col = time_index + 1  # Convert timeline index to grid column
-            if process_id and grid_col < self.timeline_grid.columnCount():
+            grid_col = time_index + 4  # Convert timeline index to grid column
+            if process_id and grid_col < self.unified_table.columnCount():
                 if process_id in process_to_row:
                     row = process_to_row[process_id]
-                    item = self.timeline_grid.item(row, grid_col)
+                    item = self.unified_table.item(row, grid_col)
                     if item:
                         item.setBackground(self.scheduling_block_color)
                         item.setText("-")
-                        item.setForeground(QColor(0, 0, 0))  # Black text
+                        item.setForeground(QColor(0, 0, 0))
                         item.setFlags(item.flags() & ~Qt.ItemIsEditable)
