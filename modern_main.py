@@ -45,7 +45,7 @@ class ModernMainWindow(QMainWindow):
         self.resizing = False
         self.resize_edge = None
         self.resize_margin = 5  # Pixels from edge to trigger resize
-        self.startup_page_index = 1  # Default to Home
+        self.startup_page_index = 0  # Default to Home
         self._first_show = True  # Track first show event
         
         # Initialize settings and theme manager
@@ -78,9 +78,9 @@ class ModernMainWindow(QMainWindow):
         if self._first_show:
             self._first_show = False
             startup_page = self.settings.value("startup_page", "Home")
-            # Map page names to indices
-            page_map = {"Home": 1, "CPU Scheduling": 2, "Page Replacement": 3, "Help": 4, "Settings": 5}
-            page_index = page_map.get(startup_page, 1)
+            # Map page names to indices (Home=0, CPU=1, PRA=2, Help=3, Settings=4)
+            page_map = {"Home": 0, "CPU Scheduling": 1, "Page Replacement": 2, "Help": 3, "Settings": 4}
+            page_index = page_map.get(startup_page, 0)
             self.change_page(page_index)
     
     def closeEvent(self, event):
@@ -178,16 +178,15 @@ class ModernMainWindow(QMainWindow):
                 border: 1px solid #72767d;
             }
         """)
-        self.content_stack.addWidget(self.cpu_page)
         
-        # Home Page
+        # Home Page (Index 0)
         self.home_page = self.create_home_page()
         self.content_stack.addWidget(self.home_page)
         
-        # CPU Page
+        # CPU Page (Index 1)
         self.content_stack.addWidget(self.cpu_page)
         
-        # PRA Page
+        # PRA Page (Index 2)
         self.pra_page = PRAMainWindow()
         self.content_stack.addWidget(self.pra_page)
         

@@ -52,11 +52,11 @@ FONT_FAMILIES = {
 
 # Startup page options
 STARTUP_PAGES = {
-    "Home": 1,
-    "CPU Scheduling": 2,
-    "Page Replacement": 3,
-    "Help": 4,
-    "Settings": 5
+    "Home": 0,
+    "CPU Scheduling": 1,
+    "Page Replacement": 2,
+    "Help": 3,
+    "Settings": 4
 }
 
 
@@ -463,7 +463,7 @@ class SettingsPage(QWidget):
     def on_startup_page_changed(self, page_name):
         """Handle startup page change"""
         self.settings.setValue("startup_page", page_name)
-        page_index = STARTUP_PAGES.get(page_name, 1)
+        page_index = STARTUP_PAGES.get(page_name, 0)
         self.startup_page_changed.emit(page_index)
     
     def export_settings(self):
