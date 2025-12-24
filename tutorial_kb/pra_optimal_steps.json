@@ -1,0 +1,22 @@
+{
+  "algorithm": "Optimal",
+  "algorithm_name": "Optimal (Farthest in Future)",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "Optimal (OPT) is the theoretically best page replacement algorithm.\n\nCore Rules:\n- Replace page used FARTHEST in future\n- Requires perfect knowledge of entire page sequence\n- If page is NEVER used again: Highest priority for replacement\n- Tie-breaker: Lowest frame number (frame ID)\n\nWe have {num_frames} frames with initial pages: {frame_list}\n\nNote: This algorithm is used as a benchmark - it cannot be implemented in practice without knowing future page requests."
+    },
+    "page_hit": {
+      "title": "Step {step}: Page {page} - HIT",
+      "description": "Page {page} is requested.\n\nPage {page} is already in Frame {frame_id}.\n\nResult: PAGE HIT - No replacement needed.\n\nNo changes to memory. We move to the next page request."
+    },
+    "page_fault": {
+      "title": "Step {step}: Page {page} - FAULT",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nFuture Distance Analysis:\n{distance_analysis}\n\nVictim Selection: Frame {victim_frame} (Page {old_page})\nReason: {victim_reason}\n\nPage {old_page} is replaced with Page {page} in Frame {victim_frame}."
+    },
+    "final": {
+      "title": "Step {step}: Final Results",
+      "description": "Optimal Page Replacement Complete!\n\nFinal Frame Contents:\n{frame_contents}\n\nStatistics:\n- Total Page Requests: {total_requests}\n- Page Hits: {page_hits}\n- Page Faults: {page_faults}\n- Hit Ratio: {hit_ratio}\n- Fault Ratio: {fault_ratio}\n\nNote: The Optimal algorithm achieves the minimum possible page faults for any given page sequence. It serves as a benchmark for comparing other algorithms."
+    }
+  }
+}

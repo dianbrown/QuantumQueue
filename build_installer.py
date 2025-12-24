@@ -10,6 +10,12 @@ import subprocess
 import platform
 from pathlib import Path
 
+# Force UTF-8 encoding for Windows
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 # Configuration
 APP_NAME = "QuantumQueue"
 APP_VERSION = "1.1.1"
@@ -18,7 +24,7 @@ DESCRIPTION = "CPU Scheduling & Page Replacement Practice Application"
 
 def clean_build_dirs():
     """Clean previous build artifacts"""
-    print("🧹 Cleaning build directories...")
+    print("Cleaning build directories...")
     dirs_to_clean = ['build', 'dist', '__pycache__']
     for dir_name in dirs_to_clean:
         if os.path.exists(dir_name):
@@ -31,7 +37,7 @@ def clean_build_dirs():
 
 def install_dependencies():
     """Install required build dependencies"""
-    print("📦 Installing build dependencies...")
+    print(" Installing build dependencies...")
     dependencies = [
         'pyinstaller',
         'pillow',  # For icon conversion
@@ -40,15 +46,15 @@ def install_dependencies():
     for dep in dependencies:
         try:
             subprocess.check_call([sys.executable, '-m', 'pip', 'install', dep])
-            print(f"   ✅ {dep} installed")
+            print(f"    {dep} installed")
         except subprocess.CalledProcessError:
-            print(f"   ❌ Failed to install {dep}")
+            print(f"    Failed to install {dep}")
             return False
     return True
 
 def convert_icon():
     """Convert PNG icon to platform-specific format"""
-    print("🎨 Converting icon to platform-specific format...")
+    print(" Converting icon to platform-specific format...")
     
     try:
         from PIL import Image
@@ -59,7 +65,7 @@ def convert_icon():
         png_path = icon_dir / "QuantumQueue2.png"
         
         if not png_path.exists():
-            print(f"   ⚠️  Warning: {png_path} not found, using default icon")
+            print(f"     Warning: {png_path} not found, using default icon")
             return True
         
         img = Image.open(png_path)
@@ -69,7 +75,7 @@ def convert_icon():
             ico_path = icon_dir / "app_icon.ico"
             # Create multiple sizes for better quality
             img.save(ico_path, format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
-            print(f"   ✅ Created {ico_path}")
+            print(f"    Created {ico_path}")
             
         elif platform.system() == 'Darwin':
             # Convert to ICNS (macOS)
@@ -91,23 +97,23 @@ def convert_icon():
             try:
                 subprocess.check_call(['iconutil', '-c', 'icns', str(iconset_path), '-o', str(icns_path)])
                 shutil.rmtree(iconset_path)
-                print(f"   ✅ Created {icns_path}")
+                print(f"    Created {icns_path}")
             except (subprocess.CalledProcessError, FileNotFoundError):
-                print("   ⚠️  iconutil not available, copying PNG as fallback")
+                print("     iconutil not available, copying PNG as fallback")
                 shutil.copy(png_path, icns_path.with_suffix('.png'))
         
         return True
         
     except ImportError:
-        print("   ⚠️  Pillow not installed, skipping icon conversion")
+        print("     Pillow not installed, skipping icon conversion")
         return True
     except Exception as e:
-        print(f"   ⚠️  Icon conversion failed: {e}")
+        print(f"     Icon conversion failed: {e}")
         return True  # Continue anyway
 
 def build_executable():
     """Build the executable using PyInstaller"""
-    print(f"🔨 Building {APP_NAME} executable...")
+    print(f" Building {APP_NAME} executable...")
     
     try:
         cmd = [
@@ -118,16 +124,16 @@ def build_executable():
         ]
         
         subprocess.check_call(cmd)
-        print("   ✅ Executable built successfully")
+        print("    Executable built successfully")
         return True
         
     except subprocess.CalledProcessError as e:
-        print(f"   ❌ Build failed: {e}")
+        print(f"    Build failed: {e}")
         return False
 
 def create_windows_installer():
     """Create Windows installer using Inno Setup"""
-    print("📦 Creating Windows installer...")
+    print(" Creating Windows installer...")
     
     # Create Inno Setup script
     iss_content = f"""
@@ -171,8 +177,8 @@ Filename: "{{app}}\\{APP_NAME}.exe"; Description: "{{cm:LaunchProgram,{APP_NAME}
     with open(iss_path, 'w') as f:
         f.write(iss_content)
     
-    print(f"   ✅ Created {iss_path}")
-    print(f"   ℹ️  To create installer, install Inno Setup and run:")
+    print(f"    Created {iss_path}")
+    print(f"     To create installer, install Inno Setup and run:")
     print(f"      iscc {iss_path}")
     
     # Try to run Inno Setup if available
@@ -191,52 +197,104 @@ Filename: "{{app}}\\{APP_NAME}.exe"; Description: "{{cm:LaunchProgram,{APP_NAME}
         try:
             os.makedirs('dist/installers', exist_ok=True)
             subprocess.check_call([inno_exe, iss_path])
-            print(f"   ✅ Windows installer created in dist/installers/")
+            print(f"    Windows installer created in dist/installers/")
             return True
         except subprocess.CalledProcessError:
-            print("   ⚠️  Inno Setup failed, but ISS script is ready")
+            print("     Inno Setup failed, but ISS script is ready")
     else:
-        print("   ℹ️  Inno Setup not found. Download from: https://jrsoftware.org/isdl.php")
+        print("     Inno Setup not found. Download from: https://jrsoftware.org/isdl.php")
     
     return True
 
 def create_macos_installer():
     """Create macOS DMG installer"""
-    print("📦 Creating macOS DMG installer...")
+    print(" Creating macOS DMG installer...")
     
-    app_path = f"dist/{APP_NAME}.app"
+    # Check for executable (onefile mode creates an executable, not .app)
+    exe_path = f"dist/{APP_NAME}"
+    app_bundle_path = f"dist/{APP_NAME}.app"
     dmg_path = f"dist/installers/{APP_NAME}-{APP_VERSION}-macOS.dmg"
     
-    if not os.path.exists(app_path):
-        print(f"   ❌ {app_path} not found")
-        return False
-    
     os.makedirs('dist/installers', exist_ok=True)
+    
+    # If we have an executable but not an app bundle, create the app bundle structure
+    if os.path.exists(exe_path) and not os.path.exists(app_bundle_path):
+        print(f"   Creating .app bundle from executable...")
+        try:
+            # Create .app bundle structure
+            os.makedirs(f"{app_bundle_path}/Contents/MacOS", exist_ok=True)
+            os.makedirs(f"{app_bundle_path}/Contents/Resources", exist_ok=True)
+            
+            # Copy executable
+            shutil.copy2(exe_path, f"{app_bundle_path}/Contents/MacOS/{APP_NAME}")
+            os.chmod(f"{app_bundle_path}/Contents/MacOS/{APP_NAME}", 0o755)
+            
+            # Create Info.plist
+            plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>{APP_NAME}</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.{AUTHOR}.{APP_NAME.lower()}</string>
+    <key>CFBundleName</key>
+    <string>{APP_NAME}</string>
+    <key>CFBundleVersion</key>
+    <string>{APP_VERSION}</string>
+    <key>CFBundleShortVersionString</key>
+    <string>{APP_VERSION}</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.13</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+</dict>
+</plist>"""
+            
+            with open(f"{app_bundle_path}/Contents/Info.plist", 'w') as f:
+                f.write(plist_content)
+            
+            # Copy icon if it exists
+            icon_path = "Assets/Icons/app_icon.icns"
+            if os.path.exists(icon_path):
+                shutil.copy2(icon_path, f"{app_bundle_path}/Contents/Resources/")
+            
+            print(f"    Created .app bundle")
+            
+        except Exception as e:
+            print(f"    Failed to create .app bundle: {e}")
+            return False
+    
+    if not os.path.exists(app_bundle_path):
+        print(f"    {app_bundle_path} not found")
+        return False
     
     try:
         # Create DMG using hdiutil
         cmd = [
             'hdiutil', 'create',
             '-volname', APP_NAME,
-            '-srcfolder', app_path,
+            '-srcfolder', app_bundle_path,
             '-ov',
             '-format', 'UDZO',
             dmg_path
         ]
         
         subprocess.check_call(cmd)
-        print(f"   ✅ macOS DMG created: {dmg_path}")
+        print(f"    macOS DMG created: {dmg_path}")
         return True
         
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
-        print(f"   ❌ DMG creation failed: {e}")
-        print("   ℹ️  You can manually create DMG or use create-dmg tool")
+        print(f"    DMG creation failed: {e}")
+        print("     You can manually create DMG or use create-dmg tool")
         return False
 
 def main():
     """Main build process"""
     print("=" * 60)
-    print(f"🚀 Building {APP_NAME} v{APP_VERSION}")
+    print(f" Building {APP_NAME} v{APP_VERSION}")
     print("=" * 60)
     
     # Step 1: Clean
@@ -244,16 +302,16 @@ def main():
     
     # Step 2: Install dependencies
     if not install_dependencies():
-        print("\n❌ Failed to install dependencies")
+        print("\n Failed to install dependencies")
         return 1
     
     # Step 3: Convert icon
     if not convert_icon():
-        print("\n⚠️  Icon conversion had issues, continuing anyway...")
+        print("\n  Icon conversion had issues, continuing anyway...")
     
     # Step 4: Build executable
     if not build_executable():
-        print("\n❌ Build failed")
+        print("\n Build failed")
         return 1
     
     # Step 5: Create installer
@@ -265,21 +323,22 @@ def main():
     elif system == 'Darwin':
         create_macos_installer()
     else:
-        print(f"⚠️  Installer creation not supported for {system}")
+        print(f"  Installer creation not supported for {system}")
         print("   Executable is available in dist/ directory")
     
     print("\n" + "=" * 60)
-    print("✅ Build process completed!")
+    print(" Build process completed!")
     print("=" * 60)
-    print(f"\n📁 Output:")
+    print(f"\n Output:")
     print(f"   Executable: dist/{APP_NAME}.exe")
     if system == 'Windows':
         print(f"   Installer: dist/installers/{APP_NAME}-{APP_VERSION}-Windows-Setup.exe")
     elif system == 'Darwin':
         print(f"   Installer: dist/installers/{APP_NAME}-{APP_VERSION}-macOS.dmg")
-    print(f"\n💡 To test: Run dist\\{APP_NAME}.exe")
+    print(f"\n To test: Run dist\\{APP_NAME}.exe")
     
     return 0
 
 if __name__ == '__main__':
     sys.exit(main())
+

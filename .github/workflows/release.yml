@@ -41,7 +41,7 @@ jobs:
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" QuantumQueue.iss
     
     - name: Upload Windows installer
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: windows-installer
         path: dist/installers/*.exe
@@ -71,7 +71,7 @@ jobs:
         python build_installer.py
     
     - name: Upload macOS DMG
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: macos-dmg
         path: dist/installers/*.dmg
@@ -81,19 +81,21 @@ jobs:
     name: Create GitHub Release
     needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
     
     - name: Download Windows installer
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: windows-installer
         path: ./installers
     
     - name: Download macOS DMG
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: macos-dmg
         path: ./installers
@@ -109,7 +111,7 @@ jobs:
         body: |
           ## QuantumQueue - CPU Scheduling & Page Replacement Practice
           
-          ### 📥 Downloads
+          ### Downloads
           
           **Windows:**
           - Download `QuantumQueue-*-Windows-Setup.exe`
@@ -121,17 +123,17 @@ jobs:
           - Open the DMG file
           - Drag QuantumQueue to Applications folder
           
-          ### ✨ Features
+          ### Features
           - Interactive CPU Scheduling algorithms practice
           - Page Replacement Algorithms visualization
           - Multiple themes available
           - Step-by-step tutorials
           
-          ### 📝 Changelog
+          ### Changelog
           See [CHANGELOG.md](CHANGELOG.md) for details.
           
-          ### 🐛 Issues
-          Report bugs at: https://github.com/dianbrown/CPU-SchedulingApp/issues
+          ### Issues
+          Report bugs at: https://github.com/dianbrown/QuantumQueue/issues
         files: |
           installers/*
         draft: false

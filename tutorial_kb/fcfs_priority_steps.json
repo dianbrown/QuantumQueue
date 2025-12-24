@@ -1,0 +1,50 @@
+{
+  "algorithm": "FCFS_Priority",
+  "algorithm_name": "FCFS with Priority (Preemptive)",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "FCFS with Priority is a PREEMPTIVE scheduling algorithm.\n\nCore Rules:\n- Higher priority number = Higher priority\n- Higher priority processes PREEMPT lower priority ones\n- Within same priority: FCFS ordering by Ready State time\n- Tie-breakers: Priority → Ready State time → Process ID\n\nOur problem set has {num_processes} processes: {process_list}.\nPriorities will determine which process runs - higher priority can interrupt!"
+    },
+    "show_arrivals": {
+      "title": "Step 1: Mark Arrival Times (RS)",
+      "description": "First, mark when each process arrives and enters the ready queue.\n\nArrival order: {arrival_order}\n\nRS (Ready State) markers show when each process becomes available.\nIMPORTANT: In this preemptive algorithm, RS times can UPDATE when a process is preempted!"
+    },
+    "first_block": {
+      "title": "Step {step}: Process {process_id} begins (Priority {priority})",
+      "description": "Process {process_id} (Priority {priority}) arrives at t={arrival} and starts executing.\n\nNo other process is running, so {process_id} takes the CPU.\nBurst time: {burst} blocks to complete.\n\nCurrent time: t={current_time}"
+    },
+    "continue_block": {
+      "title": "Step {step}: Process {process_id} continues (t={current_time})",
+      "description": "Process {process_id} (Priority {priority}) continues execution.\n\nNo higher priority process has arrived, so {process_id} keeps the CPU.\nThis is block {block_num} of {burst}.\nBlocks remaining: {remaining}"
+    },
+    "preemption": {
+      "title": "Step {step}: PREEMPTION! {new_process} interrupts {old_process}",
+      "description": "Process {new_process} (Priority {new_priority}) arrives at t={current_time}!\n\n{old_process} (Priority {old_priority}) was running but has LOWER priority.\n{new_process} PREEMPTS {old_process} and takes the CPU.\n\n{old_process}'s new Ready State time = {new_rs} (when it was preempted)\n{old_process} has {old_remaining} blocks remaining."
+    },
+    "no_preemption_same_priority": {
+      "title": "Step {step}: Process {new_process} arrives (no preemption)",
+      "description": "Process {new_process} (Priority {new_priority}) arrives at t={current_time}.\n\n{current_process} (Priority {current_priority}) is running with SAME priority.\nNo preemption occurs - FCFS rule applies within same priority.\n\n{new_process} waits in ready queue. RS time = {rs_time}"
+    },
+    "no_preemption_lower_priority": {
+      "title": "Step {step}: Process {new_process} arrives (no preemption)",
+      "description": "Process {new_process} (Priority {new_priority}) arrives at t={current_time}.\n\n{current_process} (Priority {current_priority}) is running with HIGHER priority.\nNo preemption occurs - {new_process} must wait.\n\n{new_process} enters ready queue. RS time = {rs_time}"
+    },
+    "resume_after_preemption": {
+      "title": "Step {step}: Process {process_id} resumes execution",
+      "description": "Process {process_id} (Priority {priority}) resumes after being preempted.\n\nIt was preempted at t={preemption_time} and now resumes at t={current_time}.\nReady State time: {rs_time}\nRemaining blocks: {remaining}"
+    },
+    "process_complete": {
+      "title": "Step {step}: Process {process_id} completes!",
+      "description": "Process {process_id} (Priority {priority}) finishes execution!\n\nStarted at t={start_time}, completed at t={end_time}.\nTotal burst: {burst} time units.\nWaiting time: {wait_time}\nTurnaround time: {tat}"
+    },
+    "select_next_process": {
+      "title": "Step {step}: Selecting next process",
+      "description": "CPU is now free. Selecting from ready queue...\n\nReady processes (sorted by Priority → RS time → ID):\n{ready_queue_info}\n\nSelected: {selected_process} (Priority {priority}, RS={rs_time})"
+    },
+    "final": {
+      "title": "Step {step}: Final Solution",
+      "description": "FCFS with Priority Scheduling Complete!\n\nExecution Order: {execution_order}\n\nMetrics:\n{metrics}\n\nAverage Waiting Time: {avg_wait}\nAverage Turnaround Time: {avg_tat}\n\nNote: Preemptions caused context switches that affected waiting times."
+    }
+  }
+}

@@ -17,6 +17,7 @@ class SettingsPage(QWidget):
         super().__init__()
         self.settings = QSettings()
         self.theme_manager = ThemeManager()
+        self.current_theme = {}  # Store current theme for reference
         self.setup_ui()
         self.load_settings()
         
@@ -27,18 +28,18 @@ class SettingsPage(QWidget):
         main_layout.setContentsMargins(20, 20, 20, 20)
         
         # Scroll area for settings
-        scroll_area = QScrollArea()
-        scroll_widget = QWidget()
-        scroll_layout = QVBoxLayout(scroll_widget)
+        self.scroll_area = QScrollArea()
+        self.scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(self.scroll_widget)
         
         # Title
-        title = QLabel("Settings")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #ffffff; margin-bottom: 20px;")
-        scroll_layout.addWidget(title)
+        self.title = QLabel("Settings")
+        self.title.setStyleSheet("font-size: 24px; font-weight: bold; color: #ffffff; margin-bottom: 20px;")
+        scroll_layout.addWidget(self.title)
         
         # Theme settings group
-        theme_group = QGroupBox("Appearance")
-        theme_group.setStyleSheet("""
+        self.theme_group = QGroupBox("Appearance")
+        self.theme_group.setStyleSheet("""
             QGroupBox {
                 font-size: 16px;
                 font-weight: bold;
@@ -55,7 +56,7 @@ class SettingsPage(QWidget):
             }
         """)
         
-        theme_layout = QFormLayout(theme_group)
+        theme_layout = QFormLayout(self.theme_group)
         theme_layout.setSpacing(15)
         
         # Theme selection
@@ -99,38 +100,38 @@ class SettingsPage(QWidget):
         """)
         self.theme_combo.currentTextChanged.connect(self.on_theme_changed)
         
-        theme_label = QLabel("Theme:")
-        theme_label.setStyleSheet("color: #c3c3c3; font-size: 14px;")
-        theme_layout.addRow(theme_label, self.theme_combo)
+        self.theme_label = QLabel("Theme:")
+        self.theme_label.setStyleSheet("color: #c3c3c3; font-size: 14px;")
+        theme_layout.addRow(self.theme_label, self.theme_combo)
         
-        scroll_layout.addWidget(theme_group)
+        scroll_layout.addWidget(self.theme_group)
         
         # Application settings group (placeholder for future settings)
-        app_group = QGroupBox("Application")
-        app_group.setStyleSheet(theme_group.styleSheet())
-        app_layout = QFormLayout(app_group)
+        self.app_group = QGroupBox("Application")
+        self.app_group.setStyleSheet(self.theme_group.styleSheet())
+        app_layout = QFormLayout(self.app_group)
         
         # Placeholder for future settings
-        placeholder_label = QLabel("More settings coming soon...")
-        placeholder_label.setStyleSheet("color: #c3c3c3; font-style: italic; font-size: 14px;")
-        app_layout.addWidget(placeholder_label)
+        self.placeholder_label = QLabel("More settings coming soon...")
+        self.placeholder_label.setStyleSheet("color: #c3c3c3; font-style: italic; font-size: 14px;")
+        app_layout.addWidget(self.placeholder_label)
         
-        scroll_layout.addWidget(app_group)
+        scroll_layout.addWidget(self.app_group)
         
         # Add stretch to push everything to the top
         scroll_layout.addStretch()
         
         # Setup scroll area
-        scroll_area.setWidget(scroll_widget)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setStyleSheet("""
+        self.scroll_area.setWidget(self.scroll_widget)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("""
             QScrollArea {
                 border: none;
                 background-color: transparent;
             }
         """)
         
-        main_layout.addWidget(scroll_area)
+        main_layout.addWidget(self.scroll_area)
         
     def on_theme_changed(self, theme_name):
         """Handle theme change"""
@@ -144,3 +145,99 @@ class SettingsPage(QWidget):
             index = self.theme_combo.findText(saved_theme)
             if index >= 0:
                 self.theme_combo.setCurrentIndex(index)
+    
+    def apply_theme(self, theme: dict):
+        """Apply theme colors to the settings page"""
+        self.current_theme = theme
+        
+        # Apply to scroll widget background
+        self.scroll_widget.setStyleSheet(f"""
+            QWidget {{
+                background-color: {theme['main_bg']};
+            }}
+        """)
+        
+        # Apply to title
+        self.title.setStyleSheet(f"""
+            font-size: 24px;
+            font-weight: bold;
+            color: {theme['text_primary']};
+            margin-bottom: 20px;
+            background-color: transparent;
+        """)
+        
+        # Apply to group boxes
+        group_style = f"""
+            QGroupBox {{
+                font-size: 16px;
+                font-weight: bold;
+                color: {theme['text_primary']};
+                border: 2px solid {theme['input_border']};
+                border-radius: 8px;
+                margin-top: 15px;
+                padding-top: 10px;
+                background-color: transparent;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+            }}
+        """
+        self.theme_group.setStyleSheet(group_style)
+        self.app_group.setStyleSheet(group_style)
+        
+        # Apply to theme combo box
+        self.theme_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {theme['input_bg']};
+                border: 1px solid {theme['input_border']};
+                padding: 8px 12px;
+                border-radius: 4px;
+                color: {theme['text_primary']};
+                font-size: 14px;
+                min-width: 200px;
+            }}
+            QComboBox:hover {{
+                border-color: {theme['button_bg']};
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                width: 20px;
+            }}
+            QComboBox::down-arrow {{
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid {theme['text_secondary']};
+                margin-right: 5px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {theme['input_bg']};
+                border: 1px solid {theme['input_border']};
+                selection-background-color: {theme['button_bg']};
+                color: {theme['text_primary']};
+            }}
+        """)
+        
+        # Apply to labels
+        self.theme_label.setStyleSheet(f"""
+            color: {theme['text_secondary']};
+            font-size: 14px;
+            background-color: transparent;
+        """)
+        self.placeholder_label.setStyleSheet(f"""
+            color: {theme['text_secondary']};
+            font-style: italic;
+            font-size: 14px;
+            background-color: transparent;
+        """)
+        
+        # Apply to scroll area
+        self.scroll_area.setStyleSheet(f"""
+            QScrollArea {{
+                border: none;
+                background-color: {theme['main_bg']};
+            }}
+        """)
+
