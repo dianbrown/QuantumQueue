@@ -56,6 +56,8 @@ class HelpPage(QWidget):
         self.current_theme = {}
         self.detail_pages = {}
         self.tutorial_pages = {}  # Store tutorial page references
+        self._hit_color = "#4caf50"  # Default green
+        self._fault_color = "#f44336"  # Default red
         self.setup_ui()
         
     def setup_ui(self):
@@ -493,6 +495,8 @@ class HelpPage(QWidget):
                 self.stack.addWidget(tutorial)
                 if self.current_theme:
                     tutorial.apply_theme(self.current_theme)
+                # Apply saved colorblind colors
+                tutorial.set_hit_fault_colors(self._hit_color, self._fault_color)
             else:
                 tutorial_index = self.tutorial_pages["PRA_FIFO"]
                 tutorial_widget = self.stack.widget(tutorial_index)
@@ -508,6 +512,8 @@ class HelpPage(QWidget):
                 self.stack.addWidget(tutorial)
                 if self.current_theme:
                     tutorial.apply_theme(self.current_theme)
+                # Apply saved colorblind colors
+                tutorial.set_hit_fault_colors(self._hit_color, self._fault_color)
             else:
                 tutorial_index = self.tutorial_pages["PRA_LRU"]
                 tutorial_widget = self.stack.widget(tutorial_index)
@@ -523,6 +529,8 @@ class HelpPage(QWidget):
                 self.stack.addWidget(tutorial)
                 if self.current_theme:
                     tutorial.apply_theme(self.current_theme)
+                # Apply saved colorblind colors
+                tutorial.set_hit_fault_colors(self._hit_color, self._fault_color)
             else:
                 tutorial_index = self.tutorial_pages["PRA_Optimal"]
                 tutorial_widget = self.stack.widget(tutorial_index)
@@ -538,6 +546,8 @@ class HelpPage(QWidget):
                 self.stack.addWidget(tutorial)
                 if self.current_theme:
                     tutorial.apply_theme(self.current_theme)
+                # Apply saved colorblind colors
+                tutorial.set_hit_fault_colors(self._hit_color, self._fault_color)
             else:
                 tutorial_index = self.tutorial_pages["PRA_Second Chance"]
                 tutorial_widget = self.stack.widget(tutorial_index)
@@ -553,6 +563,8 @@ class HelpPage(QWidget):
                 self.stack.addWidget(tutorial)
                 if self.current_theme:
                     tutorial.apply_theme(self.current_theme)
+                # Apply saved colorblind colors
+                tutorial.set_hit_fault_colors(self._hit_color, self._fault_color)
             else:
                 tutorial_index = self.tutorial_pages["PRA_Clock"]
                 tutorial_widget = self.stack.widget(tutorial_index)
@@ -846,6 +858,23 @@ class HelpPage(QWidget):
             """,
         }
         return descriptions.get(algo_name, f"<p>Description for {algo_name}</p>")
+    
+    def set_hit_fault_colors(self, hit_color: str, fault_color: str):
+        """Set hit/fault colors for all PRA tutorial pages"""
+        from PySide6.QtGui import QColor
+        
+        # Store for future tutorial pages
+        self._hit_color = hit_color
+        self._fault_color = fault_color
+        
+        # Apply to all existing PRA tutorial pages
+        pra_tutorial_keys = ["PRA_FIFO", "PRA_LRU", "PRA_Optimal", "PRA_Second Chance", "PRA_Clock"]
+        for key in pra_tutorial_keys:
+            if key in self.tutorial_pages:
+                page_index = self.tutorial_pages[key]
+                tutorial_widget = self.stack.widget(page_index)
+                if tutorial_widget and hasattr(tutorial_widget, 'set_hit_fault_colors'):
+                    tutorial_widget.set_hit_fault_colors(hit_color, fault_color)
     
     def apply_theme(self, theme: dict):
         """Apply theme colors - double outline artistic style"""

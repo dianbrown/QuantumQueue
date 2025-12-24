@@ -958,3 +958,13 @@ class ClockTutorialPage(QWidget):
                 'rbit_zero_border': '#f57c00',
                 'pointer_color': '#ff5722'
             })
+    
+    def set_hit_fault_colors(self, hit_color: str, fault_color: str):
+        """Set the colors used for hit/fault indicators (for colorblind accessibility)"""
+        self.hit_color = QColor(hit_color)
+        self.fault_color = QColor(fault_color)
+        
+        # Refresh the current step display to show new colors
+        if self.current_step < len(self.steps):
+            step = self.steps[self.current_step]
+            self._update_unified_table(step["solution_grid"], step["frame_state"])

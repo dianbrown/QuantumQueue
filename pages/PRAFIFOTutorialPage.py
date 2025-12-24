@@ -803,3 +803,13 @@ class PRAFIFOTutorialPage(QWidget):
             step = self.steps[self.current_step]
             self._update_unified_table(step["solution_grid"], step["frame_state"])
             self._update_queue_display(step["queue_order"])
+    
+    def set_hit_fault_colors(self, hit_color: str, fault_color: str):
+        """Set the colors used for hit/fault indicators (for colorblind accessibility)"""
+        self.hit_color = QColor(hit_color)
+        self.fault_color = QColor(fault_color)
+        
+        # Refresh the current step display to show new colors
+        if self.current_step < len(self.steps):
+            step = self.steps[self.current_step]
+            self._update_unified_table(step["solution_grid"], step["frame_state"])

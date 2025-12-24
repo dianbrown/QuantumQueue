@@ -332,6 +332,10 @@ class PRAMainWindow(QWidget):
         self.is_locked = False
         self.results_label: Optional[QLabel] = None
         self.results_scroll_area: Optional[QScrollArea] = None
+        
+        # Configurable hit/fault colors (for colorblind accessibility)
+        self.hit_color = "#4caf50"  # Default green
+        self.fault_color = "#f44336"  # Default red
         self.algorithm_name_label: Optional[QLabel] = None
         self.queue_widget: Optional[QueueVisualizationWidget] = None
         
@@ -796,7 +800,7 @@ class PRAMainWindow(QWidget):
             hit_item = QTableWidgetItem("Hit")
             hit_item.setFlags(hit_item.flags() & ~Qt.ItemIsEditable)
             hit_item.setTextAlignment(Qt.AlignCenter)
-            hit_item.setBackground(QColor("#4caf50"))
+            hit_item.setBackground(QColor(self.hit_color))
             hit_item.setForeground(QColor("white"))
             self.solution_table.setItem(legend_row, 3, hit_item)
             
@@ -804,7 +808,7 @@ class PRAMainWindow(QWidget):
             fault_item = QTableWidgetItem("Fault")
             fault_item.setFlags(fault_item.flags() & ~Qt.ItemIsEditable)
             fault_item.setTextAlignment(Qt.AlignCenter)
-            fault_item.setBackground(QColor("#f44336"))
+            fault_item.setBackground(QColor(self.fault_color))
             fault_item.setForeground(QColor("white"))
             self.solution_table.setItem(legend_row, 4, fault_item)
         
@@ -856,11 +860,11 @@ class PRAMainWindow(QWidget):
         
         if current_color == "#ffffff" or current_color == "white":
             # Set to green (hit)
-            item.setBackground(QColor("#4caf50"))
+            item.setBackground(QColor(self.hit_color))
             item.setForeground(QColor("white"))
-        elif current_color == "#4caf50":
+        elif current_color == self.hit_color.lower():
             # Set to red (fault)
-            item.setBackground(QColor("#f44336"))
+            item.setBackground(QColor(self.fault_color))
             item.setForeground(QColor("white"))
         else:
             # Set back to white
@@ -912,10 +916,10 @@ class PRAMainWindow(QWidget):
         item = self.solution_table.item(row, col)
         if item:
             if color_type == "hit":
-                item.setBackground(QColor("#4caf50"))
+                item.setBackground(QColor(self.hit_color))
                 item.setForeground(QColor("white"))
             elif color_type == "fault":
-                item.setBackground(QColor("#f44336"))
+                item.setBackground(QColor(self.fault_color))
                 item.setForeground(QColor("white"))
                 
     def clear_cell(self, row: int, col: int):
@@ -997,7 +1001,7 @@ class PRAMainWindow(QWidget):
                 if item and item.text():
                     page_state[frame_idx] = {
                         'page': item.text(),
-                        'is_hit': item.background().color().name().lower() == "#4caf50"
+                        'is_hit': item.background().color().name().lower() == self.hit_color.lower()
                     }
                     
             solution.append(page_state)
@@ -1042,8 +1046,8 @@ class PRAMainWindow(QWidget):
                     item = self.solution_table.item(frame_idx, col_idx)
                     if item and item.text() == page_id:
                         color = item.background().color().name().lower()
-                        is_hit_marked = (color == "#4caf50")  # green
-                        is_fault_marked = (color == "#f44336")  # red
+                        is_hit_marked = (color == self.hit_color.lower())  # hit color
+                        is_fault_marked = (color == self.fault_color.lower())  # fault color
                         
                         if is_hit_marked or is_fault_marked:
                             student_markings.append({
@@ -1143,9 +1147,9 @@ class PRAMainWindow(QWidget):
                             # Color code based on whether this page was accessed and hit/fault
                             if page == access.page_id:
                                 if access.is_hit:
-                                    item.setBackground(QColor("#4caf50"))  # Green for hit
+                                    item.setBackground(QColor(self.hit_color))  # Hit color
                                 else:
-                                    item.setBackground(QColor("#f44336"))  # Red for fault
+                                    item.setBackground(QColor(self.fault_color))  # Fault color
                                 item.setForeground(QColor("white"))
                             else:
                                 item.setBackground(QColor("white"))
@@ -1204,3 +1208,47 @@ class PRAMainWindow(QWidget):
                         item.setBackground(QColor("white"))
                         item.setForeground(QColor("black"))
                         item.setFlags(item.flags() | Qt.ItemIsEditable)
+    
+    def set_hit_fault_colors(self, hit_color: str, fault_color: str):
+        """Set the colors used for hit/fault indicators.
+        
+        Args:
+            hit_color: Hex color string for hits (e.g., '#4caf50')
+            fault_color: Hex color string for faults (e.g., '#f44336')
+        """
+        old_hit = self.hit_color
+        old_fault = self.fault_color
+        self.hit_color = hit_color
+        self.fault_color = fault_color
+        
+        # Update the legend if the table exists
+        if self.solution_table and self.solution_table.rowCount() > len(self.frames) + 1:
+            legend_row = len(self.frames) + 1
+            
+            # Update hit legend item
+            if self.solution_table.columnCount() > 3:
+                hit_item = self.solution_table.item(legend_row, 3)
+                if hit_item:
+                    hit_item.setBackground(QColor(self.hit_color))
+            
+            # Update fault legend item
+            if self.solution_table.columnCount() > 4:
+                fault_item = self.solution_table.item(legend_row, 4)
+                if fault_item:
+                    fault_item.setBackground(QColor(self.fault_color))
+        
+        # Refresh all existing solution cells with new colors
+        if self.frames and self.solution_table:
+            for row in range(len(self.frames)):
+                for col in range(3, self.solution_table.columnCount()):
+                    item = self.solution_table.item(row, col)
+                    if item:
+                        current_bg = item.background().color().name().lower()
+                        # Check if cell was a hit (old green color)
+                        if current_bg == old_hit.lower() or current_bg == "#4caf50":
+                            item.setBackground(QColor(self.hit_color))
+                        # Check if cell was a fault (old red color)
+                        elif current_bg == old_fault.lower() or current_bg == "#f44336":
+                            item.setBackground(QColor(self.fault_color))
+
+
