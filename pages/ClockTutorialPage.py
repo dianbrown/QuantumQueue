@@ -13,6 +13,9 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 
+# Resource helper (PyInstaller-safe)
+from resource_path import load_json_resource
+
 
 class ClockBlockWidget(QFrame):
     """Visual block representing a frame in the clock with R-bit and pointer indicator"""
@@ -138,16 +141,9 @@ class ClockTutorialPage(QWidget):
     
     def _load_step_templates(self):
         """Load step description templates from JSON file"""
-        possible_paths = [
-            os.path.join(os.path.dirname(__file__), '..', 'tutorial_kb', 'clock_steps.json'),
-            'tutorial_kb/clock_steps.json',
-        ]
-        for path in possible_paths:
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except:
-                continue
+        templates = load_json_resource('tutorial_kb/clock_steps.json', default=None)
+        if isinstance(templates, dict) and templates.get('step_types'):
+            return templates
         return {"step_types": {}}
     
     def _generate_random_problem(self):

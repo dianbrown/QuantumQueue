@@ -13,6 +13,7 @@ block_cipher = None
 datas = [
     ('themes', 'themes'),
     ('Assets', 'Assets'),
+    ('tutorial_kb', 'tutorial_kb'),
 ]
 
 # Collect all hidden imports

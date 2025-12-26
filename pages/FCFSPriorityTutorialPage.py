@@ -14,6 +14,9 @@ from PySide6.QtGui import QColor, QFont
 # Import the existing ProcessGenerator
 from CPU.utils.process_generator import ProcessGenerator
 
+# Resource helper (PyInstaller-safe)
+from resource_path import load_json_resource
+
 
 class FCFSPriorityTutorialPage(QWidget):
     """Step-by-step FCFS Priority algorithm tutorial page with dynamic step generation"""
@@ -48,19 +51,9 @@ class FCFSPriorityTutorialPage(QWidget):
     
     def _load_step_templates(self):
         """Load step description templates from JSON file"""
-        possible_paths = [
-            os.path.join(os.path.dirname(__file__), '..', 'tutorial_kb', 'fcfs_priority_steps.json'),
-            os.path.join(os.path.dirname(__file__), '..', '..', 'tutorial_kb', 'fcfs_priority_steps.json'),
-            'tutorial_kb/fcfs_priority_steps.json',
-        ]
-        
-        for path in possible_paths:
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
-                continue
-        
+        templates = load_json_resource('tutorial_kb/fcfs_priority_steps.json', default=None)
+        if isinstance(templates, dict) and templates.get('step_types'):
+            return templates
         return self._get_default_templates()
     
     def _get_default_templates(self):
