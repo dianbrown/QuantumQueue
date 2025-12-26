@@ -98,7 +98,7 @@ python main.py
 
 ### CPU Scheduling
 
-<!-- Add your CPU scheduling demo GIF here -->
+<!-- TODO Add CPU scheduling demo GIF here -->
 <p align="center">
   <em>🎥 CPU Scheduling Demo GIF coming soon...</em>
   <!-- <img src="Assets/demos/cpu_scheduling_demo.gif" alt="CPU Scheduling Demo" width="800"/> -->
@@ -106,7 +106,7 @@ python main.py
 
 ### Page Replacement Algorithms
 
-<!-- Add your PRA demo GIF here -->
+<!-- TODO Add PRA demo GIF here -->
 <p align="center">
   <em>🎥 Page Replacement Demo GIF coming soon...</em>
   <!-- <img src="Assets/demos/pra_demo.gif" alt="Page Replacement Demo" width="800"/> -->
@@ -114,7 +114,7 @@ python main.py
 
 ### Interactive Tutorials
 
-<!-- Add your tutorial demo GIF here -->
+<!-- TODO Add tutorial demo GIF here -->
 <p align="center">
   <em>🎥 Tutorial Demo GIF coming soon...</em>
   <!-- <img src="Assets/demos/tutorial_demo.gif" alt="Tutorial Demo" width="800"/> -->
@@ -122,7 +122,7 @@ python main.py
 
 ### Theme Showcase
 
-<!-- Add your theme switching GIF here -->
+<!-- TODO Add theme switching GIF here -->
 <p align="center">
   <em>🎥 Theme Showcase GIF coming soon...</em>
   <!-- <img src="Assets/demos/themes_demo.gif" alt="Themes Demo" width="800"/> -->
