@@ -9,7 +9,7 @@ import platform
 
 # Application metadata
 APP_NAME = "QuantumQueue"
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.0.1"
 APP_AUTHOR = "dianbrown"
 APP_DESCRIPTION = "CPU Scheduling & Page Replacement Practice Application"
 APP_URL = "https://github.com/dianbrown/QuantumQueue"
