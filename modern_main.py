@@ -45,6 +45,8 @@ class ModernMainWindow(QMainWindow):
         self.resizing = False
         self.resize_edge = None
         self.resize_margin = 5  # Pixels from edge to trigger resize
+        self.startup_page_index = 0  # Default to Home
+        self._first_show = True  # Track first show event
         
         # Initialize settings and theme manager
         self.settings = QSettings()
@@ -55,12 +57,37 @@ class ModernMainWindow(QMainWindow):
         # Apply saved theme or default
         saved_theme = self.settings.value("theme", "Dracula")
         self.apply_theme(saved_theme)
+        
+        # Restore window geometry if setting is enabled
+        if self.settings.value("remember_position", False, type=bool):
+            geometry = self.settings.value("window_geometry")
+            if geometry:
+                self.restoreGeometry(geometry)
+        
+        # Check if should start maximized
+        if self.settings.value("start_maximized", False, type=bool):
+            self.showMaximized()
     
     def showEvent(self, event):
-        """Handle show event to ensure sidebar is on top"""
+        """Handle show event to ensure sidebar is on top and apply startup settings"""
         super().showEvent(event)
         if hasattr(self, 'sidebar'):
             self.sidebar.raise_()
+        
+        # Apply startup page on first show
+        if self._first_show:
+            self._first_show = False
+            startup_page = self.settings.value("startup_page", "Home")
+            # Map page names to indices (Home=0, CPU=1, PRA=2, Help=3, Settings=4)
+            page_map = {"Home": 0, "CPU Scheduling": 1, "Page Replacement": 2, "Help": 3, "Settings": 4}
+            page_index = page_map.get(startup_page, 0)
+            self.change_page(page_index)
+    
+    def closeEvent(self, event):
+        """Handle close event to save window geometry"""
+        if self.settings.value("remember_position", False, type=bool):
+            self.settings.setValue("window_geometry", self.saveGeometry())
+        super().closeEvent(event)
     
     def setup_ui(self):
         """Setup the main UI"""
@@ -151,16 +178,15 @@ class ModernMainWindow(QMainWindow):
                 border: 1px solid #72767d;
             }
         """)
-        self.content_stack.addWidget(self.cpu_page)
         
-        # Home Page
+        # Home Page (Index 0)
         self.home_page = self.create_home_page()
         self.content_stack.addWidget(self.home_page)
         
-        # CPU Page
+        # CPU Page (Index 1)
         self.content_stack.addWidget(self.cpu_page)
         
-        # PRA Page
+        # PRA Page (Index 2)
         self.pra_page = PRAMainWindow()
         self.content_stack.addWidget(self.pra_page)
         
@@ -171,7 +197,18 @@ class ModernMainWindow(QMainWindow):
         # Settings Page
         self.settings_page = SettingsPage()
         self.settings_page.theme_changed.connect(self.apply_theme)
+        self.settings_page.colorblind_mode_changed.connect(self.apply_colorblind_mode)
+        self.settings_page.font_family_changed.connect(self.apply_font_family)
+        self.settings_page.font_scale_changed.connect(self.apply_font_scale)
+        self.settings_page.startup_page_changed.connect(self.set_startup_page)
         self.content_stack.addWidget(self.settings_page)
+        
+        # Apply saved colorblind mode to PRA page and tutorials
+        hit_color, fault_color = self.settings_page.get_colorblind_colors()
+        self.pra_page.set_hit_fault_colors(hit_color, fault_color)
+        # Also apply to help page tutorials
+        if hasattr(self.help_page, 'set_hit_fault_colors'):
+            self.help_page.set_hit_fault_colors(hit_color, fault_color)
     
     def create_home_page(self):
         """Create the home page with logo and application information"""
@@ -286,6 +323,112 @@ class ModernMainWindow(QMainWindow):
         self.sidebar.set_active_button(index)
         # Ensure sidebar stays on top after page change
         self.sidebar.raise_()
+    
+    def apply_colorblind_mode(self, hit_color: str, fault_color: str):
+        """Apply colorblind mode colors to PRA page and all PRA tutorials"""
+        # Apply to main PRA page and force refresh
+        self.pra_page.set_hit_fault_colors(hit_color, fault_color)
+        
+        # Apply to all PRA tutorial pages in Help page
+        if hasattr(self.help_page, 'set_hit_fault_colors'):
+            self.help_page.set_hit_fault_colors(hit_color, fault_color)
+    
+    def apply_font_family(self, font_family: str):
+        """Apply font family throughout the application"""
+        from PySide6.QtWidgets import QApplication
+        from PySide6.QtGui import QFont, QFontDatabase
+        from resource_path import resource_path
+        import os
+        
+        app = QApplication.instance()
+        if not app:
+            return
+        
+        current_font = app.font()
+        current_size = current_font.pointSize()
+        
+        if font_family and font_family != "":
+            # Try to load OpenDyslexic font from bundled file
+            if "OpenDyslexic" in font_family:
+                # Try multiple font file locations
+                font_paths = [
+                    resource_path("Assets/fonts/OpenDyslexic-Regular.otf"),
+                    resource_path("Assets/fonts/OpenDyslexic-Regular.ttf"),
+                    "Assets/fonts/OpenDyslexic-Regular.otf",
+                    "Assets/fonts/OpenDyslexic-Regular.ttf",
+                ]
+                
+                for font_path in font_paths:
+                    if os.path.exists(font_path):
+                        font_id = QFontDatabase.addApplicationFont(font_path)
+                        if font_id >= 0:
+                            families = QFontDatabase.applicationFontFamilies(font_id)
+                            if families:
+                                font_family = families[0]
+                        break
+            
+            # Apply the font
+            new_font = QFont(font_family)
+            new_font.setPointSize(current_size)
+            app.setFont(new_font)
+        else:
+            # Reset to system default - use "Segoe UI" on Windows, system font on others
+            import sys
+            if sys.platform == "win32":
+                default_family = "Segoe UI"
+            else:
+                default_family = QFontDatabase.systemFont(QFontDatabase.GeneralFont).family()
+            
+            default_font = QFont(default_family)
+            default_font.setPointSize(current_size)
+            app.setFont(default_font)
+        
+        # Force all widgets to update with new font
+        self._refresh_all_widget_styles()
+    
+    def apply_font_scale(self, scale: float):
+        """Apply font scale throughout the application"""
+        from PySide6.QtWidgets import QApplication
+        from PySide6.QtGui import QFont
+        
+        app = QApplication.instance()
+        if not app:
+            return
+        
+        # Base font size is typically 9-10 points
+        base_size = 10
+        new_size = max(8, int(base_size * scale))  # Minimum of 8pt
+        current_font = app.font()
+        current_font.setPointSize(new_size)
+        app.setFont(current_font)
+        
+        # Force all widgets to update with new font
+        self._refresh_all_widget_styles()
+    
+    def _refresh_all_widget_styles(self):
+        """Force refresh of all widget styles to apply font changes"""
+        from PySide6.QtWidgets import QApplication
+        
+        app = QApplication.instance()
+        if app:
+            # Process all widgets recursively
+            for widget in app.allWidgets():
+                try:
+                    # Update font from application
+                    widget.setFont(app.font())
+                    # Force style recalculation
+                    if widget.style():
+                        widget.style().unpolish(widget)
+                        widget.style().polish(widget)
+                    widget.update()
+                except (RuntimeError, TypeError):
+                    # Skip widgets that can't be updated (deleted or special widgets)
+                    pass
+    
+    def set_startup_page(self, page_index: int):
+        """Set the startup page preference (saved for next launch)"""
+        # This is handled by QSettings in SettingsPage, just store for reference
+        self.startup_page_index = page_index
         
     def apply_theme(self, theme_name):
         """Apply the selected theme to the application"""
@@ -654,6 +797,10 @@ class ModernMainWindow(QMainWindow):
         # Apply Help page theme
         if hasattr(self.help_page, 'apply_theme'):
             self.help_page.apply_theme(theme)
+        
+        # Apply Settings page theme
+        if hasattr(self.settings_page, 'apply_theme'):
+            self.settings_page.apply_theme(theme)
         
         # Update content stack
         self.content_stack.setStyleSheet(f"""

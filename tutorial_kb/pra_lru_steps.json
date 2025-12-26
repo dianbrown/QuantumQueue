@@ -1,0 +1,26 @@
+{
+  "algorithm": "LRU",
+  "algorithm_name": "Least Recently Used (Page Replacement)",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "LRU (Least Recently Used) replaces the page that has not been used for the longest time.\n\nCore Rules:\n- Replace least recently USED page (not just loaded)\n- Initial queue order: By load time (oldest first)\n- On page HIT: Move accessed frame to back (MRU position)\n- On page FAULT: Front of queue is victim (LRU)\n\nWe have {num_frames} frames with initial pages: {frame_list}"
+    },
+    "order_queue": {
+      "title": "Step 1: Order Queue by Load Time",
+      "description": "First, we order the frame queue by load time (oldest first).\n\nThis establishes the initial LRU order - the frame loaded first is considered least recently used.\n\nQueue order (LRU to MRU): {queue_order}\n\nThe frame at the front is the LRU candidate for replacement."
+    },
+    "page_hit": {
+      "title": "Step {step}: Page {page} - HIT",
+      "description": "Page {page} is requested.\n\nPage {page} is already in Frame {frame_id}.\n\nResult: PAGE HIT - No replacement needed.\n\nIMPORTANT: Unlike FIFO, in LRU a hit UPDATES the queue!\nFrame {frame_id} moves to the back of the queue (MRU position).\n\nThis refresh means Frame {frame_id} is now the most recently used."
+    },
+    "page_fault": {
+      "title": "Step {step}: Page {page} - FAULT",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nVictim Selection: Frame {victim_frame} (front of queue = LRU)\nOld page {old_page} is replaced with new page {page}.\n\nQueue Update: Frame {victim_frame} moves to the back (now MRU)."
+    },
+    "final": {
+      "title": "Step {step}: Final Results",
+      "description": "LRU Page Replacement Complete!\n\nFinal Frame Contents:\n{frame_contents}\n\nStatistics:\n- Total Page Requests: {total_requests}\n- Page Hits: {page_hits}\n- Page Faults: {page_faults}\n- Hit Ratio: {hit_ratio}\n- Fault Ratio: {fault_ratio}"
+    }
+  }
+}

@@ -108,8 +108,9 @@ class DraggableFrameBlock(QLabel):
         mime_data.setText(self.frame_id)
         drag.setMimeData(mime_data)
         
-        # Create drag pixmap
+        # Create drag pixmap - fill with transparent first to initialize paint device
         pixmap = QPixmap(self.size())
+        pixmap.fill(Qt.transparent)
         self.render(pixmap)
         drag.setPixmap(pixmap)
         drag.setHotSpot(event.pos())
@@ -198,12 +199,6 @@ class QueueVisualizationWidget(QWidget):
         self.queue_container.dropEvent = self.drop_event
         
         layout.addWidget(self.queue_container)
-        
-        # Instructions
-        self.instructions = QLabel("Drag frames to reorder queue (left = oldest, right = newest)\nRight-click to toggle R-bit: ● = 1, ○ = 0 (for Second Chance)")
-        self.instructions.setStyleSheet("color: #666; font-size: 10px; margin-top: 5px;")
-        self.instructions.setWordWrap(True)
-        layout.addWidget(self.instructions)
     
     def set_theme_colors(self, theme_colors: dict):
         """Set theme colors for the queue visualization."""
@@ -226,15 +221,52 @@ class QueueVisualizationWidget(QWidget):
         for block in self.frame_blocks:
             block.set_theme_colors(theme_colors)
         
-    def update_frames(self, frames: List[Frame]):
-        """Update the queue with current frames."""
+    def update_frames(self, frames: List[Frame], algorithm: str = ""):
+        """Update the queue with current frames.
+        
+        Args:
+            frames: List of Frame objects to display
+            algorithm: Current algorithm name. For Clock, uses circular order
+                      (highest frame ID first, then ascending). For others,
+                      uses load time order.
+        """
         # Clear existing blocks
         for block in self.frame_blocks:
             block.setParent(None)
         self.frame_blocks.clear()
         
-        # Sort frames by load time to show initial FIFO order
-        sorted_frames = sorted(frames, key=lambda f: f.load_time)
+        # Sort frames based on algorithm
+        if algorithm == "Clock":
+            # Clock algorithm: fixed circular order starting at pointer position
+            # Order: highest frame first, then ascending (e.g., 4→0→1→2→3)
+            # Initial pointer: points to frame with oldest load time (lowest load_time)
+            if frames:
+                # Sort by frame_id numerically to get the circular order
+                frames_with_ids = [(int(f.frame_id) if f.frame_id.isdigit() else 0, f) for f in frames]
+                frames_with_ids.sort(key=lambda x: x[0])  # Sort ascending by frame ID
+                
+                # Create circular order: [highest, 0, 1, 2, ... , highest-1]
+                if frames_with_ids:
+                    max_id_frame = frames_with_ids[-1][1]  # Highest ID frame
+                    other_frames = [f for _, f in frames_with_ids[:-1]]  # All others in ascending order
+                    circular_order = [max_id_frame] + other_frames
+                    
+                    # Find the frame with the lowest load time (pointer start position)
+                    oldest_frame = min(frames, key=lambda f: f.load_time)
+                    
+                    # Rotate the circular order to start at the oldest frame (pointer position)
+                    try:
+                        pointer_index = circular_order.index(oldest_frame)
+                        sorted_frames = circular_order[pointer_index:] + circular_order[:pointer_index]
+                    except ValueError:
+                        sorted_frames = circular_order
+                else:
+                    sorted_frames = [f for _, f in frames_with_ids]
+            else:
+                sorted_frames = []
+        else:
+            # Other algorithms: sort by load time to show initial FIFO order
+            sorted_frames = sorted(frames, key=lambda f: f.load_time)
         
         # Create new blocks
         for frame in sorted_frames:
@@ -331,13 +363,16 @@ class PRAMainWindow(QWidget):
         super().__init__()
         self.frames: List[Frame] = []
         self.page_sequence: List[str] = []
-        self.frame_table: Optional[QTableWidget] = None
         self.solution_table: Optional[QTableWidget] = None
         self.solution_result: Optional[PageReplacementResult] = None
         self.current_solution: List[List[str]] = []
         self.is_locked = False
         self.results_label: Optional[QLabel] = None
         self.results_scroll_area: Optional[QScrollArea] = None
+        
+        # Configurable hit/fault colors (for colorblind accessibility)
+        self.hit_color = "#4caf50"  # Default green
+        self.fault_color = "#f44336"  # Default red
         self.algorithm_name_label: Optional[QLabel] = None
         self.queue_widget: Optional[QueueVisualizationWidget] = None
         
@@ -384,59 +419,27 @@ class PRAMainWindow(QWidget):
         controls_layout.addStretch()
         main_layout.addLayout(controls_layout)
         
-        # Main content layout
-        content_layout = QHBoxLayout()
+        # Fixed spacing below controls (like CPU page)
+        main_layout.addSpacing(20)
         
-        # Left panel - Frame input table
-        left_panel = QVBoxLayout()
-        left_panel.addWidget(QLabel("Frame Input:"))
-        
-        self.setup_frame_table()
-        left_panel.addWidget(self.frame_table)
-        
-        # Frame control buttons
-        frame_controls = QHBoxLayout()
-        add_frame_btn = QPushButton("Add Frame")
-        add_frame_btn.clicked.connect(self.add_frame)
-        delete_frame_btn = QPushButton("Delete Frame")
-        delete_frame_btn.clicked.connect(self.delete_frame)
-        randomize_btn = QPushButton("Randomize")
-        randomize_btn.clicked.connect(self.generate_random_problem)
-        
-        frame_controls.addWidget(add_frame_btn)
-        frame_controls.addWidget(delete_frame_btn)
-        frame_controls.addWidget(randomize_btn)
-        left_panel.addLayout(frame_controls)
-        
-        # Solution control buttons
-        solution_controls = QHBoxLayout()
-        check_btn = QPushButton("Check Solution")
-        check_btn.clicked.connect(self.check_solution)
-        show_btn = QPushButton("Show Solution")
-        show_btn.clicked.connect(self.show_solution)
-        reset_btn = QPushButton("Reset")
-        reset_btn.clicked.connect(self.reset_solution)
-        
-        solution_controls.addWidget(check_btn)
-        solution_controls.addWidget(show_btn)
-        solution_controls.addWidget(reset_btn)
-        left_panel.addLayout(solution_controls)
-        
-        left_widget = QWidget()
-        left_widget.setLayout(left_panel)
-        left_widget.setFixedWidth(400)  # Increased width for frame data
-        content_layout.addWidget(left_widget)
-        
-        # Right panel - Solution table
-        right_panel = QVBoxLayout()
-        right_panel.addWidget(QLabel("Solution Grid:"))
-        
+        # Solution table (unified - combines frame data + solution grid)
         self.setup_solution_table()
-        right_panel.addWidget(self.solution_table)
+        main_layout.addWidget(self.solution_table, stretch=1)
         
-        # Queue visualization widget
+        # Spacing between table and queue
+        main_layout.addSpacing(10)
+        
+        # Queue visualization widget - centered
+        queue_container = QHBoxLayout()
+        queue_container.addStretch()
         self.queue_widget = QueueVisualizationWidget()
-        right_panel.addWidget(self.queue_widget)
+        self.queue_widget.setMaximumWidth(600)  # Limit width for centering
+        queue_container.addWidget(self.queue_widget)
+        queue_container.addStretch()
+        main_layout.addLayout(queue_container)
+        
+        # Spacing between queue and console
+        main_layout.addSpacing(10)
         
         # Results display with scroll area
         self.results_label = QLabel("")
@@ -465,25 +468,88 @@ class PRAMainWindow(QWidget):
             }
         """)
         
-        right_panel.addWidget(self.results_scroll_area)
+        main_layout.addWidget(self.results_scroll_area)
         
-        right_widget = QWidget()
-        right_widget.setLayout(right_panel)
-        content_layout.addWidget(right_widget)
+        # Spacing between console and buttons
+        main_layout.addSpacing(15)
         
-        main_layout.addLayout(content_layout)
+        # Buttons section - centered at bottom
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
         
-    def setup_frame_table(self):
-        """Set up the frame input table."""
-        self.frame_table = QTableWidget(0, 3)
-        self.frame_table.setHorizontalHeaderLabels(["Frame ID", "Load Time", "Page in Memory"])
-        self.frame_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # Button rows container
+        buttons_container = QVBoxLayout()
+        buttons_container.setSpacing(10)
         
-        # Connect signal to update solution table when frame data changes
-        self.frame_table.itemChanged.connect(self.on_frame_table_changed)
+        # Uniform button size - all buttons exactly the same (matching CPU page)
+        btn_width = 130
+        btn_height = 40
+        btn_style = f"min-width: {btn_width}px; max-width: {btn_width}px; min-height: {btn_height}px; max-height: {btn_height}px;"
+        
+        # First row of buttons
+        row1_layout = QHBoxLayout()
+        row1_layout.setSpacing(10)
+        
+        add_frame_btn = QPushButton("Add Frame")
+        add_frame_btn.clicked.connect(self.add_frame)
+        add_frame_btn.setFixedWidth(btn_width)
+        add_frame_btn.setFixedHeight(btn_height)
+        add_frame_btn.setStyleSheet(btn_style)
+        
+        delete_frame_btn = QPushButton("Delete Frame")
+        delete_frame_btn.clicked.connect(self.delete_frame)
+        delete_frame_btn.setFixedWidth(btn_width)
+        delete_frame_btn.setFixedHeight(btn_height)
+        delete_frame_btn.setStyleSheet(btn_style)
+        
+        randomize_btn = QPushButton("Randomize")
+        randomize_btn.clicked.connect(self.generate_random_problem)
+        randomize_btn.setFixedWidth(btn_width)
+        randomize_btn.setFixedHeight(btn_height)
+        randomize_btn.setStyleSheet(btn_style)
+        
+        row1_layout.addWidget(add_frame_btn)
+        row1_layout.addWidget(delete_frame_btn)
+        row1_layout.addWidget(randomize_btn)
+        buttons_container.addLayout(row1_layout)
+        
+        # Second row of buttons
+        row2_layout = QHBoxLayout()
+        row2_layout.setSpacing(10)
+        
+        check_btn = QPushButton("Check Solution")
+        check_btn.clicked.connect(self.check_solution)
+        check_btn.setFixedWidth(btn_width)
+        check_btn.setFixedHeight(btn_height)
+        check_btn.setStyleSheet(btn_style)
+        
+        show_btn = QPushButton("Show Solution")
+        show_btn.clicked.connect(self.show_solution)
+        show_btn.setFixedWidth(btn_width)
+        show_btn.setFixedHeight(btn_height)
+        show_btn.setStyleSheet(btn_style)
+        
+        reset_btn = QPushButton("Reset")
+        reset_btn.clicked.connect(self.reset_solution)
+        reset_btn.setFixedWidth(btn_width)
+        reset_btn.setFixedHeight(btn_height)
+        reset_btn.setStyleSheet(btn_style)
+        
+        row2_layout.addWidget(check_btn)
+        row2_layout.addWidget(show_btn)
+        row2_layout.addWidget(reset_btn)
+        buttons_container.addLayout(row2_layout)
+        
+        buttons_layout.addLayout(buttons_container)
+        buttons_layout.addStretch()
+        
+        main_layout.addLayout(buttons_layout)
+        
+        # Bottom spacing
+        main_layout.addSpacing(15)
         
     def setup_solution_table(self):
-        """Set up the solution grid for visualization."""
+        """Set up the unified solution grid for frame data and page replacement visualization."""
         self.solution_table = QTableWidget(0, 0)
         self.solution_table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.solution_table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
@@ -493,6 +559,7 @@ class PRAMainWindow(QWidget):
         # Connect cell events
         self.solution_table.cellClicked.connect(self.on_cell_clicked)
         self.solution_table.cellDoubleClicked.connect(self.on_cell_double_clicked)
+        self.solution_table.itemChanged.connect(self.on_solution_table_changed)
         
         # Enable context menu
         self.solution_table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -518,22 +585,47 @@ class PRAMainWindow(QWidget):
         self.parse_page_sequence(f"{sample_template}")
         
     def update_frame_table(self):
-        """Update the frame table with current frames."""
-        self.frame_table.setRowCount(len(self.frames))
-        for i, frame in enumerate(self.frames):
-            self.frame_table.setItem(i, 0, QTableWidgetItem(frame.frame_id))
-            self.frame_table.setItem(i, 1, QTableWidgetItem(str(frame.load_time)))
-            self.frame_table.setItem(i, 2, QTableWidgetItem(frame.pages_in_memory))
+        """Update the frame display with current frames (now uses solution_table)."""
+        # Refresh the solution table which includes frame data
+        self.update_solution_table()
         
         # Update queue visualization
         if self.queue_widget:
-            self.queue_widget.update_frames(self.frames)
+            self.queue_widget.update_frames(self.frames, self.algorithm_combo.currentText())
     
     def on_frame_table_changed(self, item):
         """Handle when frame table data is edited by user."""
         # Read the updated frame data and refresh solution table
         self.read_frame_table()
         self.update_solution_table()
+        
+    def on_solution_table_changed(self, item):
+        """Handle when solution table data is edited (frame columns 1-2)."""
+        if item is None:
+            return
+        col = item.column()
+        row = item.row()
+        
+        # Only react to changes in editable frame columns (1: Load Time, 2: Page in Memory)
+        if col not in (1, 2):
+            return
+        # Skip algorithm and legend rows
+        if row >= len(self.frames):
+            return
+            
+        # Update frame data from table
+        if len(self.frames) > row:
+            if col == 1:  # Load Time
+                try:
+                    self.frames[row].load_time = int(item.text()) if item.text() else 0
+                except ValueError:
+                    pass
+            elif col == 2:  # Page in Memory
+                self.frames[row].pages_in_memory = item.text()
+            
+            # Update queue visualization
+            if self.queue_widget:
+                self.queue_widget.update_frames(self.frames, self.algorithm_combo.currentText())
         
     def generate_random_problem(self):
         """Generate random frame data and page sequence for practice."""
@@ -589,12 +681,14 @@ class PRAMainWindow(QWidget):
             self.results_label.setText("No results yet. Generate a solution to see statistics.")
             
     def read_frame_table(self):
-        """Read frame data from the table."""
+        """Read frame data from the solution table (unified table)."""
         self.frames = []
-        for i in range(self.frame_table.rowCount()):
-            frame_id_item = self.frame_table.item(i, 0)
-            load_time_item = self.frame_table.item(i, 1)
-            pages_item = self.frame_table.item(i, 2)
+        # Read from solution_table columns 0, 1, 2 (Frame ID, Load Time, Page in Memory)
+        num_frame_rows = self.solution_table.rowCount() - 2  # Exclude algorithm and legend rows
+        for i in range(num_frame_rows):
+            frame_id_item = self.solution_table.item(i, 0)
+            load_time_item = self.solution_table.item(i, 1)
+            pages_item = self.solution_table.item(i, 2)
             
             if frame_id_item and load_time_item and pages_item:
                 try:
@@ -637,7 +731,11 @@ class PRAMainWindow(QWidget):
             alg_name_item = QTableWidgetItem(algorithm)
             alg_name_item.setFlags(alg_name_item.flags() & ~Qt.ItemIsEditable)
             alg_name_item.setTextAlignment(Qt.AlignCenter)
-            self.solution_table.setItem(algorithm_row, 1, alg_name_item)
+            self.solution_table.setItem(algorithm_row, 2, alg_name_item)  # Column 2 = Page in Memory
+        
+        # Update queue visualization with algorithm-specific sorting
+        if self.queue_widget and self.frames:
+            self.queue_widget.update_frames(self.frames, algorithm)
         
         self.reset_solution()
         
@@ -652,20 +750,21 @@ class PRAMainWindow(QWidget):
         num_frames = len(self.frames)
         num_pages = len(self.page_sequence)
         num_rows = num_frames + 2  # frames + algorithm + legend rows
-        num_cols = num_pages + 2   # pages + Frame ID + Load time columns
+        num_cols = num_pages + 3   # pages + Frame ID + Load Time + Page in Memory columns
         
         self.solution_table.setRowCount(num_rows)
         self.solution_table.setColumnCount(num_cols)
         
-        # Set up headers
-        headers = ["Frame ID", "Page in Memory"] + self.page_sequence
+        # Set up headers - include Load Time
+        headers = ["Frame ID", "Load Time", "Page in Memory"] + self.page_sequence
         self.solution_table.setHorizontalHeaderLabels(headers)
         
         # Set column widths
-        self.solution_table.setColumnWidth(0, 80)  # Frame ID column
-        self.solution_table.setColumnWidth(1, 120)  # Page in Memory column
-        for i in range(2, num_cols):
-            self.solution_table.setColumnWidth(i, 30)  # Page columns
+        self.solution_table.setColumnWidth(0, 70)   # Frame ID column
+        self.solution_table.setColumnWidth(1, 75)   # Load Time column
+        self.solution_table.setColumnWidth(2, 115)  # Page in Memory column
+        for i in range(3, num_cols):
+            self.solution_table.setColumnWidth(i, 35)  # Page columns
         
         # Hide the vertical header (row numbers)
         self.solution_table.verticalHeader().setVisible(False)
@@ -677,6 +776,9 @@ class PRAMainWindow(QWidget):
         """Fill the basic structure of the solution table."""
         if not self.frames:
             return
+        
+        # Block signals to prevent itemChanged from corrupting frame data
+        self.solution_table.blockSignals(True)
             
         # Clear existing data
         for row in range(self.solution_table.rowCount()):
@@ -687,21 +789,25 @@ class PRAMainWindow(QWidget):
                 
         # Frame rows
         for frame_idx, frame in enumerate(self.frames):
-            # Frame ID column
+            # Frame ID column (read-only)
             frame_item = QTableWidgetItem(frame.frame_id)
             frame_item.setFlags(frame_item.flags() & ~Qt.ItemIsEditable)
             frame_item.setTextAlignment(Qt.AlignCenter)
             self.solution_table.setItem(frame_idx, 0, frame_item)
             
-            # Page in Memory column
-            page_item = QTableWidgetItem(frame.pages_in_memory)
-            page_item.setFlags(page_item.flags() & ~Qt.ItemIsEditable)
-            page_item.setTextAlignment(Qt.AlignCenter)
-            self.solution_table.setItem(frame_idx, 1, page_item)
+            # Load Time column (editable)
+            load_item = QTableWidgetItem(str(frame.load_time))
+            load_item.setTextAlignment(Qt.AlignCenter)
+            self.solution_table.setItem(frame_idx, 1, load_item)
             
-            # Page columns - these are interactive
+            # Page in Memory column (editable)
+            page_item = QTableWidgetItem(frame.pages_in_memory)
+            page_item.setTextAlignment(Qt.AlignCenter)
+            self.solution_table.setItem(frame_idx, 2, page_item)
+            
+            # Page columns - these are interactive (start at column 3)
             for page_idx in range(len(self.page_sequence)):
-                col_idx = page_idx + 2
+                col_idx = page_idx + 3  # Offset by 3 for Frame ID, Load Time, Page in Memory
                 item = QTableWidgetItem("")
                 item.setTextAlignment(Qt.AlignCenter)
                 item.setBackground(QColor("white"))
@@ -721,7 +827,7 @@ class PRAMainWindow(QWidget):
         alg_name_item = QTableWidgetItem(self.algorithm_combo.currentText())
         alg_name_item.setFlags(alg_name_item.flags() & ~Qt.ItemIsEditable)
         alg_name_item.setTextAlignment(Qt.AlignCenter)
-        self.solution_table.setItem(algorithm_row, 1, alg_name_item)
+        self.solution_table.setItem(algorithm_row, 2, alg_name_item)  # Column 2 = Page in Memory
         
         # Legend row
         legend_row = len(self.frames) + 1
@@ -730,26 +836,29 @@ class PRAMainWindow(QWidget):
         legend_label_item.setTextAlignment(Qt.AlignCenter)
         self.solution_table.setItem(legend_row, 0, legend_label_item)
         
-        # Add legend items
-        if self.solution_table.columnCount() > 2:
+        # Add legend items (start at column 3 - first page column)
+        if self.solution_table.columnCount() > 3:
             hit_item = QTableWidgetItem("Hit")
             hit_item.setFlags(hit_item.flags() & ~Qt.ItemIsEditable)
             hit_item.setTextAlignment(Qt.AlignCenter)
-            hit_item.setBackground(QColor("#4caf50"))
+            hit_item.setBackground(QColor(self.hit_color))
             hit_item.setForeground(QColor("white"))
-            self.solution_table.setItem(legend_row, 2, hit_item)
+            self.solution_table.setItem(legend_row, 3, hit_item)
             
-        if self.solution_table.columnCount() > 3:
+        if self.solution_table.columnCount() > 4:
             fault_item = QTableWidgetItem("Fault")
             fault_item.setFlags(fault_item.flags() & ~Qt.ItemIsEditable)
             fault_item.setTextAlignment(Qt.AlignCenter)
-            fault_item.setBackground(QColor("#f44336"))
+            fault_item.setBackground(QColor(self.fault_color))
             fault_item.setForeground(QColor("white"))
-            self.solution_table.setItem(legend_row, 3, fault_item)
+            self.solution_table.setItem(legend_row, 4, fault_item)
+        
+        # Unblock signals after table is populated
+        self.solution_table.blockSignals(False)
             
     def on_cell_clicked(self, row: int, col: int):
         """Handle cell click events."""
-        if col < 2 or self.is_locked:  # Skip Frame ID and Load time columns
+        if col < 3 or self.is_locked:  # Skip Frame ID, Load Time, and Page in Memory columns
             return
             
         if row >= len(self.frames):  # Skip algorithm and legend rows
@@ -760,7 +869,7 @@ class PRAMainWindow(QWidget):
             return
             
         # Get the page that should be in this cell
-        page_idx = col - 2
+        page_idx = col - 3  # Offset by 3 for Frame ID, Load Time, Page in Memory
         if page_idx < len(self.page_sequence):
             page_id = self.page_sequence[page_idx]
             
@@ -780,7 +889,7 @@ class PRAMainWindow(QWidget):
                 
     def on_cell_double_clicked(self, row: int, col: int):
         """Handle cell double-click to toggle colors."""
-        if col < 2 or self.is_locked or row >= len(self.frames):
+        if col < 3 or self.is_locked or row >= len(self.frames):  # Skip first 3 columns
             return
             
         item = self.solution_table.item(row, col)
@@ -792,11 +901,11 @@ class PRAMainWindow(QWidget):
         
         if current_color == "#ffffff" or current_color == "white":
             # Set to green (hit)
-            item.setBackground(QColor("#4caf50"))
+            item.setBackground(QColor(self.hit_color))
             item.setForeground(QColor("white"))
-        elif current_color == "#4caf50":
+        elif current_color == self.hit_color.lower():
             # Set to red (fault)
-            item.setBackground(QColor("#f44336"))
+            item.setBackground(QColor(self.fault_color))
             item.setForeground(QColor("white"))
         else:
             # Set back to white
@@ -812,13 +921,13 @@ class PRAMainWindow(QWidget):
         row = item.row()
         col = item.column()
         
-        if col < 2 or row >= len(self.frames):
+        if col < 3 or row >= len(self.frames):  # Skip first 3 columns
             return
             
         menu = QMenu(self)
         
         # Add page action
-        page_idx = col - 2
+        page_idx = col - 3  # Offset by 3 for Frame ID, Load Time, Page in Memory
         if page_idx < len(self.page_sequence):
             page_id = self.page_sequence[page_idx]
             add_page_action = menu.addAction(f"Add Page {page_id}")
@@ -848,10 +957,10 @@ class PRAMainWindow(QWidget):
         item = self.solution_table.item(row, col)
         if item:
             if color_type == "hit":
-                item.setBackground(QColor("#4caf50"))
+                item.setBackground(QColor(self.hit_color))
                 item.setForeground(QColor("white"))
             elif color_type == "fault":
-                item.setBackground(QColor("#f44336"))
+                item.setBackground(QColor(self.fault_color))
                 item.setForeground(QColor("white"))
                 
     def clear_cell(self, row: int, col: int):
@@ -925,7 +1034,7 @@ class PRAMainWindow(QWidget):
             
         # Get each page access
         for page_idx in range(len(self.page_sequence)):
-            col_idx = page_idx + 2
+            col_idx = page_idx + 3  # Offset by 3 for Frame ID, Load Time, Page in Memory
             page_state = {}
             
             for frame_idx in range(len(self.frames)):
@@ -933,7 +1042,7 @@ class PRAMainWindow(QWidget):
                 if item and item.text():
                     page_state[frame_idx] = {
                         'page': item.text(),
-                        'is_hit': item.background().color().name().lower() == "#4caf50"
+                        'is_hit': item.background().color().name().lower() == self.hit_color.lower()
                     }
                     
             solution.append(page_state)
@@ -971,15 +1080,15 @@ class PRAMainWindow(QWidget):
                             break
                 
                 # Check student's markings in this column
-                col_idx = page_idx + 2
+                col_idx = page_idx + 3  # Offset by 3 for Frame ID, Load Time, Page in Memory
                 student_markings = []
                 
                 for frame_idx in range(len(self.frames)):
                     item = self.solution_table.item(frame_idx, col_idx)
                     if item and item.text() == page_id:
                         color = item.background().color().name().lower()
-                        is_hit_marked = (color == "#4caf50")  # green
-                        is_fault_marked = (color == "#f44336")  # red
+                        is_hit_marked = (color == self.hit_color.lower())  # hit color
+                        is_fault_marked = (color == self.fault_color.lower())  # fault color
                         
                         if is_hit_marked or is_fault_marked:
                             student_markings.append({
@@ -1066,7 +1175,7 @@ class PRAMainWindow(QWidget):
             
         # Clear and fill with correct data
         for access_idx, access in enumerate(self.solution_result.accesses):
-            col_idx = access_idx + 2
+            col_idx = access_idx + 3  # Offset by 3 for Frame ID, Load Time, Page in Memory
             
             for frame_idx in range(len(self.frames)):
                 if frame_idx < len(access.frames_state):
@@ -1079,9 +1188,9 @@ class PRAMainWindow(QWidget):
                             # Color code based on whether this page was accessed and hit/fault
                             if page == access.page_id:
                                 if access.is_hit:
-                                    item.setBackground(QColor("#4caf50"))  # Green for hit
+                                    item.setBackground(QColor(self.hit_color))  # Hit color
                                 else:
-                                    item.setBackground(QColor("#f44336"))  # Red for fault
+                                    item.setBackground(QColor(self.fault_color))  # Fault color
                                 item.setForeground(QColor("white"))
                             else:
                                 item.setBackground(QColor("white"))
@@ -1094,7 +1203,7 @@ class PRAMainWindow(QWidget):
     def lock_table_cells(self):
         """Lock all table cells to prevent editing."""
         for row in range(len(self.frames)):
-            for col in range(2, self.solution_table.columnCount()):
+            for col in range(3, self.solution_table.columnCount()):  # Start at column 3 (page columns)
                 item = self.solution_table.item(row, col)
                 if item:
                     item.setFlags(item.flags() & ~Qt.ItemIsEditable)
@@ -1133,10 +1242,54 @@ class PRAMainWindow(QWidget):
         # Clear solution cells and unlock them
         if self.frames and self.page_sequence:
             for row in range(len(self.frames)):
-                for col in range(2, self.solution_table.columnCount()):
+                for col in range(3, self.solution_table.columnCount()):  # Start at column 3 (page columns)
                     item = self.solution_table.item(row, col)
                     if item:
                         item.setText("")
                         item.setBackground(QColor("white"))
                         item.setForeground(QColor("black"))
                         item.setFlags(item.flags() | Qt.ItemIsEditable)
+    
+    def set_hit_fault_colors(self, hit_color: str, fault_color: str):
+        """Set the colors used for hit/fault indicators.
+        
+        Args:
+            hit_color: Hex color string for hits (e.g., '#4caf50')
+            fault_color: Hex color string for faults (e.g., '#f44336')
+        """
+        old_hit = self.hit_color
+        old_fault = self.fault_color
+        self.hit_color = hit_color
+        self.fault_color = fault_color
+        
+        # Update the legend if the table exists
+        if self.solution_table and self.solution_table.rowCount() > len(self.frames) + 1:
+            legend_row = len(self.frames) + 1
+            
+            # Update hit legend item
+            if self.solution_table.columnCount() > 3:
+                hit_item = self.solution_table.item(legend_row, 3)
+                if hit_item:
+                    hit_item.setBackground(QColor(self.hit_color))
+            
+            # Update fault legend item
+            if self.solution_table.columnCount() > 4:
+                fault_item = self.solution_table.item(legend_row, 4)
+                if fault_item:
+                    fault_item.setBackground(QColor(self.fault_color))
+        
+        # Refresh all existing solution cells with new colors
+        if self.frames and self.solution_table:
+            for row in range(len(self.frames)):
+                for col in range(3, self.solution_table.columnCount()):
+                    item = self.solution_table.item(row, col)
+                    if item:
+                        current_bg = item.background().color().name().lower()
+                        # Check if cell was a hit (old green color)
+                        if current_bg == old_hit.lower() or current_bg == "#4caf50":
+                            item.setBackground(QColor(self.hit_color))
+                        # Check if cell was a fault (old red color)
+                        elif current_bg == old_fault.lower() or current_bg == "#f44336":
+                            item.setBackground(QColor(self.fault_color))
+
+

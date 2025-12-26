@@ -1,0 +1,42 @@
+{
+  "algorithm": "SRT",
+  "algorithm_name": "Shortest Remaining Time (Preemptive SJF)",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "SRT (Shortest Remaining Time) is a PREEMPTIVE scheduling algorithm.\n\nCore Rules:\n- Also known as Preemptive SJF\n- Process with shortest REMAINING burst time runs\n- Preemption when new process has SHORTER remaining time\n- EQUAL remaining time: NO preemption (current continues)\n- Tie-breakers: Remaining Burst → Arrival → ID\n\nOur problem set has {num_processes} processes: {process_list}."
+    },
+    "show_arrivals": {
+      "title": "Step 1: Mark Arrival Times (RS)",
+      "description": "Mark when each process arrives.\n\nArrival order: {arrival_order}\n\nRS markers show ready state times.\nNote: SRT uses REMAINING burst (decreases as process executes)."
+    },
+    "first_block": {
+      "title": "Step {step}: Process {process_id} begins (Remaining={remaining})",
+      "description": "At t={current_time}, selecting shortest remaining time...\n\nReady queue: {ready_list}\n\nSelected: {process_id} (Remaining burst = {remaining})"
+    },
+    "continue_block": {
+      "title": "Step {step}: Process {process_id} continues (t={current_time})",
+      "description": "Process {process_id} continues execution.\n\nRemaining burst: {remaining} → {new_remaining}\nNo shorter process has arrived.\nBlock {block_num} of {burst}."
+    },
+    "preemption": {
+      "title": "Step {step}: PREEMPTION! {new_process} interrupts {old_process}",
+      "description": "Process {new_process} arrives at t={current_time}!\n\nRemaining burst comparison:\n- {new_process}: {new_remaining} (just arrived)\n- {old_process}: {old_remaining} (currently running)\n\n{new_remaining} < {old_remaining} → {new_process} preempts!\n{old_process} returns to ready queue."
+    },
+    "no_preemption_equal": {
+      "title": "Step {step}: {new_process} arrives (no preemption)",
+      "description": "Process {new_process} arrives at t={current_time}.\n\nRemaining burst comparison:\n- {new_process}: {new_remaining}\n- {current_process}: {current_remaining}\n\nEQUAL remaining time → NO preemption!\nCurrent process continues (SRT rule)."
+    },
+    "process_complete": {
+      "title": "Step {step}: Process {process_id} completes!",
+      "description": "Process {process_id} finishes execution!\n\nOriginal Burst: {burst}\nStarted: t={start_time}, Completed: t={end_time}\nWaiting time: {wait_time}\nTurnaround time: {tat}"
+    },
+    "select_next": {
+      "title": "Step {step}: Selecting next process",
+      "description": "CPU is free. Checking ready queue at t={current_time}...\n\nReady processes (sorted by Remaining Burst):\n{ready_list}\n\nSelected: {process_id} (Remaining={remaining})"
+    },
+    "final": {
+      "title": "Step {step}: Final Solution",
+      "description": "SRT Scheduling Complete!\n\nExecution Order: {execution_order}\n\nMetrics:\n{metrics}\n\nAverage Waiting Time: {avg_wait}\nAverage Turnaround Time: {avg_tat}\n\nNote: SRT minimizes average waiting time but has high context switch overhead."
+    }
+  }
+}

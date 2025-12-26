@@ -1,0 +1,42 @@
+{
+  "algorithm": "Round_Robin",
+  "algorithm_name": "Round Robin",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "Round Robin is a TIME-QUANTUM based scheduling algorithm.\n\nCore Rules:\n- Each process gets a fixed time slice (quantum = {quantum})\n- When quantum expires, process moves to back of queue\n- NO priority preemption - only quantum expiration causes switch\n- RS (Ready State) updates when quantum expires\n- Tie-breaker: Newest arrival wins (most recent first)\n\nOur problem set has {num_processes} processes: {process_list}."
+    },
+    "show_arrivals": {
+      "title": "Step 1: Mark Arrival Times (RS)",
+      "description": "Mark initial Ready State times.\n\nInitial RS = Arrival time for each process:\n{arrival_info}\n\nRS markers show when processes enter the ready queue.\nThese RS times will UPDATE when a process uses its quantum and re-queues."
+    },
+    "first_block": {
+      "title": "Step {step}: Process {process_id} begins (Quantum {quantum_used}/{quantum})",
+      "description": "At t={current_time}, selecting from ready queue...\n\nReady queue (sorted by RS, then newest arrival):\n{ready_list}\n\nSelected: {process_id} (RS={rs_time})\nStarting quantum: will run for min({quantum}, {remaining}) = {run_time} time units."
+    },
+    "continue_quantum": {
+      "title": "Step {step}: Process {process_id} continues (Q {quantum_used}/{quantum})",
+      "description": "Process {process_id} continues within its quantum.\n\nQuantum progress: {quantum_used} of {quantum}\nRemaining burst: {remaining}\nCurrent time: t={current_time}"
+    },
+    "quantum_expire": {
+      "title": "Step {step}: Quantum expires! {process_id} re-queues",
+      "description": "Process {process_id}'s quantum of {quantum} has expired!\n\n{process_id} used its full quantum but has {remaining} blocks left.\nNew RS time = {new_rs} (current time)\n{process_id} moves to back of ready queue.\n\nNext process will be selected based on RS times."
+    },
+    "process_complete": {
+      "title": "Step {step}: Process {process_id} completes!",
+      "description": "Process {process_id} finishes execution!\n\nCompleted within quantum (used {quantum_used} of {quantum}).\nBurst: {burst}, Arrival: {arrival}\nCompleted at t={end_time}\nWaiting time: {wait_time}, Turnaround: {tat}"
+    },
+    "select_next": {
+      "title": "Step {step}: Selecting next process",
+      "description": "CPU is free. Checking ready queue at t={current_time}...\n\nReady processes (sorted by RS → newest arrival):\n{ready_list}\n\nSelected: {process_id} (RS={rs_time})"
+    },
+    "new_arrival_no_preempt": {
+      "title": "Step {step}: {new_process} arrives (no preemption)",
+      "description": "Process {new_process} arrives at t={current_time}.\n\nRound Robin has NO mid-quantum preemption.\n{current_process} continues its quantum.\n{new_process} enters ready queue with RS={rs_time}."
+    },
+    "final": {
+      "title": "Step {step}: Final Solution",
+      "description": "Round Robin Scheduling Complete! (Quantum = {quantum})\n\nExecution Order: {execution_order}\n\nMetrics:\n{metrics}\n\nAverage Waiting Time: {avg_wait}\nAverage Turnaround Time: {avg_tat}\n\nNote: Round Robin provides fair CPU time but has context switch overhead."
+    }
+  }
+}

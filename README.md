@@ -1,4 +1,4 @@
-# QuantumQueue - CPU Scheduling & Page Replacement Practice
+# QuantumQueue
 
 <p align="center">
   <img src="Assets/icons/QuantumQueue2.png" alt="QuantumQueue Logo" width="200"/>
@@ -8,37 +8,44 @@
   <strong>Interactive learning tool for CPU Scheduling and Page Replacement Algorithms</strong>
 </p>
 
-just enter everything into the application, it has a built in random function and value editor for ease of use
-
-The TAT and WT are also calculated when you view the solution as well as the responsiveness per process.
-Feel free to enter your own values to view solutions or just practice the algorithms with the randomize function.
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-showcase">Showcase</a> •
+  <a href="#-usage">Usage</a> •
+  <a href="#-tutorials">Tutorials</a>
+</p>
 
 ---
 
-## 📥 Quick Start
+## About
 
-### 🎯 Easy Installation (Recommended)
+QuantumQueue is a comprehensive educational tool designed to help students learn and practice CPU Scheduling and Page Replacement Algorithms. With an intuitive interface, step-by-step tutorials, and real-time visualizations, mastering these core operating system concepts has never been easier.
 
-#### Windows Users:
-1. **Download** the installer from [Releases](https://github.com/dianbrown/CPU-SchedulingApp/releases/latest)
-2. **Run** `QuantumQueue-*-Windows-Setup.exe`
-3. **Follow** the installation wizard
-4. **Launch** from Desktop shortcut or Start Menu
-5. **Done!** 🎉
+- **Practice Mode**: Test your understanding with randomized problems
+- **Solution Checking**: Verify your answers against correct solutions
+- **Visual Feedback**: See colorful Gantt charts and queue visualizations
+- **Calculated Metrics**: TAT, WT, responsiveness, hit ratios, and more
 
-#### macOS Users:
-1. **Download** the DMG from [Releases](https://github.com/dianbrown/CPU-SchedulingApp/releases/latest)
-2. **Open** `QuantumQueue-*-macOS.dmg`
-3. **Drag** QuantumQueue to Applications folder
-4. **Launch** from Applications
-5. **Done!** 🎉
+---
 
-### 🛠️ Development Installation
+## Quick Start
+
+### Download & Run (Recommended)
+
+| Platform | Download | Instructions |
+|----------|----------|--------------|
+| **Windows** | [📥 Download EXE](https://github.com/dianbrown/CPU-SchedulingApp/releases/latest) | Run `QuantumQueue-Setup.exe` and follow the installer |
+| **macOS** | [📥 Download DMG](https://github.com/dianbrown/CPU-SchedulingApp/releases/latest) | Open DMG, drag to Applications folder |
+| **Portable** | [📥 Download ZIP](https://github.com/dianbrown/CPU-SchedulingApp/releases/latest) | Extract and run `QuantumQueue.exe` directly |
+
+
+### Run from Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/dianbrown/QuantumQueue.git
-cd QuantumQueue
+git clone https://github.com/dianbrown/CPU-SchedulingApp.git
+cd CPU-SchedulingApp
 
 # Install dependencies
 pip install -r requirements.txt
@@ -47,122 +54,161 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## ✨ Features
+---
+
+## Features
 
 ### CPU Scheduling Algorithms
-- **First Come First Served (FCFS)** - Basic FIFO scheduling
-- **FCFS with Priority** - Priority-based FCFS
-- **Shortest Job First (SJF)** - Non-preemptive shortest job first
-- **SJF with Priority** - Priority-based SJF
-- **Shortest Remaining Time (SRT)** - Preemptive SJF
-- **Round Robin (RR)** - Time-quantum based scheduling
-- **Round Robin with Priority** - Priority-based Round Robin
+
+| Algorithm | Type | Description |
+|-----------|------|-------------|
+| **FCFS** | Non-preemptive | First Come First Served - Basic FIFO scheduling |
+| **FCFS Priority** | Preemptive | Priority-based with FCFS tie-breaking |
+| **SJF** | Non-preemptive | Shortest Job First - Optimal for average wait time |
+| **SJF Priority** | Preemptive | Priority-based with shortest job tie-breaking |
+| **SRT** | Preemptive | Shortest Remaining Time - Preemptive SJF |
+| **Round Robin** | Preemptive | Time-quantum based fair scheduling |
+| **RR Priority** | Preemptive | Priority + time quantum scheduling |
 
 ### Page Replacement Algorithms
-- **First In First Out (FIFO)** - Basic queue-based replacement
-- **Least Recently Used (LRU)** - Recency-based replacement
-- **Optimal** - Theoretical best performance
-- **Second Chance** - Enhanced FIFO with reference bit
-- **Clock** - Circular queue variant
 
-### Interactive Features
-- 🎨 **28 Beautiful Themes** (Dracula, Nord, Tokyo Night, and more)
-- 📊 **Visual Gantt Charts** for CPU scheduling
-- 🎯 **Step-by-step Tutorials** for every algorithm
-- 🔄 **Random Test Case Generation**
-- 📝 **Editable Process/Frame Tables**
-- 📈 **Real-time Performance Metrics**
-- 🎭 **Drag-and-Drop Interface** for page replacement
-- 💾 **Persistent Settings** across sessions
+| Algorithm | Description |
+|-----------|-------------|
+| **FIFO** | First In First Out - Queue-based replacement |
+| **LRU** | Least Recently Used - Recency-based replacement |
+| **Optimal** | Farthest future use - Theoretical best |
+| **Second Chance** | Enhanced FIFO with R-bit second chances |
+| **Clock** | Circular buffer with R-bit sweep |
 
-## 📸 Screenshots
+### Application Features
 
-*Coming soon*
+- 🎨 **28 Beautiful Themes** — Dracula, Nord, Tokyo Night, Solarized, and more
+- 📊 **Visual Gantt Charts** — Interactive timeline visualization
+- 🎯 **Step-by-Step Tutorials** — Learn every algorithm with examples
+- 🔄 **Random Problem Generation** — Endless practice opportunities
+- 📝 **Editable Tables** — Customize processes and frames
+- 📈 **Real-time Metrics** — WT, TAT, hit ratios, fault counts
+- 🎭 **Drag-and-Drop** — Interactive queue reordering for PRA
+- 💾 **Persistent Settings** — Your preferences saved across sessions
+- ♿ **Colorblind Accessible** — Configurable hit/fault colors
 
-## 🚀 Usage
+---
+
+## Showcase
+
+### CPU Scheduling
+
+<!-- TODO Add CPU scheduling demo GIF here -->
+<p align="center">
+  <em>🎥 CPU Scheduling Demo GIF coming soon...</em>
+  <!-- <img src="Assets/demos/cpu_scheduling_demo.gif" alt="CPU Scheduling Demo" width="800"/> -->
+</p>
+
+### Page Replacement Algorithms
+
+<!-- TODO Add PRA demo GIF here -->
+<p align="center">
+  <em>🎥 Page Replacement Demo GIF coming soon...</em>
+  <!-- <img src="Assets/demos/pra_demo.gif" alt="Page Replacement Demo" width="800"/> -->
+</p>
+
+### Interactive Tutorials
+
+<!-- TODO Add tutorial demo GIF here -->
+<p align="center">
+  <em>🎥 Tutorial Demo GIF coming soon...</em>
+  <!-- <img src="Assets/demos/tutorial_demo.gif" alt="Tutorial Demo" width="800"/> -->
+</p>
+
+### Theme Showcase
+
+<!-- TODO Add theme switching GIF here -->
+<p align="center">
+  <em>🎥 Theme Showcase GIF coming soon...</em>
+  <!-- <img src="Assets/demos/themes_demo.gif" alt="Themes Demo" width="800"/> -->
+</p>
+
+---
+
+## Usage
 
 ### CPU Scheduling Practice
-1. **Select an algorithm** from the dropdown
-2. **Add processes** manually or use "Random Processes"
-3. **Edit** arrival times, burst times, and priorities
-4. **Click "Simulate"** to see the Gantt chart
-5. **Review** waiting times, turnaround times, and metrics
+
+1. **Select Algorithm** — Choose from the dropdown (FCFS, SJF, Round Robin, etc.)
+2. **Generate Problem** — Click "Randomize" or enter your own processes
+3. **Fill Timeline** — Click cells to schedule processes:
+   - `Single Click` — Fill one time slot
+   - `Double Click` — Auto-fill entire burst time
+   - `Right-Click` — Add RS (Ready State) markers
+4. **Check Solution** — Verify your answer against the correct solution
+5. **View Metrics** — See WT, TAT, and responsiveness per process
 
 ### Page Replacement Practice
-1. **Select an algorithm** from the dropdown
-2. **Set the number of frames**
-3. **Enter page sequence** or use "Random Sequence"
-4. **Click "Run Algorithm"** to visualize
-5. **Review** page faults, hits, and hit ratio
 
-### Tutorials
-1. **Click the Help icon** in the sidebar
-2. **Select CPU or PRA** category
-3. **Choose an algorithm** to learn
-4. **Follow step-by-step examples** with interactive visualizations
+1. **Select Algorithm** — Choose FIFO, LRU, Optimal, Second Chance, or Clock
+2. **Set Up Frames** — Configure frame count and initial pages
+3. **Enter Page Sequence** — Type pages or use "Randomize"
+4. **Arrange Queue** — Drag-and-drop frames to set initial order
+5. **Solve & Check** — Mark hits/faults and verify your solution
+
+---
+
+## Tutorials
+
+Access step-by-step tutorials from the **Help screen**:
+
+1. Click the **Help icon** (❓) in the sidebar
+2. Choose **CPU Scheduling** or **Page Replacement**
+3. Select any algorithm card
+4. Click **"View Example"** for an interactive walkthrough
+
+Each tutorial includes:
+- Algorithm rules and edge cases
+- Randomizable practice problems
+- Step-by-step explanations
+- Visual queue/table updates
+
+### Algorithm Reference
+
+Additionally, the [Algorithm Rules](AlgorithmRules.md) document provides a detailed explanation of each algorithm's logic. Combined with the provided Python classes i created for each algorithm, it offers a comprehensive resource for understanding the implementation and applying it to your own code or programs.
+
+---
 
 ## Project Structure
 
 ```
-CPU_SchedulingPython/
-├── setup.bat               # 🖱️ Windows setup (double-click)
-├── run.bat                 # 🖱️ Windows launcher (double-click)
-├── setup.py                # 🖱️ Cross-platform setup (double-click)
-├── main.py                 # Main entry point
+QuantumQueue/
+├── main.py                 # Application entry point
 ├── requirements.txt        # Python dependencies
-├── models/                 # Data models
-│   ├── __init__.py
-│   ├── process.py         # Process data class
-│   └── scheduling_result.py # Result data class
-├── algorithms/             # Scheduling algorithms
-│   ├── __init__.py
-│   ├── base_scheduler.py  # Abstract base class
-│   ├── fcfs.py           # First Come First Served
-│   ├── fcfs_priority.py  # FCFS with Priority
-│   ├── round_robin.py    # Round Robin
-│   ├── sjf.py           # Shortest Job First 
-│   ├── sjf_priority.py  # Shortest Job First Priority
-│   └── srt.py           # Shortest Remaining Time (template)
-├── ui/                    # User interface components
-│   ├── __init__.py
-│   └── main_window.py    # Main application window
-└── utils/                 # Utility functions
-    ├── __init__.py
-    └── process_generator.py # Random process generator
+├── algorithms/             # CPU scheduling algorithms
+├── PRA/                    # Page replacement algorithms
+│   ├── algorithms/         # FIFO, LRU, Optimal, etc.
+│   ├── models/             # Frame data models
+│   └── ui/                 # PRA interface
+├── pages/                  # UI pages and tutorials
+├── themes/                 # Theme JSON files
+├── tutorial_kb/            # Tutorial step definitions
+├── Assets/                 # Icons and resources
+└── utils/                  # Helper utilities
 ```
 
-## Features
+---
 
-### Current Implementation
-- ✅ **FCFS (First Come First Served)**: Non-preemptive scheduling
-- ✅ **FCFS with Priority**: Preemptive priority scheduling
-- ✅ **Smart Process Generation**: Eliminates gaps for better visualization
-- ✅ **Interactive Timeline**: Click and double-click to fill cells
-- ✅ **Solution Checking**: Compare your input with the correct solution
-- ✅ **Metrics Display**: Waiting time, turnaround time, averages
-- ✅ **Easy Installation**: Double-click setup for Windows users
-- ✅ **Round Robin (RR)**: Time quantum-based scheduling
-- ✅ **Round Robin with Priority (RRP)**: Priority + time quantum
-- ✅ **Shortest Job First (SJF)**: Non-preemptive shortest job
-- ✅ **SJF with Priority (SJFP)**: Priority + shortest job
-- ✅ **Shortest Remaining Time (SRT)**: Preemptive shortest remaining time
-- ✅ **Responsiveness per process**: Calculates the responsiveness and displays it
+## Contributing
 
-## 📖 How to Use the Application
+Contributions are welcome! Feel free to:
+- Report bugs or issues
+- Suggest new features
+- Submit pull requests
 
-### 🎯 Practice Mode:
-1. **Select Algorithm**: Choose FCFS or FCFS with Priority from dropdown
-2. **Generate Processes**: Click "Randomize" for new practice problems
-3. **Fill Timeline**: Click cells to schedule processes manually
-   - **Single click**: Fill one time slot
-   - **Double click**: Auto-fill entire burst time
-   - **Right-Click**: Adds RS (Ready State) Markers
-4. **Check Solution**: Click "Check Solution" to see if you're correct
-5. **Show Answer**: Click "Show Solution" to see the correct schedule
-6. **Reset**: Click "Reset" to clear and try again
+---
 
-### ⚙️ Advanced Features:
-- **Add/Delete Processes**: Modify the process list manually
-- **Edit Process Data**: Change arrival times, burst times, priorities
-- **Reset**: Generate fresh timeline after editing processes
-- **Metrics Display**: View waiting times, turnaround times, and averages
+## License
+
+This project is open source and available for educational purposes.
+
+---
+
+<p align="center">
+  Made with ❤️ for students learning Operating Systems
+</p>

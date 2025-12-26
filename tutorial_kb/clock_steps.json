@@ -1,0 +1,34 @@
+{
+  "algorithm": "Clock",
+  "algorithm_name": "Clock (Circular Buffer) Page Replacement",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "Clock is a circular buffer page replacement algorithm with a fixed frame order.\n\nCore Rules:\n- Fixed circular order: Highest frame ID first, then ascending (e.g., 4->0->1->2->3->4...)\n- Initial R-bit = 1 for all frames\n- Initial pointer points to frame with oldest load time\n- On page hit: Set R-bit = 1, pointer stays unchanged\n- On page fault:\n  - If ALL R-bits are 1: Reset all to 0, victim is at pointer\n  - Else: Sweep until R-bit = 0, clearing R-bits along the way\n  - After replacement: Set new page's R-bit = 1, advance pointer\n\nWe have {num_frames} frames with initial pages: {frame_list}"
+    },
+    "order_frames": {
+      "title": "Step 1: Establish Clock Order",
+      "description": "Clock uses a FIXED circular frame order (frames don't move like a queue).\n\nCircular Order: Highest frame first, then ascending (e.g., 4->0->1->2->3)\n\nDisplay starts at pointer position (Frame {pointer_frame} - oldest load time).\n\nClock Order (from pointer): {clock_order}\n\nAll frames start with R-bit = 1.\n\nR-bit values: {rbit_values}"
+    },
+    "page_hit": {
+      "title": "Step {step}: Page {page} - HIT",
+      "description": "Page {page} is requested.\n\nPage {page} is already in Frame {frame_id}.\n\nResult: PAGE HIT - No replacement needed.\n\nR-bit Action: Frame {frame_id}'s R-bit is set to 1 (refreshed).\n\nPointer remains at Frame {pointer_frame} (unchanged on hits).\n\nCurrent R-bits: {rbit_values}"
+    },
+    "page_fault_all_rbits_one": {
+      "title": "Step {step}: Page {page} - FAULT (Reset R-bits)",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nAll R-bits are 1! Resetting all R-bits to 0 first.\n\nPointer is at Frame {victim_frame} (R-bit now = 0).\nVictim: Frame {victim_frame}\nOld page {old_page} is replaced with page {page}.\n\nNew page's R-bit = 1. Pointer advances to Frame {new_pointer_frame}.\n\nCurrent R-bits: {rbit_values}"
+    },
+    "page_fault_sweep": {
+      "title": "Step {step}: Page {page} - FAULT (Sweep)",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nClock Sweep Process:\n{sweep_log}\n\nVictim: Frame {victim_frame} (R-bit was 0)\nOld page {old_page} is replaced with page {page}.\n\nNew page's R-bit = 1. Pointer advances to Frame {new_pointer_frame}.\n\nCurrent R-bits: {rbit_values}"
+    },
+    "page_fault_direct": {
+      "title": "Step {step}: Page {page} - FAULT",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nPointer at Frame {victim_frame} has R-bit = 0.\nVictim: Frame {victim_frame}\nOld page {old_page} is replaced with page {page}.\n\nNew page's R-bit = 1. Pointer advances to Frame {new_pointer_frame}.\n\nCurrent R-bits: {rbit_values}"
+    },
+    "final": {
+      "title": "Step {step}: Final Results",
+      "description": "Clock Page Replacement Complete!\n\nFinal Frame Contents:\n{frame_contents}\n\nFinal R-bit Values:\n{rbit_summary}\n\nFinal Pointer Position: Frame {pointer_frame}\n\nStatistics:\n- Total Page Requests: {total_requests}\n- Page Hits: {page_hits}\n- Page Faults: {page_faults}\n- Hit Ratio: {hit_ratio}\n- Fault Ratio: {fault_ratio}\n\nThe Clock algorithm efficiently manages page replacement using a circular sweep with R-bits."
+    }
+  }
+}

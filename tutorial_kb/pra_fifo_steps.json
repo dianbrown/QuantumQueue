@@ -1,0 +1,26 @@
+{
+  "algorithm": "FIFO",
+  "algorithm_name": "First In First Out (Page Replacement)",
+  "step_types": {
+    "initial": {
+      "title": "Step 0: Initial State",
+      "description": "FIFO (First In First Out) is the simplest page replacement algorithm.\n\nCore Rules:\n- Replace the oldest page (first one loaded into memory)\n- Queue order is determined by load time on initialization\n- On page fault: Front of queue is victim, new page goes to back\n- On page hit: No change to queue order\n\nWe have {num_frames} frames with initial pages: {frame_list}"
+    },
+    "order_queue": {
+      "title": "Step 1: Order Queue by Load Time",
+      "description": "First, we order the frame queue by load time (oldest first).\n\nThis establishes the FIFO order - the frame loaded first will be replaced first.\n\nQueue order (oldest to newest): {queue_order}\n\nThe frame at the front of the queue will be the next victim if a page fault occurs."
+    },
+    "page_hit": {
+      "title": "Step {step}: Page {page} - HIT",
+      "description": "Page {page} is requested.\n\nPage {page} is already in Frame {frame_id}.\n\nResult: PAGE HIT - No replacement needed.\n\nImportant: In FIFO, a hit does NOT change the queue order. The queue remains unchanged."
+    },
+    "page_fault": {
+      "title": "Step {step}: Page {page} - FAULT",
+      "description": "Page {page} is requested.\n\nPage {page} is NOT in memory.\n\nResult: PAGE FAULT - Replacement needed.\n\nVictim Selection: Frame {victim_frame} (at front of queue, oldest loaded)\nOld page {old_page} is replaced with new page {page}.\n\nQueue Update: Frame {victim_frame} moves to the back of the queue."
+    },
+    "final": {
+      "title": "Step {step}: Final Results",
+      "description": "FIFO Page Replacement Complete!\n\nFinal Frame Contents:\n{frame_contents}\n\nStatistics:\n- Total Page Requests: {total_requests}\n- Page Hits: {page_hits}\n- Page Faults: {page_faults}\n- Hit Ratio: {hit_ratio}\n- Fault Ratio: {fault_ratio}"
+    }
+  }
+}
