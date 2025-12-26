@@ -8,7 +8,7 @@
     },
     "order_frames": {
       "title": "Step 1: Establish Clock Order",
-      "description": "Clock uses a FIXED circular frame order (frames don't move like a queue).\n\nClock Order: {clock_order}\n\nInitial pointer position: Frame {pointer_frame} (oldest load time)\n\nAll frames start with R-bit = 1.\n\nR-bit values: {rbit_values}"
+      "description": "Clock uses a FIXED circular frame order (frames don't move like a queue).\n\nCircular Order: Highest frame first, then ascending (e.g., 4->0->1->2->3)\n\nDisplay starts at pointer position (Frame {pointer_frame} - oldest load time).\n\nClock Order (from pointer): {clock_order}\n\nAll frames start with R-bit = 1.\n\nR-bit values: {rbit_values}"
     },
     "page_hit": {
       "title": "Step {step}: Page {page} - HIT",

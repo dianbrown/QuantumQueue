@@ -188,19 +188,43 @@ class ClockTutorialPage(QWidget):
             self.page_sequence.append(str(page))
     
     def _get_clock_order(self):
-        """Get the fixed clock order: highest frame ID first, then ascending"""
+        """Get the fixed clock order: highest frame ID first, then ascending,
+        rotated to start at the frame with oldest load time (pointer position).
+        
+        This matches Algorithm Rules: 
+        - Order: Highest frame first, then ascending (e.g., 4→0→1→2→3)
+        - Initial pointer: Points to frame with oldest load time
+        """
+        if not self.frames:
+            return []
+        
+        # Get all frame IDs and sort numerically
         frame_ids = [f["id"] for f in self.frames]
-        frame_ids_sorted = sorted(frame_ids, key=lambda x: int(x), reverse=True)
+        frame_ids_sorted = sorted(frame_ids, key=lambda x: int(x) if x.isdigit() else 0)
+        
+        # Create circular order: [highest, 0, 1, 2, ..., highest-1]
         if frame_ids_sorted:
-            highest = frame_ids_sorted[0]
-            rest = sorted([f for f in frame_ids_sorted if f != highest], key=lambda x: int(x))
-            return [highest] + rest
+            highest = frame_ids_sorted[-1]  # Highest ID
+            rest = frame_ids_sorted[:-1]  # All others in ascending order
+            circular_order = [highest] + rest
+            
+            # Find the frame with oldest load time and rotate to start there
+            oldest_frame = min(self.frames, key=lambda f: f["load_time"])
+            oldest_frame_id = oldest_frame["id"]
+            
+            if oldest_frame_id in circular_order:
+                pointer_index = circular_order.index(oldest_frame_id)
+                # Rotate the circular order to start at the pointer
+                rotated_order = circular_order[pointer_index:] + circular_order[:pointer_index]
+                return rotated_order
+            
+            return circular_order
+        
         return frame_ids
     
     def _get_initial_pointer(self, clock_order):
-        """Get initial pointer position (frame with oldest load time)"""
-        oldest_frame = min(self.frames, key=lambda f: f["load_time"])
-        return clock_order.index(oldest_frame["id"])
+        """Get initial pointer position (always 0 since we rotated the order to start at oldest)"""
+        return 0 if clock_order else -1
     
     def _get_data_from_table(self):
         """Read frame data from unified table"""

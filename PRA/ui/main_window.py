@@ -221,15 +221,52 @@ class QueueVisualizationWidget(QWidget):
         for block in self.frame_blocks:
             block.set_theme_colors(theme_colors)
         
-    def update_frames(self, frames: List[Frame]):
-        """Update the queue with current frames."""
+    def update_frames(self, frames: List[Frame], algorithm: str = ""):
+        """Update the queue with current frames.
+        
+        Args:
+            frames: List of Frame objects to display
+            algorithm: Current algorithm name. For Clock, uses circular order
+                      (highest frame ID first, then ascending). For others,
+                      uses load time order.
+        """
         # Clear existing blocks
         for block in self.frame_blocks:
             block.setParent(None)
         self.frame_blocks.clear()
         
-        # Sort frames by load time to show initial FIFO order
-        sorted_frames = sorted(frames, key=lambda f: f.load_time)
+        # Sort frames based on algorithm
+        if algorithm == "Clock":
+            # Clock algorithm: fixed circular order starting at pointer position
+            # Order: highest frame first, then ascending (e.g., 4→0→1→2→3)
+            # Initial pointer: points to frame with oldest load time (lowest load_time)
+            if frames:
+                # Sort by frame_id numerically to get the circular order
+                frames_with_ids = [(int(f.frame_id) if f.frame_id.isdigit() else 0, f) for f in frames]
+                frames_with_ids.sort(key=lambda x: x[0])  # Sort ascending by frame ID
+                
+                # Create circular order: [highest, 0, 1, 2, ... , highest-1]
+                if frames_with_ids:
+                    max_id_frame = frames_with_ids[-1][1]  # Highest ID frame
+                    other_frames = [f for _, f in frames_with_ids[:-1]]  # All others in ascending order
+                    circular_order = [max_id_frame] + other_frames
+                    
+                    # Find the frame with the lowest load time (pointer start position)
+                    oldest_frame = min(frames, key=lambda f: f.load_time)
+                    
+                    # Rotate the circular order to start at the oldest frame (pointer position)
+                    try:
+                        pointer_index = circular_order.index(oldest_frame)
+                        sorted_frames = circular_order[pointer_index:] + circular_order[:pointer_index]
+                    except ValueError:
+                        sorted_frames = circular_order
+                else:
+                    sorted_frames = [f for _, f in frames_with_ids]
+            else:
+                sorted_frames = []
+        else:
+            # Other algorithms: sort by load time to show initial FIFO order
+            sorted_frames = sorted(frames, key=lambda f: f.load_time)
         
         # Create new blocks
         for frame in sorted_frames:
@@ -554,7 +591,7 @@ class PRAMainWindow(QWidget):
         
         # Update queue visualization
         if self.queue_widget:
-            self.queue_widget.update_frames(self.frames)
+            self.queue_widget.update_frames(self.frames, self.algorithm_combo.currentText())
     
     def on_frame_table_changed(self, item):
         """Handle when frame table data is edited by user."""
@@ -588,7 +625,7 @@ class PRAMainWindow(QWidget):
             
             # Update queue visualization
             if self.queue_widget:
-                self.queue_widget.update_frames(self.frames)
+                self.queue_widget.update_frames(self.frames, self.algorithm_combo.currentText())
         
     def generate_random_problem(self):
         """Generate random frame data and page sequence for practice."""
@@ -695,6 +732,10 @@ class PRAMainWindow(QWidget):
             alg_name_item.setFlags(alg_name_item.flags() & ~Qt.ItemIsEditable)
             alg_name_item.setTextAlignment(Qt.AlignCenter)
             self.solution_table.setItem(algorithm_row, 2, alg_name_item)  # Column 2 = Page in Memory
+        
+        # Update queue visualization with algorithm-specific sorting
+        if self.queue_widget and self.frames:
+            self.queue_widget.update_frames(self.frames, algorithm)
         
         self.reset_solution()
         
