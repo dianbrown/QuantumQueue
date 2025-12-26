@@ -2,13 +2,13 @@
 ; Inno Setup Script for QuantumQueue
 [Setup]
 AppName=QuantumQueue
-AppVersion=2.0.0
+AppVersion=2.0.1
 AppPublisher=dianbrown
 AppPublisherURL=https://github.com/dianbrown/CPU-SchedulingApp
 DefaultDirName={autopf}\QuantumQueue
 DefaultGroupName=QuantumQueue
 OutputDir=dist\installers
-OutputBaseFilename=QuantumQueue-2.0.0-Windows-Setup
+OutputBaseFilename=QuantumQueue-2.0.1-Windows-Setup
 SetupIconFile=Assets\Icons\app_icon.ico
 Compression=lzma2
 SolidCompression=yes
