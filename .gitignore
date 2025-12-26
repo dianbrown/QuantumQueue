@@ -217,7 +217,7 @@ $RECYCLE.BIN/
 # Project specific
 *.jpg
 *.jpeg
-*.gif
+# *.gif  # Removed to allow Assets/demos/*.gif for README
 ExampleTable.png
 
 # Temporary files
