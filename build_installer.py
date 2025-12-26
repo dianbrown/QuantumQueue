@@ -117,7 +117,7 @@ def build_executable():
     
     try:
         cmd = [
-            sys.executable, '-m', 'pyinstaller',
+            sys.executable, '-m', 'PyInstaller',
             '--clean',
             '--noconfirm',
             f'{APP_NAME}.spec'
