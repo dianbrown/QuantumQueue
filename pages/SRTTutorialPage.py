@@ -13,6 +13,9 @@ from PySide6.QtGui import QColor
 
 from CPU.utils.process_generator import ProcessGenerator
 
+# Resource helper (PyInstaller-safe)
+from resource_path import load_json_resource
+
 
 class SRTTutorialPage(QWidget):
     """Step-by-step SRT tutorial with preemptive REMAINING burst logic"""
@@ -37,16 +40,9 @@ class SRTTutorialPage(QWidget):
         self._show_step(0)
     
     def _load_step_templates(self):
-        possible_paths = [
-            os.path.join(os.path.dirname(__file__), '..', 'tutorial_kb', 'srt_steps.json'),
-            'tutorial_kb/srt_steps.json',
-        ]
-        for path in possible_paths:
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except:
-                continue
+        templates = load_json_resource('tutorial_kb/srt_steps.json', default=None)
+        if isinstance(templates, dict) and templates.get('step_types'):
+            return templates
         return {"step_types": {}}
     
     def _generate_random_processes(self):

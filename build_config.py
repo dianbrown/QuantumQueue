@@ -29,6 +29,7 @@ PYINSTALLER_OPTIONS = {
     'add_data': [
         ('themes', 'themes'),
         ('Assets', 'Assets'),
+    ('tutorial_kb', 'tutorial_kb'),
     ],
     'hidden_imports': [
         'PySide6.QtCore',
