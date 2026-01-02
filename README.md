@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-features">Features</a> •
-  <a href="#-showcase">Showcase</a> •
-  <a href="#-usage">Usage</a> •
-  <a href="#-tutorials">Tutorials</a>
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="#showcase">Showcase</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#tutorials">Tutorials</a>
 </p>
 
 ---
